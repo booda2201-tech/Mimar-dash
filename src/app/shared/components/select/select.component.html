@@ -6,31 +6,42 @@
 
   <div class="select-menu" *ngIf="open" [ngStyle]="menuStyle">
     <div class="select-search" *ngIf="searchable">
-      <span class="material-symbols-outlined">search</span>
-      <input
-        type="text"
-        placeholder="ابحث..."
-        [value]="query"
-        (input)="query = $any($event.target).value"
-        (click)="$event.stopPropagation()"
-      />
+      <label class="select-search-box">
+        <span class="material-symbols-outlined">search</span>
+        <input
+          type="text"
+          placeholder="ابحث..."
+          [value]="query"
+          (input)="query = $any($event.target).value"
+          (click)="$event.stopPropagation()"
+        />
+        <button type="button" class="select-search-clear" *ngIf="query" (click)="$event.stopPropagation(); query = ''" aria-label="مسح البحث">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </label>
     </div>
     <button
       type="button"
       class="select-option"
-      *ngFor="let opt of visibleOptions"
+      *ngFor="let opt of visibleOptions; let first = first"
       [class.is-active]="opt.value === value"
       [class.is-root]="opt.depth === 0 && hasTree"
       [class.is-child]="(opt.depth || 0) > 0"
-      [style.padding-inline-start.rem]="0.85 + (opt.depth || 0) * 1.1"
+      [class.is-first]="first"
+      [style.--depth]="opt.depth || 0"
       (click)="choose(opt)"
     >
       <span class="option-text">
-        <span class="material-symbols-outlined option-icon" *ngIf="hasTree">{{ (opt.depth || 0) > 0 ? 'subdirectory_arrow_left' : 'folder' }}</span>
+        <span class="option-icon" *ngIf="hasTree && !opt.depth">
+          <span class="material-symbols-outlined">{{ opt.value === '' ? 'apps' : 'folder' }}</span>
+        </span>
+        <span class="option-dot" *ngIf="opt.depth"></span>
         <span class="option-label">{{ opt.label }}</span>
-        <span class="option-hint" *ngIf="opt.hint">{{ opt.hint }}</span>
       </span>
-      <span class="material-symbols-outlined check" *ngIf="opt.value === value">check</span>
+      <span class="option-end">
+        <span class="option-hint" *ngIf="opt.hint">{{ opt.hint }}</span>
+        <span class="material-symbols-outlined check" *ngIf="opt.value === value">check</span>
+      </span>
     </button>
     <div class="select-empty" *ngIf="!visibleOptions.length">{{ query ? 'مفيش نتايج' : 'لا توجد خيارات' }}</div>
   </div>

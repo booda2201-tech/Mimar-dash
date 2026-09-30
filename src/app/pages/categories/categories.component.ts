@@ -33,6 +33,21 @@ import { STARTER_PACKS, StarterCategory, StarterPack } from './categories-starte
       :host {
         display: block;
       }
+      .ct-subs {
+        max-height: calc(4 * 3.9375rem + 3 * 0.375rem + 2px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding-inline-end: 0.25rem;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(15, 81, 50, 0.25) transparent;
+      }
+      .ct-subs::-webkit-scrollbar {
+        width: 5px;
+      }
+      .ct-subs::-webkit-scrollbar-thumb {
+        background: rgba(15, 81, 50, 0.25);
+        border-radius: 999px;
+      }
       .ct-summary,
       .ct-back {
         display: none;

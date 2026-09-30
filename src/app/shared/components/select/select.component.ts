@@ -119,13 +119,15 @@ export class SelectComponent implements ControlValueAccessor {
     const rect = el.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom;
     const openUp = spaceBelow < 260 && rect.top > spaceBelow;
-    const maxH = Math.min(256, openUp ? rect.top - 16 : spaceBelow - 16);
+    const maxH = Math.min(320, openUp ? rect.top - 16 : spaceBelow - 16);
+    const width = Math.min(Math.max(rect.width, 240), window.innerWidth - 16);
+    const left = Math.min(Math.max(8, rect.right - width), window.innerWidth - width - 8);
 
     this.menuStyle = {
       position: 'fixed',
-      left: `${rect.left}px`,
-      width: `${rect.width}px`,
-      maxHeight: `${Math.max(120, maxH)}px`,
+      left: `${left}px`,
+      width: `${width}px`,
+      maxHeight: `${Math.max(140, maxH)}px`,
       zIndex: '120',
       ...(openUp
         ? { bottom: `${window.innerHeight - rect.top + 6}px`, top: 'auto' }

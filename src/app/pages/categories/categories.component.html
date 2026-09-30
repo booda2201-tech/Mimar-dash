@@ -155,7 +155,7 @@
       </header>
 
       <div class="px-4 pb-4 pt-3 border-t border-gray-100 bg-gray-50/60" *ngIf="!collapsed.has(root.id)">
-        <div class="space-y-1.5 border-r-2 border-brand-primary/15 pr-2.5" *ngIf="childrenOf(root.id).length">
+        <div class="ct-subs space-y-1.5 border-r-2 border-brand-primary/15 pr-2.5" *ngIf="childrenOf(root.id).length">
           <ng-container *ngTemplateOutlet="childrenTpl; context: { $implicit: root.id, depth: 0 }"></ng-container>
         </div>
         <p class="text-xs text-gray-400 text-center py-1" *ngIf="!childrenOf(root.id).length">مفيش فئات فرعية لسه</p>

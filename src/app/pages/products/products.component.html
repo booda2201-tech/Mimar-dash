@@ -36,7 +36,7 @@
       </button>
     </div>
     <div class="pm-grid">
-      <button type="button" [class.is-active]="catalogFilter === 'all'" (click)="catalogFilter = 'all'; mobileLimit = 12">
+      <button type="button" [class.is-active]="catalogFilter === 'all'" (click)="catalogFilter = 'all'; resetPaging()">
         <strong>{{ stats[1].value }}</strong>
         <small>متوفرة</small>
       </button>
@@ -44,12 +44,12 @@
         type="button"
         [class.is-alert]="+stats[2].value > 0"
         [class.is-active]="catalogFilter === 'low'"
-        (click)="catalogFilter = 'low'; mobileLimit = 12"
+        (click)="catalogFilter = 'low'; resetPaging()"
       >
         <strong>{{ stats[2].value }}</strong>
         <small>مخزون منخفض</small>
       </button>
-      <button type="button" [class.is-danger]="+stats[3].value > 0" (click)="catalogFilter = 'low'; mobileLimit = 12">
+      <button type="button" [class.is-danger]="+stats[3].value > 0" (click)="catalogFilter = 'low'; resetPaging()">
         <strong>{{ stats[3].value }}</strong>
         <small>نفد</small>
       </button>
@@ -68,7 +68,7 @@
       <input
         type="search"
         [value]="searchTerm"
-        (input)="searchTerm = $any($event.target).value; mobileLimit = 12"
+        (input)="searchTerm = $any($event.target).value; resetPaging()"
         placeholder="ابحث بالاسم أو SKU أو البراند"
       />
     </label>
@@ -91,7 +91,7 @@
         type="button"
         class="pc-filter"
         [class.is-active]="catalogFilter === f.key"
-        (click)="catalogFilter = f.key; mobileLimit = 12"
+        (click)="catalogFilter = f.key; resetPaging()"
       >
         {{ f.label }}
         <span class="count">{{ filterCount(f.key) }}</span>
@@ -231,10 +231,43 @@
       </article>
     </div>
 
+    <nav class="pc-pager" *ngIf="!loading && !isMobile && visibleProducts.length > pageSizes[0]" aria-label="صفحات المنتجات">
+      <p class="pc-pager-info">
+        عرض <b>{{ pageRange.from }}–{{ pageRange.to }}</b> من <b>{{ visibleProducts.length }}</b> منتج
+      </p>
+
+      <div class="pc-pager-pages">
+        <button type="button" class="pc-pg nav" [disabled]="currentPage === 1" (click)="goToPage(currentPage - 1)" aria-label="الصفحة السابقة">
+          <span class="material-symbols-outlined">chevron_right</span>
+        </button>
+        <ng-container *ngFor="let n of pageNumbers">
+          <span class="pc-pg gap" *ngIf="n === null">…</span>
+          <button
+            type="button"
+            class="pc-pg"
+            *ngIf="n !== null"
+            [class.is-active]="n === currentPage"
+            [attr.aria-current]="n === currentPage ? 'page' : null"
+            (click)="goToPage(n)"
+          >
+            {{ n }}
+          </button>
+        </ng-container>
+        <button type="button" class="pc-pg nav" [disabled]="currentPage === pageCount" (click)="goToPage(currentPage + 1)" aria-label="الصفحة التالية">
+          <span class="material-symbols-outlined">chevron_left</span>
+        </button>
+      </div>
+
+      <div class="pc-pager-size" role="group" aria-label="عدد المنتجات في الصفحة">
+        <span>في الصفحة</span>
+        <button type="button" *ngFor="let s of pageSizes" [class.is-active]="pageSize === s" (click)="setPageSize(s)">{{ s }}</button>
+      </div>
+    </nav>
+
     <button
       type="button"
       class="pc-load"
-      *ngIf="!loading && visibleProducts.length > pagedProducts.length"
+      *ngIf="!loading && isMobile && visibleProducts.length > pagedProducts.length"
       (click)="mobileLimit = mobileLimit + 12"
     >
       عرض المزيد
@@ -301,11 +334,21 @@
 
   <div class="sp-progress" *ngIf="starterBusy">
     <div class="sp-bar"><span [style.width.%]="starterTotal ? (starterDone / starterTotal) * 100 : 0"></span></div>
-    <small>جاري الإضافة… {{ starterDone }} من {{ starterTotal }}</small>
+    <small>{{ starterMode === 'enrich' ? 'جاري تحديث التفاصيل والصور…' : 'جاري الإضافة…' }} {{ starterDone }} من {{ starterTotal }}</small>
   </div>
 
   <div class="sp-actions">
     <button type="button" class="btn-outline" (click)="showStarter = false" [disabled]="starterBusy">إلغاء</button>
+    <button
+      type="button"
+      class="btn-outline"
+      *ngIf="starterEnrichable"
+      (click)="enrichStarter()"
+      [disabled]="starterBusy"
+    >
+      <span class="material-symbols-outlined text-[18px]">photo_library</span>
+      تحديث التفاصيل والصور ({{ starterEnrichable }})
+    </button>
     <button type="button" class="btn-primary" (click)="importStarter()" [disabled]="starterBusy || !starterPending">
       <span class="material-symbols-outlined text-[18px]" [class.animate-spin]="starterBusy">{{
         starterBusy ? 'progress_activity' : 'auto_awesome'

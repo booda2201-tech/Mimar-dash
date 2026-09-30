@@ -45,6 +45,7 @@ import {
 } from './product-assistant';
 import { GeminiAiService, GeminiProduct } from '../../core/services/gemini-ai.service';
 import { STARTER_PRODUCTS, StarterProduct, StarterProductGroup } from './products-starter';
+import { STARTER_DETAILS } from './products-starter-details';
 
 type ModalMode = 'add' | 'edit' | 'view';
 
@@ -94,6 +95,9 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
   searchTerm = '';
   catalogView: 'cards' | 'table' = 'cards';
   mobileLimit = 12;
+  page = 1;
+  pageSize = 12;
+  readonly pageSizes = [12, 24, 48];
   sheetProduct: Product | null = null;
   private readonly mobileQuery = typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)') : null;
   isMobile = !!this.mobileQuery?.matches;
@@ -169,6 +173,7 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
   starterBusy = false;
   starterDone = 0;
   starterTotal = 0;
+  starterMode: 'import' | 'enrich' = 'import';
 
   constructor(
     private productsService: ProductsService,
@@ -959,8 +964,10 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     for (const { item, categoryId } of jobs) {
       try {
-        const file = await this.assetFile(item.image);
-        await firstValueFrom(this.productsService.create(this.starterPayload(item, categoryId), file ? [file] : []));
+        const rich = !!STARTER_DETAILS[item.sku];
+        const paths = rich ? [item.image, ...this.starterGallery(item)] : [item.image];
+        const files = (await Promise.all(paths.map((p) => this.assetFile(p)))).filter((f): f is File => !!f);
+        await firstValueFrom(this.productsService.create(this.starterPayload(item, categoryId, rich), files));
         this.starterDone++;
       } catch (err) {
         failed++;
@@ -975,12 +982,71 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
     else this.toast.success(`تمت إضافة ${this.starterDone} منتج بالصور والمواصفات`);
   }
 
-  private starterPayload(item: StarterProduct, categoryId: number): ProductFormPayload {
+  get starterEnrichable(): number {
+    return this.starterGroups.reduce((sum, g) => sum + g.products.filter((p) => this.starterMatch(p)).length, 0);
+  }
+
+  private starterMatch(item: StarterProduct): Product | undefined {
+    return this.products.find((p) => !!p.sku && p.sku === item.sku);
+  }
+
+  private starterGallery(item: StarterProduct): string[] {
+    return [2, 3].map((n) => item.image.replace(/\.jpg$/, `-${n}.jpg`));
+  }
+
+  async enrichStarter(): Promise<void> {
+    const jobs = this.starterGroups
+      .flatMap((g) => g.products)
+      .map((item) => ({ item, product: this.starterMatch(item) }))
+      .filter((j): j is { item: StarterProduct; product: Product } => !!j.product && !!STARTER_DETAILS[j.item.sku])
+      .filter(({ product }) => (product.images?.length || 0) < 3 || !product.priceTiers?.length);
+    if (!jobs.length) {
+      this.toast.info('كل المنتجات الجاهزة متحدثة بالتفاصيل والصور');
+      return;
+    }
+
+    this.starterTotal = jobs.length;
+    this.starterDone = 0;
+    this.starterBusy = true;
+    this.starterMode = 'enrich';
+    let failed = 0;
+    let lastError = '';
+
+    for (const { item, product } of jobs) {
+      try {
+        const payload = this.starterPayload(item, Number(product.categoryId), true);
+        // الباك إند بيستبدل كل صور المنتج بالمرفوعة في التعديل
+        const files =
+          (product.images?.length || 0) >= 3
+            ? []
+            : (await Promise.all([item.image, ...this.starterGallery(item)].map((p) => this.assetFile(p)))).filter(
+                (f): f is File => !!f
+              );
+        await firstValueFrom(this.productsService.update(product.id, payload, files));
+        this.starterDone++;
+      } catch (err) {
+        failed++;
+        lastError = this.apiError(err as { error?: unknown }) || lastError;
+      }
+    }
+
+    this.starterBusy = false;
+    this.starterMode = 'import';
+    this.showStarter = false;
+    this.load();
+    if (failed) this.toast.error(`اتحدث ${this.starterDone} منتج، وفشل ${failed}${lastError ? ' — ' + lastError : ''}`);
+    else this.toast.success(`اتحدثت تفاصيل ${this.starterDone} منتج وبقى لكل منتج 3 صور`);
+  }
+
+  private starterPayload(item: StarterProduct, categoryId: number, rich = false): ProductFormPayload {
+    const details = rich ? STARTER_DETAILS[item.sku] : undefined;
+    const specs = details ? [...item.specs, ...details.specs] : item.specs;
+    const tiers = details?.tiers || [];
     return {
       nameAr: item.name,
       nameEn: item.nameEn,
-      descriptionAr: item.description,
-      descriptionEn: item.descriptionEn,
+      descriptionAr: details?.description || item.description,
+      descriptionEn: details?.descriptionEn || item.descriptionEn,
       sku: item.sku,
       categoryId,
       hasVariants: false,
@@ -988,7 +1054,7 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
       stockQuantity: item.stock,
       isActive: true,
       isNew: !!item.isNew,
-      specifications: item.specs.map((s, i) => ({
+      specifications: specs.map((s, i) => ({
         nameAr: s.label,
         nameEn: s.labelEn,
         valueAr: s.value,
@@ -996,7 +1062,12 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
         displayOrder: i + 1,
       })),
       variants: [],
-      priceTiers: [],
+      priceTiers: tiers.map(([min, pct], i) => ({
+        minQuantity: min,
+        maxQuantity: tiers[i + 1] ? tiers[i + 1][0] - 1 : undefined,
+        unitPrice: Math.round(item.price * (100 - pct)) / 100,
+        discounts: [],
+      })),
       discounts: [],
     };
   }
@@ -1046,7 +1117,52 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.categoryFilter = value == null ? '' : String(value);
     this.categoryScope = this.categoryFilter ? this.descendantIds(this.categoryFilter) : null;
     if (!this.categoryFilter) this.categoryFilterCtrl.setValue('', { emitEvent: false });
+    this.resetPaging();
+  }
+
+  resetPaging(): void {
     this.mobileLimit = 12;
+    this.page = 1;
+  }
+
+  get pageCount(): number {
+    return Math.max(1, Math.ceil(this.visibleProducts.length / this.pageSize));
+  }
+
+  get currentPage(): number {
+    return Math.min(this.page, this.pageCount);
+  }
+
+  get pageRange(): { from: number; to: number } {
+    const total = this.visibleProducts.length;
+    const from = total ? (this.currentPage - 1) * this.pageSize + 1 : 0;
+    return { from, to: Math.min(this.currentPage * this.pageSize, total) };
+  }
+
+  get pageNumbers(): (number | null)[] {
+    const count = this.pageCount;
+    const cur = this.currentPage;
+    if (count <= 7) return Array.from({ length: count }, (_, i) => i + 1);
+    const out: (number | null)[] = [1];
+    const start = Math.max(2, cur - 1);
+    const end = Math.min(count - 1, cur + 1);
+    if (start > 2) out.push(null);
+    for (let n = start; n <= end; n++) out.push(n);
+    if (end < count - 1) out.push(null);
+    out.push(count);
+    return out;
+  }
+
+  goToPage(n: number): void {
+    const next = Math.min(Math.max(1, n), this.pageCount);
+    if (next === this.currentPage) return;
+    this.page = next;
+    document.querySelector('.pc-toolbar')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  setPageSize(size: number): void {
+    this.pageSize = size;
+    this.page = 1;
   }
 
   private inCategory(p: Product): boolean {
@@ -1109,7 +1225,9 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   get pagedProducts(): Product[] {
     const list = this.visibleProducts;
-    return this.isMobile ? list.slice(0, this.mobileLimit) : list;
+    if (this.isMobile) return list.slice(0, this.mobileLimit);
+    const start = (this.currentPage - 1) * this.pageSize;
+    return list.slice(start, start + this.pageSize);
   }
 
   openSheet(product: Product): void {

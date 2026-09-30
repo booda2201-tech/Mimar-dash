@@ -147,4 +147,43 @@ export const STARTER_PACKS: StarterPack[] = [
       },
     ],
   },
+  {
+    key: 'finishes',
+    name: 'تشطيبات',
+    nameEn: 'Finishes',
+    description: 'مواد التشطيب الداخلي',
+    descriptionEn: 'Interior finishing materials',
+    image: img('sub-gypsum'),
+    aliases: ['التشطيبات', 'مواد التشطيب', 'finishing'],
+    children: [
+      {
+        name: 'جبس بورد وأسقف',
+        nameEn: 'Gypsum Board & Ceilings',
+        description: 'ألواح جبس بورد عادية ومقاومة للرطوبة وقطاعات معدنية للأسقف المعلقة والقواطع.',
+        descriptionEn: 'Standard and moisture-resistant gypsum boards plus metal profiles for suspended ceilings and partitions.',
+        image: img('sub-gypsum'),
+      },
+      {
+        name: 'معاجين ولياسة',
+        nameEn: 'Plaster & Putty',
+        description: 'معاجين حوائط جاهزة وجبس لياسة وشبك فايبر لتشطيب حوائط ناعمة بدون شروخ.',
+        descriptionEn: 'Ready-mixed wall putty, gypsum plaster and fiberglass mesh for smooth crack-free walls.',
+        image: img('sub-putty'),
+      },
+      {
+        name: 'أبواب داخلية',
+        nameEn: 'Interior Doors',
+        description: 'أبواب خشب MDF وأبواب WPC مقاومة للماء مع الأكر والكوالين.',
+        descriptionEn: 'MDF wood doors and waterproof WPC doors with handles and locks.',
+        image: img('sub-doors'),
+      },
+      {
+        name: 'ورق حائط وديكورات',
+        nameEn: 'Wallpaper & Wall Panels',
+        description: 'ورق حائط فينيل وبانلات WPC مضلعة وألواح رخام PVC لديكورات الحوائط.',
+        descriptionEn: 'Vinyl wallpaper, fluted WPC panels and PVC marble sheets for wall decoration.',
+        image: img('sub-wallpaper'),
+      },
+    ],
+  },
 ];
