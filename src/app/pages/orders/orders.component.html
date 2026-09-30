@@ -1,0 +1,459 @@
+<div class="orders-page space-y-6">
+  <section class="page-hero anim-item">
+    <div class="min-w-0">
+      <span class="hero-chip">
+        <span class="material-symbols-outlined text-[14px]">local_shipping</span>
+        التوريد والمبيعات
+      </span>
+      <h1>إدارة طلبات التوريد</h1>
+      <p>{{ sourceCount('app') }} من التطبيق · {{ sourceCount('admin') }} من خدمة العملاء</p>
+    </div>
+    <div class="hero-actions">
+      <button type="button" class="btn-outline text-sm">
+        <span class="material-symbols-outlined text-[18px]">download</span>
+        تصدير فواتير
+      </button>
+      <button type="button" class="btn-primary text-sm" (click)="openAdd()">
+        <span class="material-symbols-outlined text-[18px]">add</span>
+        طلب جديد
+      </button>
+    </div>
+  </section>
+
+  <div class="anim-item om-summary">
+    <div class="om-main">
+      <div class="min-w-0">
+        <small>قيمة الطلبات الفعّالة</small>
+        <strong>{{ stats[0].value | number }} <em>ر.س</em></strong>
+      </div>
+      <button type="button" class="om-new" (click)="openAdd()">
+        <span class="material-symbols-outlined">add</span>
+        طلب جديد
+      </button>
+    </div>
+    <div class="om-grid">
+      <button type="button" [class.is-alert]="+stats[1].value > 0" (click)="setTab('pending')">
+        <strong>{{ stats[1].value }}</strong>
+        <small>معلق</small>
+      </button>
+      <button type="button" (click)="setTab('confirmed')">
+        <strong>{{ stats[2].value }}</strong>
+        <small>مؤكد</small>
+      </button>
+      <button type="button" (click)="setTab('completed')">
+        <strong>{{ stats[3].value }}%</strong>
+        <small>معدل التسليم</small>
+      </button>
+    </div>
+  </div>
+
+  <div class="os-stats grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+    <div class="anim-item" *ngFor="let s of stats"><app-stat-card [data]="s"></app-stat-card></div>
+  </div>
+
+  <div class="anim-item chip-scroll status-chips">
+    <button
+      *ngFor="let t of tabs"
+      type="button"
+      class="chip-btn"
+      [class.is-active]="tab === t.key"
+      (click)="setTab(t.key)"
+    >
+      {{ t.label }}
+      <span class="chip-count">{{ t.count }}</span>
+    </button>
+  </div>
+
+  <div class="anim-item chip-scroll source-chips">
+    <button type="button" class="chip-btn" [class.is-active]="sourceFilter === 'all'" (click)="setSource('all')">
+      كل المصادر
+      <span class="chip-count">{{ sourceCount('all') }}</span>
+    </button>
+    <button type="button" class="chip-btn" [class.is-active]="sourceFilter === 'app'" (click)="setSource('app')">
+      التطبيق
+      <span class="chip-count">{{ sourceCount('app') }}</span>
+    </button>
+    <button type="button" class="chip-btn" [class.is-active]="sourceFilter === 'admin'" (click)="setSource('admin')">
+      خدمة العملاء
+      <span class="chip-count">{{ sourceCount('admin') }}</span>
+    </button>
+  </div>
+
+  <div class="orders-layout">
+    <div class="anim-item mo md:hidden">
+      <div class="mo-bar">
+        <div class="mo-bar-row">
+          <div class="mo-search">
+            <span class="material-symbols-outlined">search</span>
+            <input type="search" [(ngModel)]="mobileSearch" (ngModelChange)="mobileLimit = 10" placeholder="رقم الطلب، العميل أو الصنف" />
+            <button type="button" *ngIf="mobileSearch" (click)="mobileSearch = ''" aria-label="مسح البحث">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+          <div class="mo-src" role="group" aria-label="المصدر">
+            <button type="button" [class.is-active]="sourceFilter === 'all'" (click)="setSource('all'); mobileLimit = 10" aria-label="كل المصادر">
+              <span class="material-symbols-outlined">apps</span>
+            </button>
+            <button type="button" [class.is-active]="sourceFilter === 'app'" (click)="setSource('app'); mobileLimit = 10" aria-label="التطبيق">
+              <span class="material-symbols-outlined">smartphone</span>
+            </button>
+            <button type="button" [class.is-active]="sourceFilter === 'admin'" (click)="setSource('admin'); mobileLimit = 10" aria-label="خدمة العملاء">
+              <span class="material-symbols-outlined">support_agent</span>
+            </button>
+          </div>
+        </div>
+        <div class="mo-tabs">
+          <button
+            *ngFor="let t of tabs"
+            type="button"
+            [class.is-active]="tab === t.key"
+            [attr.data-key]="t.key"
+            (click)="setTab(t.key); mobileLimit = 10"
+          >
+            {{ t.label }}
+            <span>{{ t.count }}</span>
+          </button>
+        </div>
+      </div>
+
+      <p class="mo-count" *ngIf="!loading">
+        {{ mobileOrders.length }} طلب
+        <ng-container *ngIf="sourceFilter !== 'all'"> · {{ sourceFilter === 'app' ? 'من التطبيق' : 'من خدمة العملاء' }}</ng-container>
+      </p>
+
+      <div class="mo-skeleton" *ngIf="loading">
+        <div class="skeleton" *ngFor="let i of [1, 2, 3]"></div>
+      </div>
+
+      <div class="mo-empty" *ngIf="!loading && !mobileOrders.length">
+        <span class="material-symbols-outlined">local_shipping</span>
+        <strong>مفيش طلبات</strong>
+        <p>{{ mobileSearch ? 'جرّب كلمة بحث تانية' : 'مفيش طلبات في الفلتر ده' }}</p>
+      </div>
+
+      <article
+        class="mo-card"
+        *ngFor="let o of mobileOrders | slice: 0 : mobileLimit; trackBy: trackOrder"
+        [class.is-selected]="selected?.id === o.id"
+        [attr.data-status]="o.status"
+        (click)="select(o)"
+      >
+        <div class="mo-top">
+          <div class="mo-id">
+            <strong>#{{ o.id }}</strong>
+            <small>{{ shortDate(o.date) }}</small>
+          </div>
+          <app-status-badge [status]="o.status" [label]="statusLabel(o.status)"></app-status-badge>
+        </div>
+
+        <div class="mo-customer">
+          <span class="mo-avatar">{{ (o.customer || '؟').charAt(0) }}</span>
+          <div class="min-w-0">
+            <strong>{{ o.customer }}</strong>
+            <span class="mo-source" [class.is-admin]="o.source === 'admin'">
+              <span class="material-symbols-outlined">{{ o.source === 'admin' ? 'support_agent' : 'smartphone' }}</span>
+              {{ o.source === 'admin' ? createdByLabel(o) : 'من التطبيق' }}
+            </span>
+          </div>
+        </div>
+
+        <p class="mo-items">
+          <span class="material-symbols-outlined">inventory_2</span>
+          <span>{{ o.items }}</span>
+        </p>
+
+        <div class="mo-foot">
+          <div class="mo-total">
+            <small>الإجمالي</small>
+            <strong>{{ money(o.total) }}</strong>
+          </div>
+          <button
+            type="button"
+            class="mo-action is-confirm"
+            *ngIf="canConfirm(o)"
+            [disabled]="statusBusy"
+            (click)="$event.stopPropagation(); setStatus(o, 'confirmed')"
+          >
+            <span class="material-symbols-outlined">task_alt</span>
+            تأكيد
+          </button>
+          <button
+            type="button"
+            class="mo-action is-deliver"
+            *ngIf="canDeliver(o)"
+            [disabled]="statusBusy"
+            (click)="$event.stopPropagation(); setStatus(o, 'completed')"
+          >
+            <span class="material-symbols-outlined">inventory</span>
+            تم التسليم
+          </button>
+          <button type="button" class="mo-more" (click)="$event.stopPropagation(); openView(o)" aria-label="التفاصيل">
+            <span class="material-symbols-outlined">chevron_left</span>
+          </button>
+        </div>
+      </article>
+
+      <button type="button" class="mo-load" *ngIf="mobileOrders.length > mobileLimit" (click)="mobileLimit = mobileLimit + 10">
+        عرض المزيد ({{ mobileOrders.length - mobileLimit }})
+      </button>
+    </div>
+
+    <div class="anim-item table-col hidden md:block">
+      <app-data-table
+        [columns]="columns"
+        [data]="$any(filtered)"
+        [loading]="loading"
+        [selectedId]="selected?.id || null"
+        [statusLabels]="statusLabels"
+        editLabel="تغيير الحالة"
+        editIcon="swap_horiz"
+        deleteLabel="إلغاء الطلب"
+        deleteIcon="block"
+        searchPlaceholder="بحث برقم الطلب أو المقاول..."
+        emptyTitle="لا توجد طلبات"
+        emptyMessage="لا يوجد طلبات مطابقة للفلتر الحالي"
+        emptyIcon="local_shipping"
+        (rowClick)="select($any($event))"
+        (rowAction)="onRowAction($event)"
+      ></app-data-table>
+    </div>
+
+    <aside class="anim-item track-card" *ngIf="selected; else noSelected">
+      <ng-container *ngTemplateOutlet="trackContent"></ng-container>
+    </aside>
+
+    <ng-template #noSelected>
+      <aside class="anim-item track-card is-empty">
+        <span class="material-symbols-outlined">touch_app</span>
+        <p>اختر طلباً من الجدول لعرض التتبع</p>
+      </aside>
+    </ng-template>
+  </div>
+</div>
+
+<app-modal [open]="showTrack && !!selected" title="تتبع الطلب" maxWidth="520px" (close)="showTrack = false">
+  <ng-container *ngTemplateOutlet="trackContent"></ng-container>
+</app-modal>
+
+<ng-template #trackContent>
+  <ng-container *ngIf="selected">
+      <div class="track-head">
+        <div class="min-w-0">
+          <p class="track-kicker">تتبع الشحنة</p>
+          <h3>طلب {{ selected.id }}</h3>
+          <p class="track-sub" *ngIf="selected.tracking && selected.tracking !== '—'">{{ selected.tracking }}</p>
+        </div>
+        <app-status-badge [status]="selected.status" [label]="statusLabel(selected.status)"></app-status-badge>
+      </div>
+
+      <div class="source-box" [class.is-admin]="selected.source === 'admin'">
+        <span class="material-symbols-outlined">{{ selected.source === 'admin' ? 'badge' : 'smartphone' }}</span>
+        <div class="min-w-0">
+          <p>{{ selected.source === 'admin' ? 'اسم موظف خدمة العملاء' : 'الطلب من التطبيق' }}</p>
+          <strong>{{ createdByLabel(selected) }}</strong>
+          <small>{{ sourceLabel(selected) }}</small>
+        </div>
+      </div>
+
+      <div class="track-map">
+        <span class="material-symbols-outlined">map</span>
+        <div class="min-w-0">
+          <p>موقع التسليم</p>
+          <strong>{{ selected.location && selected.location !== '—' ? selected.location : 'غير محدد' }}</strong>
+          <small *ngIf="selected.eta">الوصول المتوقع: {{ selected.eta }}</small>
+        </div>
+      </div>
+
+      <div class="track-block" *ngIf="selected.driverName">
+        <p class="block-label">السائق</p>
+        <p class="block-value">{{ selected.driverName }}</p>
+        <p class="block-meta" *ngIf="selected.driverPhone" dir="ltr">{{ selected.driverPhone }}</p>
+      </div>
+
+      <div class="track-block">
+        <p class="block-label">مراحل الطلب</p>
+        <ol class="steps">
+          <li
+            *ngFor="let step of selected.trackingSteps || []"
+            [class.is-done]="step.done"
+            [class.is-current]="step.current"
+            [class.is-cancelled]="step.key === 'cancelled'"
+          >
+            <span class="material-symbols-outlined">{{
+              step.key === 'cancelled' ? 'cancel' : step.done ? 'check_circle' : step.current ? 'pending' : 'radio_button_unchecked'
+            }}</span>
+            <span>
+              <strong>{{ step.label }}</strong>
+              <small *ngIf="step.current">الخطوة الحالية</small>
+              <small *ngIf="step.time">{{ step.time }}</small>
+            </span>
+          </li>
+        </ol>
+      </div>
+
+      <div class="track-facts">
+        <div>
+          <p class="block-label">المقاول</p>
+          <p class="block-value">{{ selected.company }}</p>
+          <p class="block-meta" *ngIf="selected.customer && selected.customer !== selected.company">{{ selected.customer }}</p>
+        </div>
+        <div>
+          <p class="block-label">المواد</p>
+          <p class="block-value">{{ selected.items }}</p>
+        </div>
+        <div class="fact-total">
+          <p class="block-label">الإجمالي</p>
+          <p class="total-value">{{ selected.total | number }} <span>ر.س</span></p>
+        </div>
+      </div>
+
+      <div class="track-actions">
+        <button type="button" class="btn-outline flex-1 text-sm" (click)="showTrack = false; openView(selected!)">عرض كامل</button>
+        <button type="button" class="status-btn is-confirm flex-1" *ngIf="canConfirm(selected)" [disabled]="statusBusy" (click)="setStatus(selected!, 'confirmed')">
+          <span class="material-symbols-outlined" [class.animate-spin]="statusBusy">{{ statusBusy ? 'progress_activity' : 'task_alt' }}</span>
+          تأكيد
+        </button>
+        <button type="button" class="status-btn is-deliver flex-1" *ngIf="canDeliver(selected)" [disabled]="statusBusy" (click)="setStatus(selected!, 'completed')">
+          <span class="material-symbols-outlined" [class.animate-spin]="statusBusy">{{ statusBusy ? 'progress_activity' : 'inventory' }}</span>
+          تم التسليم
+        </button>
+      </div>
+      <button type="button" class="track-cancel" *ngIf="canCancel(selected)" [disabled]="statusBusy" (click)="askCancel(selected!)">
+        <span class="material-symbols-outlined">block</span>
+        إلغاء الطلب
+      </button>
+  </ng-container>
+</ng-template>
+
+<app-modal [open]="showView" title="تفاصيل الطلب" maxWidth="760px" (close)="showView = false">
+  <div class="ov" *ngIf="selected as o">
+    <div class="ov-head">
+      <div class="ov-icon"><span class="material-symbols-outlined">local_shipping</span></div>
+      <div class="ov-head-text">
+        <h3>طلب #{{ o.id }}</h3>
+        <p>{{ viewDate(o.date) }}<ng-container *ngIf="o.tracking !== '—'"> · تتبع {{ o.tracking }}</ng-container></p>
+      </div>
+      <span class="ov-source" [class.is-admin]="o.source === 'admin'">
+        <span class="material-symbols-outlined">{{ o.source === 'admin' ? 'support_agent' : 'smartphone' }}</span>
+        {{ sourceLabel(o) }}
+      </span>
+      <app-status-badge [status]="o.status" [label]="statusLabel(o.status)"></app-status-badge>
+    </div>
+
+    <div class="ov-grid">
+      <section class="ov-card">
+        <h4><span class="material-symbols-outlined">person</span> العميل</h4>
+        <div class="ov-row"><span>الاسم</span><strong>{{ o.customer }}</strong></div>
+        <div class="ov-row" *ngIf="o.phone"><span>الموبايل</span><a dir="ltr" [href]="'tel:' + o.phone">{{ o.phone }}</a></div>
+        <div class="ov-row" *ngIf="o.email"><span>الإيميل</span><strong dir="ltr">{{ o.email }}</strong></div>
+        <div class="ov-row" *ngIf="o.company !== '—' && o.company !== o.customer"><span>المنشأة</span><strong>{{ o.company }}</strong></div>
+        <div class="ov-row" *ngIf="o.source === 'admin'"><span>سجّله</span><strong>{{ createdByLabel(o) }}</strong></div>
+      </section>
+
+      <section class="ov-card">
+        <h4>
+          <span class="material-symbols-outlined">location_on</span> عنوان التوصيل
+          <em *ngIf="o.address?.label">{{ o.address?.label }}</em>
+        </h4>
+        <ng-container *ngIf="addressRows(o).length; else plainAddress">
+          <div class="ov-address">
+            <div *ngFor="let row of addressRows(o)"><span>{{ row.label }}</span><strong>{{ row.value }}</strong></div>
+          </div>
+        </ng-container>
+        <ng-template #plainAddress><p class="ov-plain">{{ o.location }}</p></ng-template>
+      </section>
+    </div>
+
+    <section class="ov-card">
+      <h4>
+        <span class="material-symbols-outlined">inventory_2</span> الأصناف
+        <em>{{ o.lines?.length || 0 }} صنف · {{ o.quantity }} قطعة</em>
+      </h4>
+
+      <div class="ov-loading" *ngIf="viewLoading && !o.lines?.length">
+        <span class="material-symbols-outlined animate-spin">progress_activity</span> جاري تحميل الأصناف...
+      </div>
+
+      <div class="ov-items" *ngIf="o.lines?.length; else noLines">
+        <div class="ov-item" *ngFor="let line of o.lines">
+          <div class="ov-thumb">
+            <img *ngIf="line.image" [src]="line.image" alt="" />
+            <span *ngIf="!line.image" class="material-symbols-outlined">inventory_2</span>
+          </div>
+          <div class="ov-item-info">
+            <strong>{{ line.name }}</strong>
+            <small>
+              <span *ngIf="line.variant">{{ line.variant }}</span>
+              <span *ngIf="line.sku" dir="ltr">{{ line.sku }}</span>
+              <span class="ov-disc" *ngIf="line.discountLabel">{{ line.discountLabel }}</span>
+            </small>
+          </div>
+          <div class="ov-item-qty">× {{ line.quantity }}</div>
+          <div class="ov-item-price">
+            <del *ngIf="line.originalUnitPrice">{{ money(line.originalUnitPrice) }}</del>
+            <small>{{ money(line.unitPrice) }} للوحدة</small>
+            <strong>{{ money(line.total) }}</strong>
+          </div>
+        </div>
+      </div>
+      <ng-template #noLines>
+        <p class="ov-plain" *ngIf="!viewLoading">{{ o.items }}</p>
+      </ng-template>
+
+      <div class="ov-totals">
+        <div *ngIf="o.subtotal"><span>إجمالي الأصناف</span><strong>{{ money(o.subtotal) }}</strong></div>
+        <div *ngIf="o.discount" class="is-discount"><span>الخصم</span><strong>− {{ money(o.discount) }}</strong></div>
+        <div *ngIf="o.shippingFee !== undefined"><span>التوصيل</span><strong>{{ o.shippingFee ? money(o.shippingFee) : 'مجاني' }}</strong></div>
+        <div *ngIf="o.tax"><span>الضريبة</span><strong>{{ money(o.tax) }}</strong></div>
+        <div class="is-total"><span>الإجمالي</span><strong>{{ money(o.total) }}</strong></div>
+      </div>
+    </section>
+
+    <div class="ov-grid">
+      <section class="ov-card">
+        <h4><span class="material-symbols-outlined">payments</span> الدفع والتوصيل</h4>
+        <div class="ov-row"><span>وسيلة الدفع</span><strong>{{ o.payment }}</strong></div>
+        <div class="ov-row" *ngIf="o.paymentStatus"><span>حالة الدفع</span><strong>{{ o.paymentStatus }}</strong></div>
+        <div class="ov-row" *ngIf="o.driverName"><span>السائق</span><strong>{{ o.driverName }}</strong></div>
+        <div class="ov-row" *ngIf="o.driverPhone"><span>جوال السائق</span><a dir="ltr" [href]="'tel:' + o.driverPhone">{{ o.driverPhone }}</a></div>
+        <div class="ov-row" *ngIf="o.eta"><span>الوصول المتوقع</span><strong>{{ o.eta }}</strong></div>
+        <div class="ov-row" *ngIf="o.updatedAt"><span>آخر تحديث</span><strong>{{ viewDate(o.updatedAt) }}</strong></div>
+      </section>
+
+      <section class="ov-card">
+        <h4><span class="material-symbols-outlined">sticky_note_2</span> ملاحظات</h4>
+        <p class="ov-note" *ngIf="o.notes; else noNotes">{{ o.notes }}</p>
+        <ng-template #noNotes><p class="ov-plain muted">مفيش ملاحظات على الطلب</p></ng-template>
+      </section>
+    </div>
+  </div>
+  <div class="form-actions mt-5">
+    <button type="button" class="btn-outline" (click)="showView = false">إغلاق</button>
+    <ng-container *ngIf="selected as o">
+      <button type="button" class="status-btn is-cancel" *ngIf="canCancel(o)" [disabled]="statusBusy" (click)="askCancel(o)">
+        <span class="material-symbols-outlined">block</span>
+        إلغاء الطلب
+      </button>
+      <button type="button" class="status-btn is-confirm" *ngIf="canConfirm(o)" [disabled]="statusBusy" (click)="setStatus(o, 'confirmed')">
+        <span class="material-symbols-outlined" [class.animate-spin]="statusBusy">{{ statusBusy ? 'progress_activity' : 'task_alt' }}</span>
+        تأكيد الطلب
+      </button>
+      <button type="button" class="status-btn is-deliver" *ngIf="canDeliver(o)" [disabled]="statusBusy" (click)="setStatus(o, 'completed')">
+        <span class="material-symbols-outlined" [class.animate-spin]="statusBusy">{{ statusBusy ? 'progress_activity' : 'inventory' }}</span>
+        تم التسليم
+      </button>
+    </ng-container>
+  </div>
+</app-modal>
+
+<app-create-order [open]="showCreate" (closed)="showCreate = false" (created)="onCreated($event)"></app-create-order>
+
+<app-confirm-dialog
+  [open]="showConfirm"
+  title="إلغاء الطلب"
+  [message]="'متأكد إنك عايز تلغي طلب #' + (selected?.id || '') + '؟ مش هينفع ترجّعه بعد كده.'"
+  confirmText="إلغاء الطلب"
+  [danger]="true"
+  (confirm)="confirmCancel()"
+  (cancel)="showConfirm = false"
+></app-confirm-dialog>

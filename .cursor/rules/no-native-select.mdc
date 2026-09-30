@@ -1,0 +1,16 @@
+---
+description: Never use native HTML select — always use custom dropdown UI
+alwaysApply: true
+---
+
+# Custom Dropdowns Only
+
+Never use native `<select>` / `<option>` in UI forms or filters.
+
+- Always use the shared custom dropdown (`app-select` or equivalent in the stack).
+- Native browser select styling looks outdated and breaks brand consistency.
+- Dropdowns must support RTL, brand colors, hover/active states, and click-outside close.
+- Options should be passed as `{ label, value }[]`.
+- Wire to Reactive Forms via `ControlValueAccessor` / `formControlName`.
+
+If a page still has `<select>`, replace it before finishing the task.

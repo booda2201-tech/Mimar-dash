@@ -1,0 +1,351 @@
+<div class="settings-page space-y-6" [class.is-detail]="mobileDetail" [formGroup]="form">
+  <div class="anim-item desk-head">
+    <h1 class="text-2xl font-bold text-brand-primary">إعدادات المنصة والأعمال الهندسية</h1>
+    <p class="text-sm text-gray-500 mt-1">الهوية · اللوجستيات · الضرائب · بوابات الدفع</p>
+  </div>
+
+  <!-- Mobile: profile-style home -->
+  <section class="m-home anim-item">
+    <div class="m-hero">
+      <div class="m-hero-bg" aria-hidden="true"></div>
+      <div class="m-hero-row">
+        <div class="m-hero-avatar">{{ adminInitial }}</div>
+        <div class="min-w-0 flex-1">
+          <h2>{{ form.value.adminName || 'م. عبد الرحمن' }}</h2>
+          <span class="m-hero-role">
+            <span class="material-symbols-outlined">verified_user</span>
+            Super Admin · {{ form.value.nameAr }}
+          </span>
+        </div>
+      </div>
+      <div class="m-hero-contact">
+        <span dir="ltr"><span class="material-symbols-outlined">mail</span>{{ form.value.email }}</span>
+        <span dir="ltr"><span class="material-symbols-outlined">call</span>{{ form.value.hotline }}</span>
+      </div>
+      <div class="m-hero-stats">
+        <div>
+          <strong>{{ form.value.vatRate }}%</strong>
+          <small>الضريبة</small>
+        </div>
+        <div>
+          <strong>{{ activePayments }}</strong>
+          <small>قنوات دفع</small>
+        </div>
+        <div>
+          <strong [class.is-warn]="form.value.maintenance">{{ form.value.maintenance ? 'صيانة' : 'شغّالة' }}</strong>
+          <small>حالة المنصة</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="m-group" *ngFor="let group of mobileGroups">
+      <p class="m-group-title">{{ group.title }}</p>
+      <div class="m-list">
+        <button type="button" class="m-row" *ngFor="let key of group.tabs" (click)="openMobile(key)">
+          <span class="m-row-icon" [attr.data-tone]="key"><span class="material-symbols-outlined">{{ tabOf(key).icon }}</span></span>
+          <span class="m-row-text">
+            <strong>{{ tabOf(key).label }}</strong>
+            <small>{{ summary(key) }}</small>
+          </span>
+          <span class="m-row-badge" *ngIf="key === 'maintenance'" [class.is-on]="form.value.maintenance">
+            {{ form.value.maintenance ? 'مفعّل' : 'متوقف' }}
+          </span>
+          <span class="material-symbols-outlined m-row-arrow">chevron_left</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="m-list">
+      <button type="button" class="m-row is-danger" (click)="logout()">
+        <span class="m-row-icon"><span class="material-symbols-outlined">logout</span></span>
+        <span class="m-row-text"><strong>تسجيل الخروج</strong></span>
+      </button>
+    </div>
+  </section>
+
+  <div class="settings-grid grid grid-cols-1 lg:grid-cols-4 gap-5">
+    <aside class="anim-item settings-nav h-fit lg:sticky lg:top-24">
+      <p class="settings-nav-title hidden lg:block">أقسام الإعدادات</p>
+      <nav class="settings-nav-list" aria-label="قائمة الإعدادات">
+        <button
+          *ngFor="let t of tabs"
+          type="button"
+          class="settings-tab"
+          [class.is-active]="tab === t.key"
+          (click)="setTab(t.key)"
+        >
+          <span class="settings-tab-icon">
+            <span class="material-symbols-outlined">{{ t.icon }}</span>
+          </span>
+          <span class="settings-tab-label">{{ t.label }}</span>
+        </button>
+      </nav>
+    </aside>
+
+    <div class="anim-item lg:col-span-3 settings-panel">
+      <div class="m-detail-head">
+        <button type="button" class="m-back" (click)="closeMobile()" aria-label="رجوع">
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </button>
+        <div class="min-w-0">
+          <h2>{{ activeTab.label }}</h2>
+          <p>{{ activeTab.desc }}</p>
+        </div>
+      </div>
+
+      <div class="settings-panel-head">
+        <div class="settings-panel-head-icon">
+          <span class="material-symbols-outlined">{{ activeTab.icon }}</span>
+        </div>
+        <div>
+          <h2 class="settings-panel-title">{{ activeTab.label }}</h2>
+          <p class="settings-panel-desc">{{ activeTab.desc }}</p>
+        </div>
+      </div>
+
+      <div class="settings-panel-body">
+        <!-- General -->
+        <ng-container *ngIf="tab === 'general'">
+          <section class="form-section">
+            <p class="form-section-title">بيانات الهوية (تطبيق معمار)</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="form-label">اسم البراند بالعربية</label>
+                <input class="input-field" formControlName="nameAr" />
+              </div>
+              <div>
+                <label class="form-label">اسم البراند بالإنجليزية</label>
+                <input class="input-field" formControlName="nameEn" dir="ltr" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="form-label">الشعار / الوصف القصير</label>
+                <input class="input-field" formControlName="tagline" />
+              </div>
+              <div class="sm:col-span-2">
+                <label class="form-label">اسم المسؤول في الداشبورد</label>
+                <input class="input-field" formControlName="adminName" />
+                <p class="text-xs text-gray-400 mt-1">يظهر في الشريط الجانبي والترحيب — الافتراضي: م. عبد الرحمن</p>
+              </div>
+              <div>
+                <label class="form-label">السجل التجاري</label>
+                <input class="input-field" formControlName="cr" dir="ltr" />
+              </div>
+              <div>
+                <label class="form-label">الرقم الضريبي</label>
+                <input class="input-field" formControlName="vat" dir="ltr" />
+              </div>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <p class="form-section-title">التواصل والمقر</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="form-label">البريد الرسمي</label>
+                <input class="input-field" type="email" formControlName="email" dir="ltr" />
+              </div>
+              <div>
+                <label class="form-label">الخط الساخن</label>
+                <input class="input-field" formControlName="hotline" dir="ltr" />
+              </div>
+              <div>
+                <label class="form-label">المدينة</label>
+                <input class="input-field" formControlName="city" />
+              </div>
+              <div>
+                <label class="form-label">العنوان</label>
+                <input class="input-field" formControlName="address" />
+              </div>
+            </div>
+          </section>
+        </ng-container>
+
+        <!-- Logistics -->
+        <ng-container *ngIf="tab === 'logistics'">
+          <section class="form-section">
+            <p class="form-section-title">خيارات التشغيل</p>
+            <div class="feature-grid">
+              <label class="feature-card" [class.is-on]="form.value.gps">
+                <span class="feature-icon"><span class="material-symbols-outlined">location_on</span></span>
+                <span class="feature-text">
+                  <span class="feature-title">تتبع GPS</span>
+                  <span class="feature-desc">متابعة الشاحنات لحظياً على الخريطة</span>
+                </span>
+                <span class="toggle">
+                  <input type="checkbox" formControlName="gps" />
+                  <span class="toggle-track"></span>
+                </span>
+              </label>
+
+              <label class="feature-card" [class.is-on]="form.value.hydraulic">
+                <span class="feature-icon"><span class="material-symbols-outlined">precision_manufacturing</span></span>
+                <span class="feature-text">
+                  <span class="feature-title">التفريغ الهيدروليكي</span>
+                  <span class="feature-desc">تفعيل خيار التفريغ للشاحنات المؤهلة</span>
+                </span>
+                <span class="toggle">
+                  <input type="checkbox" formControlName="hydraulic" />
+                  <span class="toggle-track"></span>
+                </span>
+              </label>
+
+              <label class="feature-card" [class.is-on]="form.value.nightDelivery">
+                <span class="feature-icon"><span class="material-symbols-outlined">nightlight</span></span>
+                <span class="feature-text">
+                  <span class="feature-title">التوصيل الليلي</span>
+                  <span class="feature-desc">السماح بالتوريد بعد الساعة 8 مساءً</span>
+                </span>
+                <span class="toggle">
+                  <input type="checkbox" formControlName="nightDelivery" />
+                  <span class="toggle-track"></span>
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <p class="form-section-title">تسعير النقل</p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="metric-field">
+                <label class="form-label">معامل الكيلومتر</label>
+                <div class="input-with-suffix">
+                  <input type="number" class="input-field" formControlName="kmRate" step="0.01" />
+                  <span>ر.س</span>
+                </div>
+              </div>
+              <div class="metric-field">
+                <label class="form-label">سعر الطن</label>
+                <div class="input-with-suffix">
+                  <input type="number" class="input-field" formControlName="tonRate" />
+                  <span>ر.س</span>
+                </div>
+              </div>
+              <div class="metric-field">
+                <label class="form-label">حد أدنى تريلا</label>
+                <div class="input-with-suffix">
+                  <input type="number" class="input-field" formControlName="minTrailer" />
+                  <span>طن</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        </ng-container>
+
+        <!-- Tax -->
+        <ng-container *ngIf="tab === 'tax'">
+          <section class="form-section">
+            <p class="form-section-title">ضريبة القيمة المضافة</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="form-label">نسبة الضريبة %</label>
+                <div class="input-with-suffix">
+                  <input type="number" class="input-field" formControlName="vatRate" min="0" max="100" />
+                  <span>%</span>
+                </div>
+              </div>
+              <div>
+                <label class="form-label">بيئة الربط</label>
+                <div class="env-pills">
+                  <label class="env-pill" [class.is-active]="form.value.zatcaEnv === 'sandbox'">
+                    <input type="radio" formControlName="zatcaEnv" value="sandbox" />
+                    تجريبي
+                  </label>
+                  <label class="env-pill" [class.is-active]="form.value.zatcaEnv === 'production'">
+                    <input type="radio" formControlName="zatcaEnv" value="production" />
+                    إنتاج
+                  </label>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="form-section">
+            <p class="form-section-title">حالة ZATCA</p>
+            <div class="status-banner is-success">
+              <span class="status-banner-icon"><span class="material-symbols-outlined">verified</span></span>
+              <div>
+                <p class="status-banner-title">الربط مع منصة فاتورة متصل</p>
+                <p class="status-banner-desc">نسبة نجاح المزامنة اليوم 99.98% · آخر مزامنة منذ 12 دقيقة</p>
+              </div>
+            </div>
+            <div class="info-grid">
+              <div class="info-tile">
+                <span class="info-label">الفواتير اليوم</span>
+                <span class="info-value">248</span>
+              </div>
+              <div class="info-tile">
+                <span class="info-label">مرفوضة</span>
+                <span class="info-value warn">2</span>
+              </div>
+              <div class="info-tile">
+                <span class="info-label">بانتظار الاعتماد</span>
+                <span class="info-value">5</span>
+              </div>
+            </div>
+          </section>
+        </ng-container>
+
+        <!-- Payments -->
+        <ng-container *ngIf="tab === 'payments'">
+          <section class="form-section">
+            <p class="form-section-title">القنوات المفعّلة</p>
+            <div class="pay-grid">
+              <label
+                class="pay-card"
+                *ngFor="let p of paymentOptions"
+                [class.is-on]="form.get(p.control)?.value"
+              >
+                <span class="pay-icon"><span class="material-symbols-outlined">{{ p.icon }}</span></span>
+                <span class="pay-text">
+                  <span class="pay-title">{{ p.label }}</span>
+                  <span class="pay-desc">{{ p.desc }}</span>
+                </span>
+                <span class="toggle">
+                  <input type="checkbox" [formControlName]="p.control" />
+                  <span class="toggle-track"></span>
+                </span>
+              </label>
+            </div>
+          </section>
+        </ng-container>
+
+        <!-- Maintenance -->
+        <ng-container *ngIf="tab === 'maintenance'">
+          <section class="form-section">
+            <label class="maint-hero" [class.is-on]="form.value.maintenance">
+              <div class="maint-hero-top">
+                <span class="maint-hero-icon"><span class="material-symbols-outlined">construction</span></span>
+                <div class="flex-1">
+                  <p class="feature-title">تفعيل وضع التوقف المؤقت</p>
+                  <p class="feature-desc">سيظهر تنبيه للمقاولين والسائقين دون التأثير على الطلبات قيد التوصيل</p>
+                </div>
+                <span class="toggle lg">
+                  <input type="checkbox" formControlName="maintenance" />
+                  <span class="toggle-track"></span>
+                </span>
+              </div>
+              <div class="maint-badge" *ngIf="form.value.maintenance">الوضع مفعّل حالياً</div>
+            </label>
+          </section>
+
+          <section class="form-section">
+            <p class="form-section-title">رسالة الصيانة</p>
+            <textarea
+              class="input-field min-h-[110px] py-3"
+              formControlName="maintenanceMsg"
+              placeholder="اكتب الرسالة التي ستظهر للمستخدمين..."
+            ></textarea>
+          </section>
+        </ng-container>
+      </div>
+
+      <div class="settings-actions">
+        <button type="button" class="btn-outline" (click)="cancel()">تراجع</button>
+        <button type="button" class="btn-primary" (click)="save()">
+          <span class="material-symbols-outlined text-[18px]">save</span>
+          حفظ التغييرات
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

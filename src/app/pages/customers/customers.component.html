@@ -1,0 +1,316 @@
+<div class="customers-page space-y-6">
+  <section class="page-hero anim-item">
+    <div class="min-w-0">
+      <span class="hero-chip">
+        <span class="material-symbols-outlined text-[14px]">groups</span>
+        العملاء والمقاولون
+      </span>
+      <h1>إدارة عملاء التطبيق</h1>
+      <p>كل عميل طلب من التطبيق يظهر هنا مع سجل طلباته ومدفوعاته</p>
+    </div>
+    <label class="hidden md:flex items-center gap-2 w-full sm:w-80 px-3 py-2.5 rounded-xl bg-white border border-brand-primary/15">
+      <span class="material-symbols-outlined text-gray-400">search</span>
+      <input
+        type="search"
+        class="w-full bg-transparent border-0 outline-none text-sm font-semibold"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="applySearch()"
+        placeholder="بحث بالاسم أو الجوال أو الشركة..."
+      />
+    </label>
+  </section>
+
+  <div class="cm anim-item">
+    <div class="cm-summary">
+      <div class="cm-summary-main">
+        <div class="min-w-0">
+          <small>إجمالي المدفوعات</small>
+          <strong>{{ stats[2].value | number }} <em>ر.س</em></strong>
+        </div>
+        <span class="cm-summary-icon"><span class="material-symbols-outlined">account_balance_wallet</span></span>
+      </div>
+      <div class="cm-summary-grid">
+        <div>
+          <strong>{{ stats[0].value | number }}</strong>
+          <small>عميل</small>
+        </div>
+        <div>
+          <strong>{{ stats[1].value | number }}</strong>
+          <small>طلب</small>
+        </div>
+        <div>
+          <strong>{{ stats[3].value | number }}</strong>
+          <small>متوسط العميل</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="cm-search">
+      <span class="material-symbols-outlined">search</span>
+      <input type="search" [(ngModel)]="searchTerm" (ngModelChange)="applySearch()" placeholder="ابحث بالاسم، الجوال أو الشركة" />
+      <button type="button" *ngIf="searchTerm" (click)="searchTerm = ''; applySearch()" aria-label="مسح البحث">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    <div class="cm-sort">
+      <button type="button" *ngFor="let s of sortOptions" [class.is-active]="sortKey === s.key" (click)="setSort(s.key)">
+        <span class="material-symbols-outlined">{{ s.icon }}</span>
+        {{ s.label }}
+      </button>
+    </div>
+
+    <div class="cm-skeleton" *ngIf="loading">
+      <div class="skeleton" *ngFor="let i of [1, 2, 3, 4]"></div>
+    </div>
+
+    <div class="cm-empty" *ngIf="!loading && !filtered.length">
+      <span class="material-symbols-outlined">groups</span>
+      <strong>{{ searchTerm ? 'لا توجد نتائج' : 'لا يوجد عملاء حتى الآن' }}</strong>
+      <p>{{ searchTerm ? 'جرّب كلمة بحث أخرى' : 'سيظهر هنا كل عميل أتم طلباً من التطبيق' }}</p>
+    </div>
+
+    <ng-container *ngIf="!loading && filtered.length">
+      <p class="cm-count">{{ filtered.length }} عميل</p>
+      <div class="cm-list">
+        <article
+          class="cm-row"
+          *ngFor="let p of mobileProfiles | slice: 0 : mobileLimit; let i = index; trackBy: trackProfile"
+          (click)="openProfile(p)"
+        >
+          <div class="cm-head">
+            <div class="cm-avatar" [class.is-top]="sortKey === 'spent' && !searchTerm && i < 3">
+              {{ initial(p.name) }}
+              <span class="cm-rank" *ngIf="sortKey === 'spent' && !searchTerm && i < 3">
+                <span class="material-symbols-outlined">workspace_premium</span>
+              </span>
+            </div>
+            <div class="cm-info">
+              <strong>{{ p.name }}</strong>
+              <span class="cm-sub">
+                <span class="material-symbols-outlined">{{ subIconOf(p) }}</span>
+                {{ subtitleOf(p) || 'عميل من التطبيق' }}
+              </span>
+            </div>
+            <a
+              class="cm-call"
+              *ngIf="p.phone !== '—'"
+              [href]="'tel:' + p.phone"
+              (click)="$event.stopPropagation()"
+              aria-label="اتصال"
+            >
+              <span class="material-symbols-outlined">call</span>
+            </a>
+          </div>
+          <div class="cm-stats">
+            <div>
+              <small>الطلبات</small>
+              <strong>{{ p.orders }}</strong>
+            </div>
+            <div>
+              <small>المدفوعات</small>
+              <strong>{{ p.spent | number }} <em>ر.س</em></strong>
+            </div>
+            <div>
+              <small>آخر طلب</small>
+              <strong>{{ shortDate(p.lastOrderAt) || '—' }}</strong>
+            </div>
+          </div>
+        </article>
+      </div>
+      <button type="button" class="cm-load" *ngIf="filtered.length > mobileLimit" (click)="mobileLimit = mobileLimit + 15">
+        عرض المزيد ({{ filtered.length - mobileLimit }})
+      </button>
+    </ng-container>
+  </div>
+
+  <div class="hidden md:grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+    <div class="anim-item" *ngFor="let s of stats">
+      <app-stat-card [data]="s" [loading]="loading"></app-stat-card>
+    </div>
+  </div>
+
+  <div class="hidden md:grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" *ngIf="loading">
+    <div class="card p-5 min-h-[220px]" *ngFor="let i of [1, 2, 3]">
+      <div class="skeleton h-12 w-12 rounded-2xl mb-4"></div>
+      <div class="skeleton h-4 w-40 mb-2"></div>
+      <div class="skeleton h-3 w-28"></div>
+    </div>
+  </div>
+
+  <div class="card py-16 px-6 text-center hidden md:block" *ngIf="!loading && !filtered.length">
+    <span class="material-symbols-outlined text-4xl text-brand-gold">groups</span>
+    <h3 class="font-extrabold text-gray-900 mt-3 mb-1">لا يوجد عملاء حتى الآن</h3>
+    <p class="text-sm text-gray-500 mb-0">سيظهر هنا كل عميل أتم طلباً من تطبيق معمار.</p>
+  </div>
+
+  <div class="hidden md:grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5 sm:gap-4" *ngIf="!loading && filtered.length">
+    <article
+      class="card p-3.5 sm:p-5 flex flex-col gap-4 min-w-0 cursor-pointer card-hover"
+      *ngFor="let p of filtered"
+      (click)="openProfile(p)"
+    >
+      <div class="flex items-start gap-3">
+        <div class="shrink-0 w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center font-extrabold text-base sm:text-lg text-[#073328] bg-gradient-to-br from-[#DFC17B] to-[#C8A24B]">
+          {{ initial(p.name) }}
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="m-0 text-sm sm:text-base font-extrabold text-brand-primary truncate">{{ p.name }}</h3>
+            <app-status-badge [status]="statusOf(p)"></app-status-badge>
+          </div>
+          <p class="m-0 mt-0.5 sm:mt-1 text-xs sm:text-sm text-gray-500 truncate">{{ p.company !== '—' ? p.company : 'عميل التطبيق' }}</p>
+          <p class="sm:hidden m-0 mt-1 flex items-center gap-2 text-xs text-gray-400">
+            <span class="inline-flex items-center gap-0.5 font-bold text-brand-primary"><span class="material-symbols-outlined text-[14px]">receipt_long</span>{{ p.orders }} طلب</span>
+            <span class="font-bold text-gray-700">{{ p.spent | number }} ر.س</span>
+            <span *ngIf="p.city !== '—'" class="truncate">{{ p.city }}</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="hidden sm:flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500" *ngIf="p.phone !== '—' || p.city !== '—'">
+        <span *ngIf="p.phone !== '—'" dir="ltr">{{ p.phone }}</span>
+        <span *ngIf="p.city !== '—'" class="truncate">{{ p.city }}</span>
+      </div>
+
+      <div class="hidden sm:grid grid-cols-3 gap-2">
+        <div class="rounded-xl bg-brand-primary/[0.04] px-2 py-2.5 text-center min-w-0">
+          <strong class="block text-brand-primary font-extrabold">{{ p.orders }}</strong>
+          <small class="text-[11px] font-bold text-gray-400">طلب</small>
+        </div>
+        <div class="rounded-xl bg-brand-primary/[0.04] px-2 py-2.5 text-center min-w-0">
+          <strong class="block text-brand-primary font-extrabold truncate">{{ p.spent | number }}</strong>
+          <small class="text-[11px] font-bold text-gray-400">مدفوعات</small>
+        </div>
+        <div class="rounded-xl bg-brand-primary/[0.04] px-2 py-2.5 text-center min-w-0">
+          <strong class="block text-brand-primary font-extrabold truncate text-[13px]">{{ displayDate(p.lastOrderAt) }}</strong>
+          <small class="text-[11px] font-bold text-gray-400">آخر طلب</small>
+        </div>
+      </div>
+
+      <div class="hidden sm:flex items-center gap-2 rounded-xl bg-[#F8FAF9] border border-brand-primary/5 px-3 py-2.5" *ngIf="lastOrder(p) as order">
+        <span class="material-symbols-outlined text-brand-primary">receipt_long</span>
+        <div class="min-w-0 flex-1">
+          <p class="m-0 text-[11px] font-bold text-gray-400">آخر طلب #{{ order.id }}</p>
+          <p class="m-0 text-sm font-extrabold text-gray-900 truncate">{{ order.items }}</p>
+        </div>
+        <app-status-badge [status]="order.status"></app-status-badge>
+      </div>
+
+      <button type="button" class="hidden sm:inline-flex mt-auto self-end items-center gap-1 text-sm font-extrabold text-brand-primary" (click)="openProfile(p); $event.stopPropagation()">
+        عرض الملف
+        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+      </button>
+    </article>
+  </div>
+</div>
+
+<app-modal [open]="showProfile" title="ملف العميل" maxWidth="760px" (close)="closeProfile()">
+  <ng-container *ngIf="selected">
+    <div class="cp-hero">
+      <div class="cp-avatar">{{ initial(selected.name) }}</div>
+      <div class="cp-hero-text">
+        <div class="cp-name-row">
+          <h2>{{ selected.name }}</h2>
+          <app-status-badge [status]="statusOf(selected)"></app-status-badge>
+        </div>
+        <p>{{ profileSub(selected) }}</p>
+      </div>
+    </div>
+
+    <div class="cp-actions" *ngIf="selected.phone !== '—'">
+      <a class="is-call" [href]="'tel:' + selected.phone">
+        <span class="material-symbols-outlined">call</span>
+        اتصال
+      </a>
+      <a class="is-wa" [href]="waLink(selected.phone)" target="_blank" rel="noopener">
+        <span class="material-symbols-outlined">chat</span>
+        واتساب
+      </a>
+    </div>
+
+    <div class="cp-contact" *ngIf="selected.phone !== '—' || selected.email !== '—' || selected.city !== '—'">
+      <a class="cp-contact-row" *ngIf="selected.phone !== '—'" [href]="'tel:' + selected.phone">
+        <span class="material-symbols-outlined">smartphone</span>
+        <span class="cp-contact-text"><small>الجوال</small><span dir="ltr">{{ selected.phone }}</span></span>
+        <span class="material-symbols-outlined cp-contact-go">chevron_left</span>
+      </a>
+      <a class="cp-contact-row" *ngIf="selected.email !== '—'" [href]="'mailto:' + selected.email">
+        <span class="material-symbols-outlined">mail</span>
+        <span class="cp-contact-text"><small>البريد الإلكتروني</small>{{ selected.email }}</span>
+        <span class="material-symbols-outlined cp-contact-go">chevron_left</span>
+      </a>
+      <div class="cp-contact-row" *ngIf="selected.city !== '—'">
+        <span class="material-symbols-outlined">location_on</span>
+        <span class="cp-contact-text"><small>العنوان</small>{{ selected.city }}</span>
+      </div>
+    </div>
+
+    <div class="cp-stats">
+      <div>
+        <small>الطلبات</small>
+        <strong>{{ selected.orders }}</strong>
+      </div>
+      <div>
+        <small>المدفوعات</small>
+        <strong>{{ selected.spent | number }} <em>ر.س</em></strong>
+      </div>
+      <div>
+        <small>آخر طلب</small>
+        <strong>{{ shortDate(selected.lastOrderAt) || '—' }}</strong>
+      </div>
+    </div>
+
+    <section class="cp-section">
+      <h3 class="cp-section-title">
+        <span class="material-symbols-outlined">local_shipping</span>
+        الطلبات
+        <span class="cp-count">{{ selected.orderList.length }}</span>
+      </h3>
+      <ng-container *ngIf="selected.orderList.length; else noOrders">
+        <article class="cp-order" *ngFor="let order of selected.orderList">
+          <div class="cp-order-top">
+            <span><strong>#{{ order.id }}</strong><small>{{ displayDate(order.date) }}</small></span>
+            <app-status-badge [status]="order.status" [label]="orderStatusLabel(order.status)"></app-status-badge>
+          </div>
+          <p class="cp-order-items">{{ order.items }}</p>
+          <div class="cp-order-foot">
+            <span>
+              <ng-container *ngIf="order.location && order.location !== '—'">
+                <span class="material-symbols-outlined">location_on</span>{{ order.location }}
+              </ng-container>
+            </span>
+            <strong>{{ order.total | number }} ر.س</strong>
+          </div>
+        </article>
+      </ng-container>
+      <ng-template #noOrders>
+        <p class="cp-empty">لا توجد طلبات مسجّلة لهذا العميل.</p>
+      </ng-template>
+    </section>
+
+    <section class="cp-section">
+      <h3 class="cp-section-title">
+        <span class="material-symbols-outlined">payments</span>
+        المدفوعات
+      </h3>
+      <ng-container *ngIf="selectedPayments.length; else noPay">
+        <div class="cp-pay" *ngFor="let slice of selectedPayments">
+          <span class="material-symbols-outlined">account_balance_wallet</span>
+          <div>
+            <p>{{ slice.method }}</p>
+            <small>{{ slice.count }} عملية</small>
+          </div>
+          <strong>{{ slice.total | number }} ر.س</strong>
+        </div>
+      </ng-container>
+      <ng-template #noPay>
+        <p class="cp-empty">لا توجد مدفوعات بعد.</p>
+      </ng-template>
+    </section>
+  </ng-container>
+
+  <div class="form-actions mt-5">
+    <button type="button" class="btn-outline" (click)="closeProfile()">إغلاق</button>
+  </div>
+</app-modal>

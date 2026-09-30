@@ -1,0 +1,116 @@
+<div class="space-y-6">
+  <div class="anim-item page-head flex flex-wrap justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold">فريق العمل والصلاحيات الإدارية</h1>
+      <p class="text-sm text-gray-500 mt-1">المستخدمون · الأدوار · امتثال NCA و2FA</p>
+    </div>
+    <div class="flex gap-2">
+      <button type="button" class="btn-outline text-sm" (click)="showRoles = true">مصفوفة الصلاحيات</button>
+      <button type="button" class="btn-primary text-sm" (click)="openAdd()">
+        <span class="material-symbols-outlined text-[18px]">person_add</span>
+        إضافة عضو
+      </button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+    <div class="anim-item" *ngFor="let s of stats"><app-stat-card [data]="s"></app-stat-card></div>
+  </div>
+
+  <div class="anim-item m-rail grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
+    <div class="card card-hover p-4" *ngFor="let r of roles">
+      <h3 class="font-bold text-sm mb-1">{{ r.name }}</h3>
+      <p class="text-xs text-gray-500 mb-2">{{ r.desc }}</p>
+      <span class="text-xs font-bold text-brand-gold">{{ r.perms }} صلاحية</span>
+    </div>
+  </div>
+
+  <div class="anim-item">
+    <app-data-table
+      [columns]="columns"
+      [data]="$any(members)"
+      [loading]="loading"
+      searchPlaceholder="بحث بالاسم أو البريد أو الدور..."
+      emptyIcon="admin_panel_settings"
+      emptyTitle="لا يوجد أعضاء"
+      (rowAction)="onAction($event)"
+    ></app-data-table>
+  </div>
+</div>
+
+<app-modal [open]="showModal" [title]="formTitle" maxWidth="640px" (close)="showModal = false">
+  <form class="grid grid-cols-1 sm:grid-cols-2 gap-4" [formGroup]="form" (ngSubmit)="save()">
+    <div class="sm:col-span-2">
+      <label class="form-label">الاسم الكامل</label>
+      <input class="input-field" formControlName="name" />
+      <p *ngIf="err('name')" class="form-error">الاسم مطلوب</p>
+    </div>
+    <div>
+      <label class="form-label">البريد الإلكتروني</label>
+      <input class="input-field" formControlName="email" type="email" dir="ltr" />
+      <p *ngIf="err('email')" class="form-error">بريد غير صالح</p>
+    </div>
+    <div>
+      <label class="form-label">الجوال</label>
+      <input class="input-field" formControlName="phone" dir="ltr" />
+      <p *ngIf="err('phone')" class="form-error">الجوال مطلوب</p>
+    </div>
+    <div>
+      <label class="form-label">الدور</label>
+      <app-select formControlName="role" [options]="roleOptions" placeholder="اختر الدور"></app-select>
+    </div>
+    <div>
+      <label class="form-label">القسم / الفرع</label>
+      <input class="input-field" formControlName="department" />
+    </div>
+    <div>
+      <label class="form-label">حالة الحساب</label>
+      <app-select formControlName="status" [options]="statusOptions" placeholder="اختر الحالة"></app-select>
+    </div>
+    <label class="sm:col-span-2 flex items-center gap-2 text-sm font-semibold">
+      <input type="checkbox" formControlName="twoFa" />
+      إلزام التحقق الثنائي (2FA)
+    </label>
+    <div class="form-actions">
+      <button type="button" class="btn-outline" (click)="showModal = false">إلغاء</button>
+      <button type="submit" class="btn-primary">{{ mode === 'edit' ? 'حفظ التعديلات' : 'حفظ العضو' }}</button>
+    </div>
+  </form>
+</app-modal>
+
+<app-modal [open]="showView" title="ملف العضو" maxWidth="560px" (close)="showView = false">
+  <app-detail-view
+    *ngIf="selected"
+    [title]="selected.name"
+    [subtitle]="selected.role"
+    icon="badge"
+    [status]="selected.status"
+    [fields]="viewFields"
+  ></app-detail-view>
+  <div class="form-actions mt-5">
+    <button type="button" class="btn-outline" (click)="showView = false">إغلاق</button>
+    <button type="button" class="btn-primary" (click)="showView = false; openEdit(selected!)">تعديل</button>
+  </div>
+</app-modal>
+
+<app-modal [open]="showRoles" title="مصفوفة صلاحيات: مدير المبيعات والطلبات" maxWidth="520px" (close)="showRoles = false">
+  <div class="space-y-2 text-sm">
+    <label class="flex items-center gap-2 font-semibold" *ngFor="let p of ['عرض الطلبات','تعديل الطلبات','عرض العملاء','إنشاء عروض أسعار','عرض التقارير','حذف الطلبات','إدارة الأسعار']">
+      <input type="checkbox" [checked]="p !== 'حذف الطلبات' && p !== 'إدارة الأسعار'" class="accent-brand-primary" />
+      {{ p }}
+    </label>
+  </div>
+  <div class="flex justify-end mt-5">
+    <button type="button" class="btn-primary" (click)="showRoles = false; toast.success('تم حفظ مصفوفة الصلاحيات')">حفظ</button>
+  </div>
+</app-modal>
+
+<app-confirm-dialog
+  [open]="showConfirm"
+  title="حذف العضو"
+  [message]="'حذف العضو «' + (selected?.name || '') + '»؟'"
+  confirmText="حذف"
+  [danger]="true"
+  (confirm)="confirmDelete()"
+  (cancel)="showConfirm = false"
+></app-confirm-dialog>

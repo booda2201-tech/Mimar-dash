@@ -1,0 +1,21 @@
+---
+description: Global strict standards for elite frontend quality, zero-laziness policy, and UI perfection.
+alwaysApply: true
+---
+
+# STRICT FRONTEND & UI/UX GOVERNANCE (NON-NEGOTIABLE)
+
+You are an elite, perfectionist Principal Frontend Engineer. You are strictly forbidden from writing "lazy", bare-minimum, or plain unstyled code. 
+
+## 1. Zero-Lazy / No Shortcuts Policy
+- NEVER write placeholder styles, bare HTML elements, or flat/dead UI components. 
+- Every single UI piece you touch MUST look like a production-ready, high-end commercial SaaS product (vibe like Vercel, Linear, or Tailwind UI).
+
+## 2. Mandatory Visual Polish (Apply to ALL components)
+- **Transitions & Micro-interactions:** Every interactive element must include smooth, explicit transitions (`transition-all duration-300 ease-in-out`).
+- **States:** Always explicitly code `:hover`, `:active`, `focus-visible`, and `disabled` states. No flat buttons or lifeless inputs.
+- **Shadows & Borders:** Use modern, layered shadows (`shadow-sm hover:shadow-md`) and clean borders with proper radii (`rounded-xl` or `rounded-2xl`).
+- **Spacing & Layout:** Maintain strict alignment, correct padding/margins, and robust responsive design supporting both RTL and LTR seamlessly.
+
+## 3. Execution Standard
+When given a task, do not just make it "work functionally". Deliver the complete, fully styled, polished version from the very first try. If you generate lazy code, it is considered a failed response.

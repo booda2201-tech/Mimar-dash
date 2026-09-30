@@ -1,0 +1,245 @@
+<div class="card overflow-hidden">
+  <div *ngIf="searchable" class="toolbar">
+    <div class="relative flex-1 min-w-[200px] max-w-md">
+      <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[20px]">search</span>
+      <input
+        class="input-field pr-10"
+        [placeholder]="searchPlaceholder"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="onSearch()"
+      />
+    </div>
+
+    <div class="toolbar-end">
+      <div class="view-tabs" *ngIf="viewToggle" role="tablist" aria-label="طريقة العرض">
+        <button
+          type="button"
+          role="tab"
+          class="view-tab"
+          [class.is-active]="viewMode === 'cards'"
+          [attr.aria-selected]="viewMode === 'cards'"
+          (click)="setView('cards')"
+        >
+          <span class="material-symbols-outlined">grid_view</span>
+          كروت
+        </button>
+        <button
+          type="button"
+          role="tab"
+          class="view-tab"
+          [class.is-active]="viewMode === 'table'"
+          [attr.aria-selected]="viewMode === 'table'"
+          (click)="setView('table')"
+        >
+          <span class="material-symbols-outlined">table_rows</span>
+          جداول
+        </button>
+      </div>
+      <p class="text-sm text-gray-500 whitespace-nowrap">{{ filtered.length }} نتيجة</p>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="p-4 space-y-3">
+    <div class="skeleton h-10 w-full" *ngFor="let i of [1,2,3,4,5]"></div>
+  </div>
+
+  <div *ngIf="!loading && paged.length === 0" class="py-16 px-6 text-center">
+    <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center">
+      <span class="material-symbols-outlined text-3xl">{{ emptyIcon }}</span>
+    </div>
+    <h3 class="font-bold text-gray-900 mb-1">{{ emptyTitle }}</h3>
+    <p class="text-sm text-gray-500">{{ emptyMessage }}</p>
+  </div>
+
+  <!-- Cards -->
+  <div *ngIf="!loading && paged.length && viewMode === 'cards'" class="product-cards">
+    <article class="product-card" *ngFor="let row of paged">
+      <button type="button" class="product-card-body" (click)="emit('view', row)">
+        <div class="product-card-cover" [class.is-empty]="!rowImage(row)">
+          <img *ngIf="rowImage(row) as src" [src]="src" [alt]="rowTitle(row)" loading="lazy" />
+          <span *ngIf="!rowImage(row)" class="material-symbols-outlined cover-placeholder">image</span>
+          <div class="cover-badge" *ngIf="rowStatus(row) as st">
+            <app-status-badge [status]="st" [label]="statusLabels[st]"></app-status-badge>
+          </div>
+        </div>
+
+        <div class="product-card-content">
+          <p class="product-card-sku" *ngIf="rowSubtitle(row)">{{ rowSubtitle(row) }}</p>
+          <h3 class="product-card-title">{{ rowTitle(row) }}</h3>
+
+          <div class="product-card-meta">
+            <div class="meta-chip" *ngFor="let col of cardStatColumns">
+              <span class="meta-label">{{ col.label }}</span>
+              <ng-container [ngSwitch]="col.type">
+                <span *ngSwitchCase="'currency'" class="meta-value is-price">{{ asCurrency(row[col.key]) }}</span>
+                <app-status-badge *ngSwitchCase="'status'" [status]="$any(row[col.key])" [label]="statusLabels[$any(row[col.key])]"></app-status-badge>
+                <span *ngSwitchDefault class="meta-value">{{ row[col.key] }}</span>
+              </ng-container>
+            </div>
+          </div>
+
+          <span class="category-pill" *ngIf="rowCategory(row) as cat">
+            <span class="material-symbols-outlined">category</span>
+            {{ cat }}
+          </span>
+        </div>
+      </button>
+
+      <button
+        *ngIf="hasActions"
+        type="button"
+        class="card-more"
+        [class.is-open]="isMenuOpen(row)"
+        (click)="toggleMenu($event, row)"
+        aria-label="إجراءات"
+        title="إجراءات"
+      >
+        <span class="material-symbols-outlined">more_horiz</span>
+      </button>
+    </article>
+  </div>
+
+  <!-- Mobile list -->
+  <ul *ngIf="!loading && paged.length && viewMode === 'table'" class="m-list md:hidden">
+    <li
+      *ngFor="let row of paged"
+      class="m-row"
+      [class.row-selected]="isSelected(row)"
+    >
+      <button type="button" class="m-row-body" (click)="onRowClick(row)">
+        <span class="m-thumb" *ngIf="hasImageColumn; else avatar">
+          <img *ngIf="rowImage(row) as src; else noMobileThumb" [src]="src" [alt]="rowTitle(row)" loading="lazy" />
+          <ng-template #noMobileThumb>
+            <span class="material-symbols-outlined">image</span>
+          </ng-template>
+        </span>
+        <ng-template #avatar>
+          <span class="m-avatar">{{ rowInitial(row) }}</span>
+        </ng-template>
+
+        <span class="m-main">
+          <span class="m-title">{{ rowTitle(row) }}</span>
+          <span class="m-sub" *ngIf="rowSubtitle(row) as sub">{{ sub }}</span>
+          <span class="m-meta" *ngIf="rowMeta(row) as meta">{{ meta }}</span>
+        </span>
+
+        <span class="m-end">
+          <span class="m-amount" *ngIf="rowAmount(row) as amount">{{ amount }}</span>
+          <app-status-badge *ngIf="rowStatus(row) as st" [status]="st" [label]="statusLabels[st]"></app-status-badge>
+        </span>
+      </button>
+
+      <button
+        *ngIf="hasActions"
+        type="button"
+        class="m-more"
+        [class.is-open]="isMenuOpen(row)"
+        (click)="toggleMenu($event, row)"
+        aria-label="إجراءات"
+      >
+        <span class="material-symbols-outlined">more_vert</span>
+      </button>
+    </li>
+  </ul>
+
+  <!-- Table -->
+  <div *ngIf="!loading && paged.length && viewMode === 'table'" class="overflow-x-auto hidden md:block" (scroll)="closeMenu()">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-gray-50 text-gray-600 border-b border-gray-200">
+          <th
+            *ngFor="let col of columns"
+            class="py-3.5 px-[14px] font-semibold text-right whitespace-nowrap"
+            [style.width]="col.width"
+            [class.cursor-pointer]="col.sortable"
+            (click)="sort(col)"
+          >
+            <span class="inline-flex items-center gap-1">
+              {{ col.label }}
+              <span *ngIf="col.sortable && sortKey === col.key" class="material-symbols-outlined text-sm text-brand-gold">
+                {{ sortDir === 'asc' ? 'arrow_upward' : 'arrow_downward' }}
+              </span>
+            </span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr
+          *ngFor="let row of paged"
+          class="border-b border-gray-100 hover:bg-[#F9FBFA] transition-colors cursor-pointer"
+          [class.row-selected]="isSelected(row)"
+          (click)="onRowClick(row)"
+        >
+          <td *ngFor="let col of columns" class="py-3.5 px-[14px] align-middle">
+            <ng-container [ngSwitch]="col.type">
+              <div *ngSwitchCase="'image'" class="table-thumb">
+                <img *ngIf="asImage(row[col.key]) as src; else noThumb" [src]="src" [alt]="rowTitle(row)" loading="lazy" />
+                <ng-template #noThumb>
+                  <span class="material-symbols-outlined text-gray-300">image</span>
+                </ng-template>
+              </div>
+              <app-status-badge *ngSwitchCase="'status'" [status]="$any(row[col.key])" [label]="statusLabels[$any(row[col.key])]"></app-status-badge>
+              <span *ngSwitchCase="'currency'" class="cell-money">{{ asCurrency(row[col.key]) }}</span>
+              <span *ngSwitchCase="'date'" class="cell-date" dir="ltr">{{ asDate(row[col.key]) }}</span>
+              <div *ngSwitchCase="'source'" class="source-cell">
+                <strong>{{ sourcePerson(row) }}</strong>
+                <span class="source-chip" [class.is-admin]="row['source'] === 'admin'">
+                  {{ row['source'] === 'admin' ? 'خدمة العملاء' : 'التطبيق' }}
+                </span>
+              </div>
+              <div *ngSwitchCase="'actions'" class="action-cell" (click)="$event.stopPropagation()">
+                <button
+                  type="button"
+                  class="action-trigger"
+                  [class.is-open]="isMenuOpen(row)"
+                  (click)="toggleMenu($event, row)"
+                  aria-label="إجراءات"
+                  title="إجراءات"
+                >
+                  <span class="material-symbols-outlined">more_vert</span>
+                </button>
+              </div>
+              <span *ngSwitchDefault class="cell-text" [title]="displayCell(row[col.key])">{{ displayCell(row[col.key]) }}</span>
+            </ng-container>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="!loading && filtered.length > pageSize" class="pager">
+    <p class="text-xs sm:text-sm text-gray-500">صفحة {{ page }} من {{ totalPages }}</p>
+    <div class="flex gap-2">
+      <button type="button" class="pager-btn" [disabled]="page === 1" (click)="prev()" aria-label="السابق">
+        <span class="material-symbols-outlined">chevron_right</span>
+        <span class="hidden sm:inline">السابق</span>
+      </button>
+      <button type="button" class="pager-btn" [disabled]="page === totalPages" (click)="next()" aria-label="التالي">
+        <span class="hidden sm:inline">التالي</span>
+        <span class="material-symbols-outlined">chevron_left</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<ng-container *ngIf="menuOpenId && menuRow">
+  <div class="action-menu-backdrop" (click)="closeMenu()"></div>
+  <div class="action-menu" [ngStyle]="menuStyle" (click)="$event.stopPropagation()">
+    <div class="action-menu-head">
+      <span class="action-menu-handle"></span>
+      <p class="action-menu-title">{{ rowTitle(menuRow) }}</p>
+    </div>
+    <button type="button" (click)="pickAction('view', $event)">
+      <span class="material-symbols-outlined">visibility</span>
+      عرض التفاصيل
+    </button>
+    <button type="button" (click)="pickAction('edit', $event)">
+      <span class="material-symbols-outlined">{{ editIcon }}</span>
+      {{ editLabel }}
+    </button>
+    <button type="button" class="is-delete" (click)="pickAction('delete', $event)">
+      <span class="material-symbols-outlined">{{ deleteIcon }}</span>
+      {{ deleteLabel }}
+    </button>
+  </div>
+</ng-container>

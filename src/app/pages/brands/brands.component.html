@@ -1,0 +1,195 @@
+<div class="brands-page">
+  <header class="b-head anim-item">
+    <div class="min-w-0">
+      <h1>البراندات</h1>
+      <p>{{ brands.length }} براند · {{ totalProducts | number }} منتج في الكتالوج</p>
+    </div>
+    <button type="button" class="b-add" (click)="openAdd()">
+      <span class="material-symbols-outlined">add</span>
+      <span class="b-add-label">إضافة براند</span>
+    </button>
+  </header>
+
+  <div class="b-toolbar anim-item">
+    <label class="b-search">
+      <span class="material-symbols-outlined">search</span>
+      <input type="search" [(ngModel)]="searchTerm" placeholder="ابحث باسم البراند أو البلد..." />
+    </label>
+    <div class="b-chips">
+      <button
+        *ngFor="let f of [{ k: 'all', l: 'الكل' }, { k: 'active', l: 'نشط' }, { k: 'inactive', l: 'متوقف' }]"
+        type="button"
+        class="b-chip"
+        [class.is-active]="statusFilter === f.k"
+        (click)="statusFilter = $any(f.k)"
+      >
+        {{ f.l }}
+        <span>{{ statusCount($any(f.k)) }}</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="b-grid" *ngIf="loading">
+    <div class="b-card is-skeleton" *ngFor="let i of [1, 2, 3, 4]">
+      <div class="skeleton b-logo"></div>
+      <div class="flex-1 space-y-2">
+        <div class="skeleton h-4 w-28"></div>
+        <div class="skeleton h-3 w-16"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="b-grid" *ngIf="!loading && filtered.length">
+    <article class="b-card anim-item" *ngFor="let b of filtered" [class.is-off]="b.status !== 'active'">
+      <div class="b-logo">
+        <img *ngIf="b.image; else brandInitial" [src]="b.image" [alt]="b.name" loading="lazy" />
+        <ng-template #brandInitial><span>{{ initial(b) }}</span></ng-template>
+        <i class="b-dot" [attr.aria-label]="b.status === 'active' ? 'نشط' : 'متوقف'"></i>
+      </div>
+
+      <div class="b-body">
+        <div class="b-title">
+          <h3>{{ b.name }}</h3>
+          <bdi class="b-en" *ngIf="b.nameEn && b.nameEn !== b.name">{{ b.nameEn }}</bdi>
+        </div>
+        <div class="b-meta">
+          <span class="b-count">
+            <span class="material-symbols-outlined">inventory_2</span>
+            {{ b.products | number }} منتج
+          </span>
+          <span *ngIf="hasValue(b.country)">
+            <span class="material-symbols-outlined">public</span>
+            {{ b.country }}
+          </span>
+          <span *ngIf="hasValue(b.category)" class="b-cat">{{ b.category }}</span>
+        </div>
+        <p class="b-desc" *ngIf="b.description">{{ b.description }}</p>
+      </div>
+
+      <div class="b-actions">
+        <button type="button" class="b-icon" (click)="openEdit(b)" aria-label="تعديل" title="تعديل">
+          <span class="material-symbols-outlined">edit</span>
+        </button>
+        <button type="button" class="b-icon is-danger" (click)="openDelete(b)" aria-label="حذف" title="حذف">
+          <span class="material-symbols-outlined">delete</span>
+        </button>
+      </div>
+    </article>
+  </div>
+
+  <div class="b-empty anim-item" *ngIf="!loading && !filtered.length">
+    <span class="material-symbols-outlined">workspace_premium</span>
+    <h3>{{ brands.length ? 'مفيش براند مطابق' : 'لا توجد براندات بعد' }}</h3>
+    <p>{{ brands.length ? 'جرّب اسم تاني أو غيّر الفلتر' : 'ابدأ بإضافة أول براند للكتالوج' }}</p>
+    <button type="button" class="b-add" (click)="openAdd()" *ngIf="!brands.length">
+      <span class="material-symbols-outlined">add</span>
+      إضافة براند
+    </button>
+  </div>
+</div>
+
+<app-modal [open]="showForm" [title]="formTitle" maxWidth="640px" (close)="showForm = false">
+  <form class="bf" [formGroup]="form" (ngSubmit)="save()">
+    <div class="bf-preview">
+      <div class="bf-logo">
+        <img *ngIf="selected?.image; else previewInitial" [src]="selected?.image" alt="" />
+        <ng-template #previewInitial>
+          <span>{{ (form.value.nameEn || form.value.name || '?').trim().charAt(0).toUpperCase() }}</span>
+        </ng-template>
+      </div>
+      <div class="min-w-0 flex-1">
+        <strong>{{ form.value.name || 'اسم البراند' }}</strong>
+        <bdi>{{ form.value.nameEn || 'Brand name' }}</bdi>
+      </div>
+      <span class="bf-count" *ngIf="mode === 'edit'">
+        <span class="material-symbols-outlined">inventory_2</span>
+        {{ form.value.products || 0 }} منتج
+      </span>
+    </div>
+
+    <section class="bf-section">
+      <h4><span class="material-symbols-outlined">badge</span> الاسم</h4>
+      <div class="bf-row">
+        <div>
+          <label class="form-label">بالعربي</label>
+          <input class="input-field" formControlName="name" placeholder="مثال: جوتن" />
+          <p *ngIf="err('name')" class="form-error">الاسم مطلوب</p>
+        </div>
+        <div>
+          <label class="form-label">بالإنجليزي</label>
+          <input class="input-field" formControlName="nameEn" dir="ltr" placeholder="Jotun" />
+          <p *ngIf="err('nameEn')" class="form-error">الاسم الإنجليزي مطلوب</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="bf-section">
+      <h4><span class="material-symbols-outlined">factory</span> المنشأ والتخصص</h4>
+      <div class="bf-row">
+        <div>
+          <label class="form-label">بلد المنشأ</label>
+          <app-select formControlName="country" [options]="countryOptions" [searchable]="true" placeholder="اختر الدولة"></app-select>
+        </div>
+        <div>
+          <label class="form-label">خط الإنتاج</label>
+          <app-select formControlName="category" [options]="categoryOptions" [searchable]="true" placeholder="اختر التخصص"></app-select>
+          <p *ngIf="err('category')" class="form-error">اختر التخصص</p>
+        </div>
+      </div>
+    </section>
+
+    <details class="bf-section bf-more" [open]="!!(form.value.description || form.value.descriptionEn)">
+      <summary>
+        <span class="material-symbols-outlined">notes</span>
+        الوصف
+        <em>اختياري</em>
+        <span class="material-symbols-outlined bf-chev">expand_more</span>
+      </summary>
+      <textarea class="input-field bf-text" formControlName="description" placeholder="نبذة قصيرة عن الشركة ومنتجاتها"></textarea>
+      <textarea class="input-field bf-text" formControlName="descriptionEn" dir="ltr" placeholder="Short description in English"></textarea>
+    </details>
+
+    <section class="bf-section">
+      <h4><span class="material-symbols-outlined">tune</span> الظهور</h4>
+      <div class="bf-seg" role="radiogroup" aria-label="الحالة">
+        <button
+          *ngFor="let s of statusOptions"
+          type="button"
+          role="radio"
+          [attr.aria-checked]="form.value.status === s.value"
+          [class.is-active]="form.value.status === s.value"
+          [attr.data-status]="s.value"
+          (click)="form.patchValue({ status: $any(s.value) })"
+        >
+          <i></i>{{ s.label }}
+        </button>
+      </div>
+      <label class="bf-switch">
+        <span class="min-w-0">
+          <strong>يظهر في تطبيق معمار</strong>
+          <small>العملاء يقدروا يفلتروا المنتجات بالبراند ده</small>
+        </span>
+        <input type="checkbox" formControlName="showInApp" />
+        <i aria-hidden="true"></i>
+      </label>
+    </section>
+
+    <div class="bf-actions">
+      <button type="button" class="btn-outline" (click)="showForm = false">إلغاء</button>
+      <button type="submit" class="btn-primary">
+        <span class="material-symbols-outlined text-[18px]">check</span>
+        {{ mode === 'edit' ? 'حفظ التعديلات' : 'إضافة البراند' }}
+      </button>
+    </div>
+  </form>
+</app-modal>
+
+<app-confirm-dialog
+  [open]="showConfirm"
+  title="حذف البراند"
+  [message]="'حذف «' + (selected?.name || '') + '»؟ المنتجات المرتبطة تفضل باسم البراند الحالي.'"
+  confirmText="حذف"
+  [danger]="true"
+  (confirm)="confirmDelete()"
+  (cancel)="showConfirm = false"
+></app-confirm-dialog>

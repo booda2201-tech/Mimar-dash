@@ -1,0 +1,819 @@
+<div class="space-y-6" *ngIf="!showForm">
+  <div class="anim-item page-head flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">إدارة المنتجات والمخزون</h1>
+      <p class="text-sm text-gray-500 mt-1">الكتالوج الشامل · {{ products.length }} صنف</p>
+    </div>
+    <div class="ph-actions flex flex-wrap gap-2">
+      <button type="button" class="btn-outline text-sm">
+        <span class="material-symbols-outlined text-[18px]">upload</span>
+        استيراد Excel
+      </button>
+      <button type="button" class="btn-outline text-sm">
+        <span class="material-symbols-outlined text-[18px]">download</span>
+        تصدير
+      </button>
+      <button type="button" class="btn-outline text-sm" (click)="openStarter()">
+        <span class="material-symbols-outlined text-[18px]">auto_awesome</span>
+        منتجات جاهزة
+      </button>
+      <button type="button" class="btn-primary text-sm" (click)="openAdd()">
+        <span class="material-symbols-outlined text-[18px]">add</span>
+        إضافة منتج
+      </button>
+    </div>
+  </div>
+
+  <section class="anim-item pm-summary">
+    <div class="pm-main">
+      <div class="min-w-0">
+        <small>إجمالي الأصناف</small>
+        <strong>{{ stats[0].value | number }} <em>صنف</em></strong>
+      </div>
+      <button type="button" class="pm-new" (click)="openAdd()">
+        <span class="material-symbols-outlined">add</span>
+        منتج
+      </button>
+    </div>
+    <div class="pm-grid">
+      <button type="button" [class.is-active]="catalogFilter === 'all'" (click)="catalogFilter = 'all'; mobileLimit = 12">
+        <strong>{{ stats[1].value }}</strong>
+        <small>متوفرة</small>
+      </button>
+      <button
+        type="button"
+        [class.is-alert]="+stats[2].value > 0"
+        [class.is-active]="catalogFilter === 'low'"
+        (click)="catalogFilter = 'low'; mobileLimit = 12"
+      >
+        <strong>{{ stats[2].value }}</strong>
+        <small>مخزون منخفض</small>
+      </button>
+      <button type="button" [class.is-danger]="+stats[3].value > 0" (click)="catalogFilter = 'low'; mobileLimit = 12">
+        <strong>{{ stats[3].value }}</strong>
+        <small>نفد</small>
+      </button>
+    </div>
+  </section>
+
+  <div class="ps-stats grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+    <div class="anim-item" *ngFor="let s of stats">
+      <app-stat-card [data]="s"></app-stat-card>
+    </div>
+  </div>
+
+  <div class="anim-item pc-toolbar">
+    <label class="pc-search">
+      <span class="material-symbols-outlined">search</span>
+      <input
+        type="search"
+        [value]="searchTerm"
+        (input)="searchTerm = $any($event.target).value; mobileLimit = 12"
+        placeholder="ابحث بالاسم أو SKU أو البراند"
+      />
+    </label>
+    <div class="pc-cat" [class.is-set]="categoryFilter">
+      <span class="material-symbols-outlined pc-cat-icon">category</span>
+      <app-select
+        [formControl]="categoryFilterCtrl"
+        [options]="categoryFilterOptions"
+        [searchable]="true"
+        placeholder="كل الفئات"
+        (selectionChange)="setCategoryFilter($event)"
+      ></app-select>
+      <button type="button" class="pc-cat-clear" *ngIf="categoryFilter" (click)="setCategoryFilter('')" aria-label="إلغاء فلتر الفئة">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="pc-filters">
+      <button
+        *ngFor="let f of catalogFilters"
+        type="button"
+        class="pc-filter"
+        [class.is-active]="catalogFilter === f.key"
+        (click)="catalogFilter = f.key; mobileLimit = 12"
+      >
+        {{ f.label }}
+        <span class="count">{{ filterCount(f.key) }}</span>
+      </button>
+    </div>
+    <div class="pc-view" role="group" aria-label="طريقة العرض">
+      <button type="button" [class.is-active]="catalogView === 'cards'" (click)="catalogView = 'cards'">
+        <span class="material-symbols-outlined">grid_view</span>
+        كروت
+      </button>
+      <button type="button" [class.is-active]="catalogView === 'table'" (click)="catalogView = 'table'">
+        <span class="material-symbols-outlined">table_rows</span>
+        جدول
+      </button>
+    </div>
+  </div>
+
+  <div class="anim-item" *ngIf="effectiveView === 'table'">
+    <app-data-table
+      [columns]="columns"
+      [data]="$any(visibleProducts)"
+      [loading]="loading"
+      [searchable]="false"
+      emptyTitle="لا توجد منتجات"
+      emptyMessage="جرّب بحث أو فلتر مختلف"
+      emptyIcon="inventory_2"
+      (rowAction)="onRowAction($event)"
+    ></app-data-table>
+  </div>
+
+  <ng-container *ngIf="effectiveView === 'cards'">
+    <div class="pc-grid" *ngIf="loading">
+      <div class="pc-card" *ngFor="let i of [1, 2, 3, 4]">
+        <div class="skeleton w-full aspect-[16/10] !rounded-none"></div>
+        <div class="p-4 space-y-2">
+          <div class="skeleton h-4 w-2/3"></div>
+          <div class="skeleton h-3 w-1/2"></div>
+          <div class="skeleton h-12 w-full"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pc-empty" *ngIf="!loading && !visibleProducts.length">
+      <span class="material-symbols-outlined">inventory_2</span>
+      <h3>{{ products.length ? 'مفيش منتجات مطابقة' : 'لا توجد منتجات' }}</h3>
+      <p class="text-sm">{{ products.length ? 'جرّب بحث أو فلتر مختلف.' : 'ابدأ بإضافة أول منتج إلى الكتالوج.' }}</p>
+    </div>
+
+    <div class="pc-grid" *ngIf="!loading && visibleProducts.length">
+      <article class="pc-card" *ngFor="let p of pagedProducts; trackBy: trackById" [class.is-alert]="p.status === 'low' || p.status === 'out'">
+        <div class="pc-cover" (click)="act('view', p)">
+          <img *ngIf="p.image" [src]="p.image" [alt]="p.name" loading="lazy" />
+          <span *ngIf="!p.image" class="material-symbols-outlined">image</span>
+          <div class="pc-tags">
+            <span class="pc-new" *ngIf="p.isNew">جديد</span>
+            <app-status-badge [status]="p.status"></app-status-badge>
+          </div>
+          <button type="button" class="pc-more" (click)="$event.stopPropagation(); openSheet(p)" aria-label="إجراءات المنتج">
+            <span class="material-symbols-outlined">more_vert</span>
+          </button>
+          <span class="pc-ribbon" *ngIf="p.discountLabel">
+            خصم {{ p.discountLabel }}
+            <small *ngIf="p.discountSource && p.discountSource !== 'product'">{{ sourceShort(p) }}</small>
+          </span>
+        </div>
+
+        <div class="pc-body">
+          <div>
+            <p class="pc-kicker">
+              <span>{{ p.category !== '—' ? p.category : 'بدون فئة' }}</span>
+              <span class="brand" *ngIf="p.brand">{{ p.brand }}</span>
+            </p>
+            <h3 class="pc-name" [title]="p.name" (click)="act('view', p)">{{ p.name }}</h3>
+            <p class="pc-sub">
+              <bdi *ngIf="p.nameEn">{{ p.nameEn }}</bdi>
+              <span *ngIf="p.nameEn && p.sku !== '—'"> · </span>
+              <bdi class="sku" *ngIf="p.sku !== '—'">{{ p.sku }}</bdi>
+            </p>
+          </div>
+
+          <div class="pc-price">
+            <div class="pc-price-main">
+              <small>{{ p.variants?.length ? 'يبدأ من' : 'سعر البيع' }}</small>
+              <strong>{{ money(p.price) }}</strong>
+            </div>
+            <div class="pc-price-old" *ngIf="(p.basePrice || 0) > p.price">
+              <s>{{ money(p.basePrice) }}</s>
+              <span>وفّر {{ money((p.basePrice || 0) - p.price) }}</span>
+            </div>
+          </div>
+
+          <div class="pc-facts">
+            <div class="pc-fact" [class.is-low]="p.status === 'low'" [class.is-out]="p.status === 'out'">
+              <strong>{{ p.stock | number }}</strong>
+              <small>المخزون</small>
+            </div>
+            <div class="pc-fact">
+              <strong>{{ p.variants?.length || 0 }}</strong>
+              <small>الأنواع</small>
+            </div>
+            <div class="pc-fact">
+              <strong>{{ tierCount(p) }}</strong>
+              <small>شرائح الجملة</small>
+            </div>
+          </div>
+
+          <div class="pc-variants">
+            <span
+              class="pc-variant"
+              *ngFor="let v of (p.variants || []).slice(0, 2)"
+              [class.has-discount]="(v.finalPrice ?? v.price) < v.price"
+              [title]="variantTitle(v)"
+            >
+              {{ variantTitle(v) }}
+              <b>{{ money(v.finalPrice ?? v.price) }}</b>
+              <span class="pc-new sm" *ngIf="v.isNew && !p.isNew">جديد</span>
+            </span>
+            <span class="pc-variant more" *ngIf="(p.variants?.length || 0) > 2">+{{ (p.variants?.length || 0) - 2 }}</span>
+            <span class="none" *ngIf="!p.variants?.length">{{ p.specs?.length ? specsPreview(p) : 'منتج بدون أنواع' }}</span>
+          </div>
+        </div>
+
+        <footer class="pc-actions">
+          <button type="button" (click)="act('view', p)">
+            <span class="material-symbols-outlined">visibility</span>
+            عرض
+          </button>
+          <button type="button" (click)="act('edit', p)">
+            <span class="material-symbols-outlined">edit</span>
+            تعديل
+          </button>
+          <button type="button" class="is-danger" (click)="act('delete', p)">
+            <span class="material-symbols-outlined">delete</span>
+            حذف
+          </button>
+        </footer>
+      </article>
+    </div>
+
+    <button
+      type="button"
+      class="pc-load"
+      *ngIf="!loading && visibleProducts.length > pagedProducts.length"
+      (click)="mobileLimit = mobileLimit + 12"
+    >
+      عرض المزيد
+      <span>{{ visibleProducts.length - pagedProducts.length }} منتج كمان</span>
+    </button>
+  </ng-container>
+</div>
+
+<app-modal [open]="!!sheetProduct" [title]="sheetProduct?.name || ''" maxWidth="420px" (close)="sheetProduct = null">
+  <div class="pc-sheet" *ngIf="sheetProduct as p">
+    <div class="pc-sheet-info">
+      <div class="pc-sheet-thumb">
+        <img *ngIf="p.image" [src]="p.image" alt="" />
+        <span *ngIf="!p.image" class="material-symbols-outlined">image</span>
+      </div>
+      <div class="min-w-0">
+        <strong>{{ money(p.price) }}</strong>
+        <small>المخزون {{ p.stock | number }} · {{ p.variants?.length || 0 }} أنواع</small>
+      </div>
+      <app-status-badge [status]="p.status"></app-status-badge>
+    </div>
+    <button type="button" class="pc-sheet-btn" (click)="sheetAct('view')">
+      <span class="material-symbols-outlined">visibility</span>
+      عرض التفاصيل
+    </button>
+    <button type="button" class="pc-sheet-btn" (click)="sheetAct('edit')">
+      <span class="material-symbols-outlined">edit</span>
+      تعديل المنتج
+    </button>
+    <button type="button" class="pc-sheet-btn is-danger" (click)="sheetAct('delete')">
+      <span class="material-symbols-outlined">delete</span>
+      حذف المنتج
+    </button>
+  </div>
+</app-modal>
+
+<app-modal [open]="showStarter" title="منتجات جاهزة للفئات" maxWidth="680px" (close)="!starterBusy && (showStarter = false)">
+  <p class="sp-intro">
+    منتجين في كل فئة فرعية، كل منتج بصورته وسعره ومخزونه ومواصفاته بالعربي والإنجليزي. المنتج الموجود قبل كدا مش هيتكرر.
+  </p>
+  <div class="sp-warn" *ngIf="starterNoCategory">
+    <span class="material-symbols-outlined">info</span>
+    {{ starterNoCategory }} فئة مش موجودة — ضيفها الأول من «فئات جاهزة» في صفحة الفئات
+  </div>
+
+  <div class="sp-list">
+    <section class="sp-group" *ngFor="let g of starterGroups" [class.is-off]="!starterCategory(g)">
+      <header>
+        <strong>{{ g.category }}</strong>
+        <small>{{ g.parent }}</small>
+      </header>
+      <div class="sp-items">
+        <div class="sp-item" *ngFor="let item of g.products" [class.is-exists]="starterExists(item)">
+          <img [src]="item.image" [alt]="item.name" loading="lazy" />
+          <div>
+            <b [title]="item.name">{{ item.name }}</b>
+            <span>{{ money(item.price) }}</span>
+          </div>
+          <span class="sp-ok material-symbols-outlined" *ngIf="starterExists(item)">check_circle</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="sp-progress" *ngIf="starterBusy">
+    <div class="sp-bar"><span [style.width.%]="starterTotal ? (starterDone / starterTotal) * 100 : 0"></span></div>
+    <small>جاري الإضافة… {{ starterDone }} من {{ starterTotal }}</small>
+  </div>
+
+  <div class="sp-actions">
+    <button type="button" class="btn-outline" (click)="showStarter = false" [disabled]="starterBusy">إلغاء</button>
+    <button type="button" class="btn-primary" (click)="importStarter()" [disabled]="starterBusy || !starterPending">
+      <span class="material-symbols-outlined text-[18px]" [class.animate-spin]="starterBusy">{{
+        starterBusy ? 'progress_activity' : 'auto_awesome'
+      }}</span>
+      {{ starterPending ? 'إضافة ' + starterPending + ' منتج' : 'كله موجود' }}
+    </button>
+  </div>
+</app-modal>
+
+<!-- Discounts editor: $implicit = FormArray -->
+<ng-template #discountsTpl let-list let-title="title" let-compact="compact">
+  <div class="sub-block" [class.is-compact]="compact">
+    <div class="sub-head">
+      <h3>
+        <span class="material-symbols-outlined">sell</span>
+        {{ title }}
+      </h3>
+      <button type="button" class="chip-btn" (click)="addDiscount(list)">
+        <span class="material-symbols-outlined">add</span>
+        إضافة خصم
+      </button>
+    </div>
+    <p class="sub-empty" *ngIf="!list.length">لا يوجد خصم</p>
+    <div class="discount-grid discount-labels" *ngIf="list.length">
+      <span>النوع</span><span>القيمة</span><span>يبدأ من</span><span>المدة (يوم)</span><span></span>
+    </div>
+    <div class="discount-grid" *ngFor="let d of list.controls; let j = index" [formGroup]="asGroup(d)">
+      <select class="input-field select-native" formControlName="type">
+        <option value="percent">نسبة %</option>
+        <option value="amount">مبلغ ثابت</option>
+      </select>
+      <input type="number" class="input-field" formControlName="value" min="0" step="0.01" placeholder="10" />
+      <input type="date" class="input-field" formControlName="startDate" />
+      <input type="number" class="input-field" formControlName="durationDays" min="1" placeholder="30" />
+      <button type="button" class="icon-btn danger" (click)="removeDiscount(list, j)" aria-label="حذف الخصم">
+        <span class="material-symbols-outlined">delete</span>
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<!-- Price tiers editor: $implicit = FormArray -->
+<ng-template #tiersTpl let-list>
+  <div class="sub-block">
+    <div class="sub-head">
+      <div>
+        <h3>
+          <span class="material-symbols-outlined">stacked_bar_chart</span>
+          شرائح أسعار الجملة
+        </h3>
+        <p>سعر الوحدة يتغير حسب الكمية — اترك «إلى كمية» فاضي لآخر شريحة</p>
+      </div>
+      <button type="button" class="chip-btn" (click)="addTier(list)">
+        <span class="material-symbols-outlined">add</span>
+        إضافة شريحة
+      </button>
+    </div>
+    <p class="sub-empty" *ngIf="!list.length">لا توجد شرائح — يُستخدم السعر الأساسي لكل الكميات</p>
+    <div class="tier-card" *ngFor="let t of list.controls; let k = index" [formGroup]="asGroup(t)">
+      <div class="tier-grid">
+        <span class="tier-index">{{ k + 1 }}</span>
+        <div>
+          <label class="mini-label">من كمية</label>
+          <input type="number" class="input-field" formControlName="minQuantity" min="1" />
+        </div>
+        <div>
+          <label class="mini-label">إلى كمية</label>
+          <input type="number" class="input-field" formControlName="maxQuantity" min="1" placeholder="بدون حد" />
+        </div>
+        <div>
+          <label class="mini-label">سعر الوحدة</label>
+          <input type="number" class="input-field" formControlName="unitPrice" min="0" step="0.01" />
+        </div>
+        <button type="button" class="icon-btn danger" (click)="removeTier(list, k)" aria-label="حذف الشريحة">
+          <span class="material-symbols-outlined">delete</span>
+        </button>
+      </div>
+      <ng-container
+        *ngTemplateOutlet="
+          discountsTpl;
+          context: { $implicit: arr(t, 'discounts'), title: 'خصم على الشريحة دي بس', compact: true }
+        "
+      ></ng-container>
+    </div>
+  </div>
+</ng-template>
+
+<section class="product-editor" *ngIf="showForm">
+  <div class="editor-head">
+    <div>
+      <p class="editor-crumb">المنتجات · {{ formTitle }}</p>
+      <h1>{{ formTitle }}</h1>
+    </div>
+    <button type="button" class="btn-outline text-sm editor-back" (click)="showForm = false" aria-label="العودة">
+      <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+      <span class="editor-back-label">العودة</span>
+    </button>
+  </div>
+
+  <div class="editor-layout">
+    <form [formGroup]="form" (ngSubmit)="save()" class="editor-main">
+      <!-- Basic info -->
+      <article class="card editor-card">
+        <header class="section-head">
+          <span class="section-icon material-symbols-outlined">inventory_2</span>
+          <div>
+            <h2>المعلومات الأساسية</h2>
+            <p>الاسم والوصف والتصنيف والصور</p>
+          </div>
+        </header>
+
+        <div class="basic-grid">
+          <div class="gallery">
+            <button type="button" class="gallery-main" [class.is-empty]="!images.length" (click)="fileInput.click()">
+              <img *ngIf="images[mainImage]" [src]="images[mainImage]" alt="صورة المنتج" />
+              <ng-container *ngIf="!images.length">
+                <span class="material-symbols-outlined">add_photo_alternate</span>
+                <strong>رفع صور المنتج</strong>
+                <small>PNG · JPG · WEBP</small>
+              </ng-container>
+              <span class="main-badge" *ngIf="images.length">الرئيسية</span>
+            </button>
+            <div class="thumbs" *ngIf="images.length">
+              <div class="thumb-wrap" *ngFor="let img of images; let i = index">
+                <button type="button" class="thumb" [class.is-main]="i === mainImage" (click)="setMain(i)" title="اجعلها الرئيسية">
+                  <img [src]="img" alt="" />
+                </button>
+                <button type="button" class="thumb-remove" (click)="removeImage(i)" aria-label="حذف الصورة">
+                  <span class="material-symbols-outlined">close</span>
+                </button>
+              </div>
+              <button type="button" class="thumb add" (click)="fileInput.click()" aria-label="إضافة صور">
+                <span class="material-symbols-outlined">add</span>
+              </button>
+            </div>
+            <p class="gallery-hint">اضغط على أي صورة لتصبح الرئيسية</p>
+            <p class="gallery-hint" *ngIf="mode === 'edit'">الصور الجديدة فقط هي اللي هتترفع</p>
+            <input #fileInput type="file" accept="image/*" multiple hidden (change)="onImages($event)" />
+          </div>
+
+          <div class="fields-grid">
+            <div>
+              <label class="form-label">اسم المنتج بالعربي <span class="req">*</span></label>
+              <input class="input-field" formControlName="name" placeholder="إسمنت بورتلاند OPC 50 كجم" />
+              <p *ngIf="err('name')" class="form-error">اسم المنتج مطلوب</p>
+            </div>
+            <div>
+              <label class="form-label">Product name (EN)</label>
+              <input class="input-field" formControlName="nameEn" dir="ltr" placeholder="Portland Cement OPC 50 kg" />
+            </div>
+            <div>
+              <label class="form-label">الوصف بالعربي</label>
+              <textarea class="input-field textarea" formControlName="description" placeholder="وصف يظهر في تطبيق معمار"></textarea>
+            </div>
+            <div>
+              <label class="form-label">Description (EN)</label>
+              <textarea class="input-field textarea" formControlName="descriptionEn" dir="ltr" placeholder="Shown in the English app"></textarea>
+            </div>
+            <div class="fields-row-3">
+              <div>
+                <label class="form-label">الفئة <span class="req">*</span></label>
+                <app-select formControlName="category" [options]="categoryOptions" [searchable]="true" placeholder="اختر الفئة"></app-select>
+                <p *ngIf="err('category')" class="form-error">اختر الفئة</p>
+              </div>
+              <div>
+                <label class="form-label">البراند</label>
+                <app-select formControlName="brand" [options]="brandOptions" placeholder="اختياري"></app-select>
+              </div>
+              <div>
+                <label class="form-label">رمز SKU</label>
+                <input class="input-field" formControlName="sku" placeholder="اختياري" dir="ltr" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flags">
+          <label class="toggle">
+            <input type="checkbox" formControlName="showInApp" />
+            <span class="toggle-track"></span>
+            <span class="toggle-text">
+              <strong>نشط</strong>
+              <small>يظهر في تطبيق معمار</small>
+            </span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" formControlName="featured" />
+            <span class="toggle-track"></span>
+            <span class="toggle-text">
+              <strong>منتج جديد</strong>
+              <small>يظهر في «وصل حديثاً»</small>
+            </span>
+          </label>
+          <label class="toggle">
+            <input type="checkbox" formControlName="hasVariants" />
+            <span class="toggle-track"></span>
+            <span class="toggle-text">
+              <strong>له أنواع</strong>
+              <small>لون، مقاس، خامة...</small>
+            </span>
+          </label>
+        </div>
+      </article>
+
+      <!-- Pricing -->
+      <article class="card editor-card">
+        <header class="section-head">
+          <span class="section-icon material-symbols-outlined">payments</span>
+          <div>
+            <h2>التسعير والخصومات</h2>
+            <p *ngIf="!form.value.hasVariants">السعر والمخزون وشرائح الجملة والخصم على المنتج</p>
+            <p *ngIf="form.value.hasVariants">السعر والمخزون بيتحددوا لكل نوع في قسم الأنواع</p>
+          </div>
+        </header>
+
+        <div class="price-row" *ngIf="!form.value.hasVariants">
+          <div>
+            <label class="form-label">السعر <span class="req">*</span></label>
+            <div class="input-affix">
+              <input type="number" class="input-field" formControlName="price" min="0" step="0.01" placeholder="0.00" />
+              <span>ر.س</span>
+            </div>
+            <p *ngIf="err('price')" class="form-error">أدخل سعراً صالحاً</p>
+          </div>
+          <div>
+            <label class="form-label">المخزون <span class="req">*</span></label>
+            <div class="input-affix">
+              <input type="number" class="input-field" formControlName="stock" min="0" placeholder="0" />
+              <span>وحدة</span>
+            </div>
+            <p *ngIf="err('stock')" class="form-error">الكمية مطلوبة</p>
+          </div>
+        </div>
+
+        <div class="section-divider" *ngIf="!form.value.hasVariants"></div>
+        <ng-container *ngIf="!form.value.hasVariants">
+          <ng-container *ngTemplateOutlet="tiersTpl; context: { $implicit: priceTiers }"></ng-container>
+          <div class="section-divider"></div>
+        </ng-container>
+
+        <ng-container
+          *ngTemplateOutlet="discountsTpl; context: { $implicit: discounts, title: 'خصم على المنتج كله' }"
+        ></ng-container>
+      </article>
+
+      <!-- Variants -->
+      <article class="card editor-card" *ngIf="form.value.hasVariants">
+        <header class="section-head">
+          <span class="section-icon material-symbols-outlined">style</span>
+          <div>
+            <h2>الأنواع</h2>
+            <p>كل نوع بسعر ومخزون وشرائح وخصومات مستقلة</p>
+          </div>
+        </header>
+
+        <div class="props-box">
+          <div class="props-copy">
+            <h3>خصائص الأنواع</h3>
+            <p>كل خاصية بتبقى عمود في الجدول. مثال: اللون، المقاس، الخامة، القطر، الطول.</p>
+          </div>
+          <div class="prop-row">
+            <span class="prop-chip" *ngFor="let prop of variantProps">
+              {{ prop }}
+              <button type="button" (click)="removeProp(prop)" [attr.aria-label]="'حذف ' + prop">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </span>
+            <span class="prop-add" *ngIf="addingProp">
+              <input
+                class="input-field"
+                [value]="newProp"
+                (input)="newProp = $any($event.target).value"
+                (keydown.enter)="$event.preventDefault(); commitProp()"
+                placeholder="اسم الخاصية"
+              />
+              <button type="button" class="btn-primary text-sm" (click)="commitProp()">إضافة</button>
+            </span>
+            <button type="button" class="chip-btn" *ngIf="!addingProp" (click)="startAddProp()">
+              <span class="material-symbols-outlined">add</span>
+              إضافة خاصية
+            </button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="variants-table">
+            <thead>
+              <tr>
+                <th class="w-8">#</th>
+                <th *ngFor="let prop of variantProps">{{ prop }}</th>
+                <th>السعر <span class="req">*</span></th>
+                <th>المخزون <span class="req">*</span></th>
+                <th>SKU</th>
+                <th class="text-center">نشط</th>
+                <th class="text-center">جديد</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <ng-container *ngFor="let row of variants.controls; let i = index">
+                <tr [formGroup]="asGroup(row)" [class.is-open]="expandedVariant === i">
+                  <td class="row-index">{{ i + 1 }}</td>
+                  <ng-container formGroupName="attrs">
+                    <td *ngFor="let prop of variantProps">
+                      <input class="input-field" [formControlName]="prop" [placeholder]="prop" />
+                    </td>
+                  </ng-container>
+                  <td><input type="number" class="input-field num" formControlName="price" min="0" step="0.01" /></td>
+                  <td><input type="number" class="input-field num" formControlName="stock" min="0" /></td>
+                  <td><input class="input-field" formControlName="sku" dir="ltr" /></td>
+                  <td class="text-center"><input type="checkbox" class="check" formControlName="isActive" /></td>
+                  <td class="text-center"><input type="checkbox" class="check" formControlName="isNew" /></td>
+                  <td class="row-actions">
+                    <button
+                      type="button"
+                      class="pill-btn"
+                      [class.is-open]="expandedVariant === i"
+                      (click)="toggleVariant(i)"
+                    >
+                      <span class="material-symbols-outlined">{{ expandedVariant === i ? 'expand_less' : 'tune' }}</span>
+                      تسعير
+                      <span class="pill-count" *ngIf="arr(row, 'priceTiers').length + arr(row, 'discounts').length">
+                        {{ arr(row, 'priceTiers').length + arr(row, 'discounts').length }}
+                      </span>
+                    </button>
+                    <button type="button" class="icon-btn danger" (click)="removeVariant(i)" aria-label="حذف النوع">
+                      <span class="material-symbols-outlined">delete</span>
+                    </button>
+                  </td>
+                </tr>
+              </ng-container>
+            </tbody>
+          </table>
+        </div>
+        <ng-container *ngIf="expandedVariant !== null && variants.at(expandedVariant) as row">
+          <div class="variant-extra-inner">
+            <div class="variant-extra-head">
+              <span class="variant-extra-badge">{{ expandedVariant + 1 }}</span>
+              <strong>تسعير النوع {{ variantLabel(expandedVariant) }}</strong>
+              <button type="button" class="icon-btn" (click)="toggleVariant(expandedVariant)" aria-label="إغلاق">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <ng-container *ngTemplateOutlet="tiersTpl; context: { $implicit: arr(row, 'priceTiers') }"></ng-container>
+            <div class="section-divider"></div>
+            <ng-container
+              *ngTemplateOutlet="discountsTpl; context: { $implicit: arr(row, 'discounts'), title: 'خصم على النوع ده بس' }"
+            ></ng-container>
+          </div>
+        </ng-container>
+        <button type="button" class="add-row-btn" (click)="addVariant()">
+          <span class="material-symbols-outlined">add</span>
+          إضافة نوع آخر
+        </button>
+      </article>
+
+      <!-- Specs -->
+      <article class="card editor-card">
+        <header class="section-head">
+          <span class="section-icon material-symbols-outlined">list_alt</span>
+          <div class="flex-1">
+            <h2>المواصفات</h2>
+            <p>لا تؤثر على السعر — تظهر بنفس الترتيب في التطبيق</p>
+          </div>
+          <button type="button" class="chip-btn" (click)="addSpec()">
+            <span class="material-symbols-outlined">add</span>
+            إضافة مواصفة
+          </button>
+        </header>
+        <div class="table-wrap" formArrayName="specs">
+          <table class="specs-table">
+            <thead>
+              <tr>
+                <th>المواصفة</th>
+                <th>القيمة</th>
+                <th>Spec (EN)</th>
+                <th>Value (EN)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of specs.controls; let i = index" [formGroupName]="i">
+                <td><input class="input-field" formControlName="nameAr" placeholder="الوزن" /></td>
+                <td><input class="input-field" formControlName="valueAr" placeholder="50 كجم" /></td>
+                <td><input class="input-field" formControlName="nameEn" dir="ltr" placeholder="Weight" /></td>
+                <td><input class="input-field" formControlName="valueEn" dir="ltr" placeholder="50 kg" /></td>
+                <td>
+                  <button type="button" class="icon-btn danger" (click)="removeSpec(i)" aria-label="حذف">
+                    <span class="material-symbols-outlined">delete</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+
+      <div class="editor-actions">
+        <p class="actions-hint"><span class="req">*</span> حقول مطلوبة</p>
+        <div class="actions-buttons">
+          <button type="button" class="btn-outline" (click)="showForm = false" [disabled]="saving">إلغاء</button>
+          <button type="submit" class="btn-primary" [disabled]="saving">
+            <span class="material-symbols-outlined text-[18px]">{{ saving ? 'progress_activity' : 'save' }}</span>
+            {{ saving ? 'جاري الحفظ...' : mode === 'edit' ? 'حفظ التعديلات' : 'حفظ المنتج' }}
+          </button>
+        </div>
+      </div>
+    </form>
+
+    <aside class="mimar-bot" [class.is-open]="botOpen" aria-label="بوت معمار">
+      <button type="button" class="bot-trigger" (click)="botOpen = !botOpen" [attr.aria-expanded]="botOpen">
+        <span class="bot-orb" [class.is-busy]="assisting">
+          <span class="material-symbols-outlined">auto_awesome</span>
+        </span>
+        <span class="bot-trigger-text">
+          <strong>بوت معمار</strong>
+          <small>{{ assisting ? 'بيحلّل الوصف...' : 'اوصف المنتج وهو يملأ النموذج' }}</small>
+        </span>
+        <span class="material-symbols-outlined bot-caret">expand_more</span>
+      </button>
+
+      <div class="bot-body" *ngIf="botOpen">
+        <div class="bot-compose">
+          <textarea
+            class="bot-input"
+            rows="2"
+            [value]="assistText"
+            (input)="assistText = $any($event.target).value"
+            (keydown.control.enter)="fillFromAssistant()"
+            placeholder="مثال: إسمنت بورتلاند 50 كجم من اليمامة، سعر 28.5، مخزون 12500"
+          ></textarea>
+          <button
+            type="button"
+            class="bot-send"
+            [disabled]="assisting || assistText.trim().length < 3"
+            (click)="fillFromAssistant()"
+            aria-label="املأ النموذج"
+          >
+            <span class="material-symbols-outlined" [class.animate-spin]="assisting">
+              {{ assisting ? 'progress_activity' : 'arrow_upward' }}
+            </span>
+          </button>
+        </div>
+        <div class="bot-examples">
+          <button type="button" *ngFor="let ex of botExamples" (click)="assistText = ex.text">{{ ex.label }}</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- View Details -->
+<app-modal [open]="showView" title="تفاصيل المنتج" maxWidth="640px" (close)="showView = false">
+  <app-detail-view
+    *ngIf="selected"
+    [title]="selected.name"
+    [subtitle]="selected.sku"
+    icon="inventory_2"
+    [status]="selected.status"
+    [image]="selected.image || ''"
+    [images]="selected.images || []"
+    [fields]="viewFields"
+  ></app-detail-view>
+
+  <section *ngIf="selected" class="view-specs">
+    <h4>
+      <span class="material-symbols-outlined">list_alt</span>
+      المواصفات
+      <span class="view-specs-count" *ngIf="selected.specs?.length">{{ selected.specs?.length }}</span>
+    </h4>
+    <div class="table-wrap" *ngIf="selected.specs?.length; else noSpecs">
+      <table>
+        <thead>
+          <tr>
+            <th>المواصفة</th>
+            <th>القيمة</th>
+            <th>Spec (EN)</th>
+            <th>Value (EN)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let spec of selected.specs">
+            <td class="font-bold">{{ spec.label || '—' }}</td>
+            <td>{{ spec.value || '—' }}</td>
+            <td dir="ltr" class="text-right">{{ spec.labelEn || '—' }}</td>
+            <td dir="ltr" class="text-right">{{ spec.valueEn || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <ng-template #noSpecs><p class="view-specs-empty">-</p></ng-template>
+  </section>
+
+  <div class="form-actions mt-5">
+    <button type="button" class="btn-outline" (click)="showView = false">إغلاق</button>
+    <button type="button" class="btn-primary" (click)="switchViewToEdit()">
+      <span class="material-symbols-outlined text-[18px]">edit</span>
+      تعديل
+    </button>
+  </div>
+</app-modal>
+
+<app-confirm-dialog
+  [open]="showConfirm"
+  title="حذف المنتج"
+  [message]="'هل أنت متأكد من حذف «' + (selected?.name || 'هذا المنتج') + '»؟ لا يمكن التراجع.'"
+  confirmText="حذف"
+  [danger]="true"
+  (confirm)="confirmDelete()"
+  (cancel)="showConfirm = false"
+></app-confirm-dialog>

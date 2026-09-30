@@ -1,0 +1,277 @@
+<div class="lists-page space-y-6">
+  <section class="page-hero anim-item">
+    <div class="min-w-0">
+      <span class="hero-chip">
+        <span class="material-symbols-outlined text-[14px]">list_alt</span>
+        مشاريع المقاولين
+      </span>
+      <div class="title-row">
+        <button type="button" class="ml-back" (click)="goBack()" aria-label="رجوع">
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </button>
+        <div class="min-w-0">
+          <h1>قوائم المواد</h1>
+          <p>الأصناف والكميات والقيمة التقديرية لكل مشروع قبل ما تتحول لطلب</p>
+        </div>
+      </div>
+    </div>
+    <div class="hero-actions">
+      <label class="search-box">
+        <span class="material-symbols-outlined">search</span>
+        <input
+          type="search"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="applyFilter()"
+          placeholder="بحث بالقائمة أو المشروع أو المالك..."
+        />
+      </label>
+      <button type="button" class="btn-primary text-sm hero-add" (click)="openAdd()">
+        <span class="material-symbols-outlined text-[18px]">playlist_add</span>
+        قائمة جديدة
+      </button>
+    </div>
+  </section>
+
+  <div class="anim-item ml-summary">
+    <div class="ml-main">
+      <div class="min-w-0">
+        <small>قوائم نشطة دلوقتي</small>
+        <strong>{{ stats[1].value }} <em>من {{ stats[0].value }}</em></strong>
+      </div>
+      <button type="button" class="ml-new" (click)="openAdd()">
+        <span class="material-symbols-outlined">playlist_add</span>
+        قائمة
+      </button>
+    </div>
+    <div class="ml-grid">
+      <div>
+        <strong>{{ stats[2].value }}</strong>
+        <small>صنف</small>
+      </div>
+      <div>
+        <strong>{{ stats[3].value }}</strong>
+        <small>قابلة للمشاركة</small>
+      </div>
+      <div>
+        <strong>{{ tabCount('inactive') }}</strong>
+        <small>متوقفة</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="desk-stats grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+    <div class="anim-item" *ngFor="let s of stats">
+      <app-stat-card [data]="s" [loading]="loading"></app-stat-card>
+    </div>
+  </div>
+
+  <div class="anim-item chip-scroll">
+    <button type="button" class="chip-btn" [class.is-active]="tab === 'all'" (click)="setTab('all')">
+      الكل
+      <span class="chip-count">{{ tabCount('all') }}</span>
+    </button>
+    <button type="button" class="chip-btn" [class.is-active]="tab === 'active'" (click)="setTab('active')">
+      نشطة
+      <span class="chip-count">{{ tabCount('active') }}</span>
+    </button>
+    <button type="button" class="chip-btn" [class.is-active]="tab === 'inactive'" (click)="setTab('inactive')">
+      متوقفة
+      <span class="chip-count">{{ tabCount('inactive') }}</span>
+    </button>
+  </div>
+
+  <div class="lists-grid" *ngIf="loading">
+    <div class="list-card is-skeleton" *ngFor="let i of [1, 2, 3]">
+      <div class="skeleton h-12 w-12 rounded-2xl"></div>
+      <div class="skeleton h-4 w-40 mt-4"></div>
+      <div class="skeleton h-3 w-28 mt-2"></div>
+    </div>
+  </div>
+
+  <div class="empty-state" *ngIf="!loading && !filtered.length">
+    <span class="material-symbols-outlined">list_alt</span>
+    <h3>لا توجد قوائم مطابقة</h3>
+    <p>جرّب بحثاً مختلفاً أو أنشئ قائمة جديدة للمشروع.</p>
+    <button type="button" class="btn-primary text-sm mt-3" (click)="openAdd()">قائمة جديدة</button>
+  </div>
+
+  <div class="lists-grid" *ngIf="!loading && filtered.length">
+    <article class="list-card" *ngFor="let list of filtered" [attr.data-status]="list.status" (click)="openView(list)">
+      <span class="card-accent" aria-hidden="true"></span>
+      <header class="card-top">
+        <div class="avatar">{{ initial(list.ownerName || list.name) }}</div>
+        <div class="min-w-0 flex-1">
+          <h3>{{ list.name }}</h3>
+          <p class="project">{{ list.projectName || 'بدون مشروع' }}</p>
+        </div>
+        <app-status-badge [status]="list.status"></app-status-badge>
+      </header>
+
+      <div class="meta-row">
+        <span>
+          <span class="material-symbols-outlined">person</span>
+          {{ list.ownerName || 'مالك غير محدد' }}
+        </span>
+        <span>
+          <span class="material-symbols-outlined">calendar_today</span>
+          {{ displayDate(list.createdAt) }}
+        </span>
+      </div>
+
+      <ul class="mini-items" *ngIf="previewItems(list).length">
+        <li *ngFor="let item of previewItems(list)">
+          <span class="item-dot"></span>
+          <span class="item-label">{{ item.productName }}</span>
+          <span class="item-qty">{{ item.quantity }} {{ item.unit || '' }}</span>
+        </li>
+        <li class="is-more" *ngIf="(list.items?.length || 0) > 3">
+          +{{ (list.items?.length || 0) - 3 }} أصناف أخرى
+        </li>
+      </ul>
+
+      <div class="total-row">
+        <span>{{ list.itemsCount || list.items?.length || 0 }} أصناف</span>
+        <strong>{{ listTotal(list) ? (listTotal(list) | number) + ' ر.س' : 'بدون تقدير' }}</strong>
+      </div>
+
+      <footer class="card-foot" (click)="$event.stopPropagation()">
+        <span class="share-pill" [class.is-on]="!!list.shareToken">
+          <span class="material-symbols-outlined">{{ list.shareToken ? 'share' : 'lock' }}</span>
+          {{ list.shareToken ? 'قابلة للمشاركة' : 'خاصة' }}
+        </span>
+        <div class="card-actions">
+          <button type="button" class="icon-btn is-view" (click)="openView(list)" title="عرض" aria-label="عرض">
+            <span class="material-symbols-outlined">visibility</span>
+            <span class="btn-label">عرض</span>
+          </button>
+          <button type="button" class="icon-btn is-edit" (click)="openEdit(list)" title="تعديل" aria-label="تعديل">
+            <span class="material-symbols-outlined">edit</span>
+            <span class="btn-label">تعديل</span>
+          </button>
+          <button type="button" class="icon-btn is-danger" (click)="askDelete(list)" title="حذف" aria-label="حذف">
+            <span class="material-symbols-outlined">delete</span>
+          </button>
+        </div>
+      </footer>
+    </article>
+  </div>
+</div>
+
+<app-modal [open]="showForm" [title]="formTitle" maxWidth="560px" (close)="showForm = false">
+  <form class="grid grid-cols-1 sm:grid-cols-2 gap-4" [formGroup]="form" (ngSubmit)="save()">
+    <div class="sm:col-span-2">
+      <label class="form-label">اسم القائمة بالعربي</label>
+      <input class="input-field" formControlName="name" placeholder="قائمة فيلا الرياض" />
+      <p *ngIf="err('name')" class="form-error">الاسم مطلوب</p>
+    </div>
+    <div class="sm:col-span-2">
+      <label class="form-label">List name in English</label>
+      <input class="input-field" formControlName="nameEn" dir="ltr" placeholder="Riyadh villa list" />
+    </div>
+    <div class="sm:col-span-2">
+      <label class="form-label">اسم المشروع</label>
+      <input class="input-field" formControlName="projectName" placeholder="مشروع النرجس" />
+    </div>
+    <div class="sm:col-span-2">
+      <label class="form-label">الوصف / ملاحظات</label>
+      <textarea class="input-field min-h-[88px] py-3" formControlName="description"></textarea>
+    </div>
+    <div class="sm:col-span-2" *ngIf="mode === 'edit'">
+      <label class="form-label">الحالة</label>
+      <app-select formControlName="status" [options]="statusOptions" placeholder="الحالة"></app-select>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn-outline" (click)="showForm = false" [disabled]="saving">إلغاء</button>
+      <button type="submit" class="btn-primary" [disabled]="saving">
+        {{ saving ? 'جاري الحفظ...' : mode === 'edit' ? 'حفظ التعديلات' : 'إنشاء القائمة' }}
+      </button>
+    </div>
+  </form>
+</app-modal>
+
+<app-modal [open]="showView" title="تفاصيل قائمة المواد" maxWidth="720px" (close)="showView = false">
+  <app-detail-view
+    *ngIf="selected"
+    [title]="selected.name"
+    [subtitle]="selected.projectName || selected.nameEn || ''"
+    icon="list_alt"
+    [status]="selected.status"
+    [fields]="viewFields"
+  ></app-detail-view>
+
+  <div class="items-block" *ngIf="selected">
+    <div class="items-head">
+      <h3>أصناف القائمة</h3>
+      <button type="button" class="btn-outline text-sm" (click)="openAddItem()">
+        <span class="material-symbols-outlined text-[16px]">add</span>
+        إضافة صنف
+      </button>
+    </div>
+
+    <div class="empty-items" *ngIf="!selected.items?.length">
+      <span class="material-symbols-outlined">inventory_2</span>
+      <p>لا توجد أصناف في هذه القائمة بعد</p>
+    </div>
+
+    <ul class="items-list" *ngIf="selected.items?.length">
+      <li *ngFor="let item of selected.items">
+        <div class="min-w-0 flex-1">
+          <p class="item-name">{{ item.productName || ('منتج #' + item.productId) }}</p>
+          <p class="item-meta" dir="ltr" *ngIf="item.productSku">{{ item.productSku }}</p>
+          <p class="item-meta" *ngIf="item.notes">{{ item.notes }}</p>
+        </div>
+        <div class="item-figures">
+          <span class="item-qty">{{ item.quantity }} {{ item.unit || '' }}</span>
+          <span class="item-price" *ngIf="item.price">{{ item.price * item.quantity | number }} ر.س</span>
+        </div>
+        <button type="button" class="item-del" (click)="removeItem(item)" aria-label="حذف الصنف">
+          <span class="material-symbols-outlined text-[18px]">delete</span>
+        </button>
+      </li>
+    </ul>
+    <div class="items-total" *ngIf="listTotal(selected)">
+      <span>تقدير قيمة القائمة</span>
+      <strong>{{ listTotal(selected) | number }} ر.س</strong>
+    </div>
+  </div>
+
+  <div class="form-actions mt-5">
+    <button type="button" class="btn-outline" (click)="showView = false">إغلاق</button>
+    <button type="button" class="btn-primary" (click)="openEdit(selected!)">تعديل</button>
+  </div>
+</app-modal>
+
+<app-modal [open]="showItemForm" title="إضافة صنف للقائمة" maxWidth="480px" (close)="showItemForm = false">
+  <form class="grid grid-cols-1 gap-4" [formGroup]="itemForm" (ngSubmit)="saveItem()">
+    <div>
+      <label class="form-label">المنتج</label>
+      <app-select formControlName="productId" [options]="productOptions" placeholder="اختر منتجاً"></app-select>
+      <p *ngIf="itemErr('productId')" class="form-error">اختر منتجاً</p>
+    </div>
+    <div>
+      <label class="form-label">الكمية</label>
+      <input type="number" class="input-field" formControlName="quantity" min="0.01" step="0.01" />
+      <p *ngIf="itemErr('quantity')" class="form-error">أدخل كمية صحيحة</p>
+    </div>
+    <div>
+      <label class="form-label">ملاحظات</label>
+      <input class="input-field" formControlName="notes" />
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn-outline" (click)="showItemForm = false" [disabled]="saving">إلغاء</button>
+      <button type="submit" class="btn-primary" [disabled]="saving">
+        {{ saving ? 'جاري الإضافة...' : 'إضافة الصنف' }}
+      </button>
+    </div>
+  </form>
+</app-modal>
+
+<app-confirm-dialog
+  [open]="showConfirm"
+  title="حذف قائمة المواد"
+  [message]="'حذف «' + (selected?.name || '') + '» وكل أصنافها؟'"
+  confirmText="حذف"
+  [danger]="true"
+  (confirm)="confirmDelete()"
+  (cancel)="showConfirm = false"
+></app-confirm-dialog>

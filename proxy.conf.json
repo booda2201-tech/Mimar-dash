@@ -1,0 +1,8 @@
+{
+  "/api": {
+    "target": "https://alhendalcompany-001-site13.jtempurl.com",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}

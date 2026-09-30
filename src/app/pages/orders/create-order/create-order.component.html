@@ -1,0 +1,180 @@
+<app-modal [open]="open" title="طلب جديد من لوحة التحكم" maxWidth="820px" (close)="close()">
+  <div class="co">
+    <section class="co-section">
+      <div class="co-head">
+        <div class="co-title">
+          <span class="co-step">1</span>
+          <div>
+            <h4>بيانات العميل</h4>
+            <p>اختار عميل موجود أو اكتب بيانات عميل جديد</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="co-pick" *ngIf="customerOptions.length">
+        <app-select
+          [options]="customerOptions"
+          [searchable]="true"
+          placeholder="اختيار عميل مسجّل (اختياري)"
+          [(ngModel)]="pickedCustomer"
+          (selectionChange)="useCustomer($event)"
+        ></app-select>
+      </div>
+
+      <div class="co-grid cols-3">
+        <div>
+          <label class="form-label">الاسم بالكامل <span class="req">*</span></label>
+          <input class="input-field" [(ngModel)]="customer.fullName" placeholder="مثال: أحمد محمد" />
+        </div>
+        <div>
+          <label class="form-label">رقم الموبايل <span class="req">*</span></label>
+          <input class="input-field" [(ngModel)]="customer.phoneNumber" dir="ltr" inputmode="tel" placeholder="01xxxxxxxxx" />
+        </div>
+        <div>
+          <label class="form-label">البريد الإلكتروني</label>
+          <input class="input-field" [(ngModel)]="customer.email" dir="ltr" type="email" placeholder="اختياري" />
+        </div>
+      </div>
+    </section>
+
+    <section class="co-section">
+      <div class="co-head">
+        <div class="co-title">
+          <span class="co-step">2</span>
+          <div>
+            <h4>الأصناف</h4>
+            <p>السعر بيتحسب من الكتالوج وشرائح الجملة والخصومات</p>
+          </div>
+        </div>
+        <button type="button" class="co-add" (click)="addLine()">
+          <span class="material-symbols-outlined">add</span>
+          صنف
+        </button>
+      </div>
+
+      <div class="co-empty" *ngIf="!lines.length">
+        <span class="material-symbols-outlined">add_shopping_cart</span>
+        ضيف أول صنف للطلب
+      </div>
+
+      <div class="co-lines" *ngIf="lines.length">
+        <div class="co-line" *ngFor="let line of lines; trackBy: trackLine" [class.is-invalid]="submitted && !lineValid(line)">
+          <div class="line-product">
+            <div class="line-thumb">
+              <img *ngIf="product(line)?.image as img" [src]="img" alt="" />
+              <span *ngIf="!product(line)?.image" class="material-symbols-outlined">inventory_2</span>
+            </div>
+            <div class="line-fields" [class.no-variant]="!variantOptions(line).length">
+              <app-select
+                [options]="productOptions"
+                [searchable]="true"
+                placeholder="اختار المنتج"
+                [(ngModel)]="line.productId"
+                (selectionChange)="onProduct(line)"
+              ></app-select>
+              <app-select
+                *ngIf="variantOptions(line).length"
+                [options]="variantOptions(line)"
+                placeholder="اختار النوع"
+                [(ngModel)]="line.variantId"
+              ></app-select>
+            </div>
+            <button type="button" class="co-remove" (click)="removeLine(line)" aria-label="حذف الصنف">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </div>
+
+          <div class="line-bottom" *ngIf="product(line)">
+            <div class="qty">
+              <button type="button" class="qty-btn" (click)="step(line, -1)" [disabled]="line.quantity <= 1" aria-label="تقليل">
+                <span class="material-symbols-outlined">remove</span>
+              </button>
+              <input type="number" min="1" [(ngModel)]="line.quantity" aria-label="الكمية" />
+              <button type="button" class="qty-btn" (click)="step(line, 1)" aria-label="زيادة">
+                <span class="material-symbols-outlined">add</span>
+              </button>
+            </div>
+            <div class="line-meta">
+              <span>الوحدة {{ money(unitPrice(line)) }}</span>
+              <span class="tier-hit" *ngIf="tierLabel(line) as t">{{ t }}</span>
+              <span [class.stock-warn]="line.quantity > stockOf(line)">متاح {{ stockOf(line) }}</span>
+            </div>
+            <div class="line-price">
+              <small>الإجمالي</small>
+              <strong>{{ money(lineTotal(line)) }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="co-section">
+      <div class="co-head">
+        <div class="co-title">
+          <span class="co-step">3</span>
+          <div>
+            <h4>عنوان التوصيل</h4>
+            <p>المكان اللي هيتسلم فيه الطلب</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="co-grid cols-3">
+        <div>
+          <label class="form-label">المحافظة <span class="req">*</span></label>
+          <input class="input-field" [(ngModel)]="address.governorate" placeholder="القاهرة" />
+        </div>
+        <div>
+          <label class="form-label">المدينة <span class="req">*</span></label>
+          <input class="input-field" [(ngModel)]="address.city" placeholder="مدينة نصر" />
+        </div>
+        <div>
+          <label class="form-label">المنطقة</label>
+          <input class="input-field" [(ngModel)]="address.area" placeholder="الحي السابع" />
+        </div>
+        <div class="span-2">
+          <label class="form-label">الشارع <span class="req">*</span></label>
+          <input class="input-field" [(ngModel)]="address.street" placeholder="اسم الشارع" />
+        </div>
+        <div>
+          <label class="form-label">رقم العمارة</label>
+          <input class="input-field" [(ngModel)]="address.buildingNumber" />
+        </div>
+        <div>
+          <label class="form-label">الدور</label>
+          <input class="input-field" [(ngModel)]="address.floor" />
+        </div>
+        <div>
+          <label class="form-label">الشقة</label>
+          <input class="input-field" [(ngModel)]="address.apartment" />
+        </div>
+        <div>
+          <label class="form-label">اسم العنوان</label>
+          <input class="input-field" [(ngModel)]="address.label" placeholder="موقع المشروع / البيت" />
+        </div>
+        <div class="span-all">
+          <label class="form-label">علامة مميزة</label>
+          <input class="input-field" [(ngModel)]="address.landmark" placeholder="بجوار..." />
+        </div>
+      </div>
+    </section>
+
+    <section class="co-section">
+      <label class="form-label">ملاحظات الطلب</label>
+      <textarea class="input-field min-h-[80px] py-2.5" [(ngModel)]="notes" placeholder="مواعيد التسليم، طريقة الدفع، أي تفاصيل للمندوب..."></textarea>
+    </section>
+
+    <div class="co-summary">
+      <div class="co-total">
+        <small>{{ lines.length }} صنف · {{ totalQuantity }} قطعة</small>
+        <strong>{{ money(total) }}</strong>
+        <span>إجمالي تقديري — السعر النهائي بيحسبه السيستم</span>
+      </div>
+      <button type="button" class="btn-outline" (click)="close()" [disabled]="saving">إلغاء</button>
+      <button type="button" class="btn-primary" (click)="submit()" [disabled]="saving">
+        <span class="material-symbols-outlined text-[18px]" [class.animate-spin]="saving">{{ saving ? 'progress_activity' : 'check' }}</span>
+        {{ saving ? 'جاري الإنشاء...' : 'إنشاء الطلب' }}
+      </button>
+    </div>
+  </div>
+</app-modal>

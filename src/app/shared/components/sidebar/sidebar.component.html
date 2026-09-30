@@ -1,0 +1,93 @@
+<!-- Desktop sidebar -->
+<aside class="sidebar-shell">
+  <div class="sidebar-glow" aria-hidden="true"></div>
+
+  <div class="sidebar-brand">
+    <div class="logo-mark"><span>م</span></div>
+    <div class="min-w-0">
+      <p class="brand-title">منصة معمار</p>
+      <p class="brand-sub">لوحة التحكم التنفيذية</p>
+    </div>
+  </div>
+
+  <nav #navList class="sidebar-nav">
+    <p class="nav-section">القائمة الرئيسية</p>
+    <a
+      *ngFor="let item of navItems"
+      [routerLink]="item.route"
+      routerLinkActive="nav-active"
+      [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+      class="nav-item"
+    >
+      <span class="nav-icon">
+        <span class="material-symbols-outlined">{{ item.icon }}</span>
+      </span>
+      <span class="nav-label">{{ item.label }}</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-row">
+        <div class="user-avatar">{{ staffInitial }}</div>
+        <div class="min-w-0 flex-1">
+          <p class="user-name">{{ staffName }}</p>
+          <p class="user-role">Super Admin</p>
+        </div>
+      </div>
+      <a routerLink="/login" class="logout-btn" (click)="logout()">
+        <span class="material-symbols-outlined text-[18px]">logout</span>
+        تسجيل الخروج
+      </a>
+    </div>
+  </div>
+</aside>
+
+<!-- Mobile menu (bottom sheet) -->
+<div class="m-overlay" [class.is-open]="open" (click)="close()" aria-hidden="true"></div>
+
+<aside
+  class="m-sheet"
+  [class.is-open]="open"
+  [class.is-dragging]="dragging"
+  [style.transform]="dragY ? 'translateY(' + dragY + 'px)' : null"
+  role="dialog"
+  aria-modal="true"
+  aria-label="القائمة"
+  [attr.aria-hidden]="!open"
+  (touchstart)="onTouchStart($event)"
+  (touchmove)="onTouchMove($event)"
+  (touchend)="onTouchEnd()"
+  (touchcancel)="onTouchEnd()"
+>
+  <div class="m-handle" aria-hidden="true"></div>
+
+  <div class="m-top">
+    <div class="m-avatar">{{ staffInitial }}</div>
+    <div class="m-who">
+      <strong>{{ staffName }}</strong>
+      <small>Super Admin</small>
+    </div>
+    <a routerLink="/login" class="m-icon-btn is-logout" (click)="logout()" aria-label="تسجيل الخروج" title="تسجيل الخروج">
+      <span class="material-symbols-outlined">logout</span>
+    </a>
+    <button type="button" class="m-icon-btn" (click)="close()" aria-label="إغلاق القائمة">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+  </div>
+
+  <nav class="m-grid">
+    <a
+      *ngFor="let item of navItems; let i = index"
+      [routerLink]="item.route"
+      routerLinkActive="is-active"
+      [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+      class="m-tile"
+      [style.--i]="i"
+      (click)="close()"
+    >
+      <span class="m-tile-icon"><span class="material-symbols-outlined">{{ item.icon }}</span></span>
+      <span class="m-tile-label">{{ item.label }}</span>
+    </a>
+  </nav>
+</aside>

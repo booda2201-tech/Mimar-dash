@@ -1,0 +1,114 @@
+.dropzone-wrap {
+  width: 100%;
+}
+
+.dropzone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 160px;
+  padding: 1.25rem;
+  border: 2px dashed rgba(11, 74, 58, 0.28);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, rgba(11, 74, 58, 0.03) 0%, rgba(11, 74, 58, 0.01) 100%);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+  outline: none;
+
+  &:hover:not(.is-disabled),
+  &:focus-visible:not(.is-disabled) {
+    border-color: rgba(11, 74, 58, 0.55);
+    background: rgba(11, 74, 58, 0.05);
+  }
+
+  &.is-dragging {
+    border-color: var(--brand-primary);
+    background: rgba(11, 74, 58, 0.08);
+    box-shadow: 0 0 0 3px rgba(11, 74, 58, 0.12);
+  }
+
+  &.has-preview {
+    padding: 0;
+    border-style: solid;
+    border-color: rgba(11, 74, 58, 0.12);
+    min-height: 180px;
+  }
+
+  &.is-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.icon {
+  font-size: 2rem;
+  color: var(--brand-primary);
+  opacity: 0.75;
+}
+
+.title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #0b4a3a;
+  text-align: center;
+}
+
+.sub {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.preview {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+}
+
+.preview-actions {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.65rem;
+  background: linear-gradient(transparent, rgba(7, 51, 40, 0.75));
+}
+
+.btn-change,
+.btn-remove {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border: none;
+  border-radius: 0.55rem;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.btn-change {
+  background: #fff;
+  color: #0b4a3a;
+}
+
+.btn-remove {
+  background: rgba(220, 38, 38, 0.95);
+  color: #fff;
+}

@@ -1,0 +1,421 @@
+<div class="space-y-6">
+  <section class="page-hero anim-item">
+    <div class="min-w-0">
+      <span class="hero-chip">
+        <span class="material-symbols-outlined text-[14px]">request_quote</span>
+        طلبات التسعير
+      </span>
+      <h1>عروض السعر</h1>
+      <p class="hero-desc-full">طلبات تسعير من التجار والمستخدمين: سعّر الأصناف، وافق على السعر المقترح أو ارفضه</p>
+      <p class="hero-desc-short">سعّر طلبات العملاء وتابع ردودهم</p>
+    </div>
+    <div class="hero-actions">
+      <label class="search-box">
+        <span class="material-symbols-outlined">search</span>
+        <input
+          type="search"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="applyFilter()"
+          placeholder="رقم الطلب، العميل، أو المنتج..."
+        />
+      </label>
+      <button type="button" class="btn-outline text-sm q-refresh" (click)="load()" [disabled]="loading">
+        <span class="material-symbols-outlined text-[18px]" [class.animate-spin]="loading">refresh</span>
+        تحديث
+      </button>
+    </div>
+  </section>
+
+  <section class="anim-item qm-summary">
+    <div class="qm-main">
+      <div class="min-w-0">
+        <small>بانتظار التسعير</small>
+        <strong>{{ stats[1].value }} <em>طلب</em></strong>
+      </div>
+      <button type="button" class="qm-refresh" (click)="load()" [disabled]="loading" aria-label="تحديث">
+        <span class="material-symbols-outlined" [class.animate-spin]="loading">refresh</span>
+      </button>
+    </div>
+    <div class="qm-grid">
+      <button type="button" [class.is-active]="tab === 'all'" (click)="setTab('all')">
+        <strong>{{ stats[0].value }}</strong>
+        <small>كل الطلبات</small>
+      </button>
+      <button type="button" [class.is-active]="tab === 'offered'" (click)="setTab('offered')">
+        <strong>{{ stats[2].value }}</strong>
+        <small>عروض مرسلة</small>
+      </button>
+      <button type="button" [class.is-active]="tab === 'accepted'" (click)="setTab('accepted')">
+        <strong>{{ stats[3].value }}</strong>
+        <small>مقبولة</small>
+      </button>
+    </div>
+  </section>
+
+  <div class="qs-stats grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+    <div class="anim-item" *ngFor="let s of stats">
+      <app-stat-card [data]="s" [loading]="loading"></app-stat-card>
+    </div>
+  </div>
+
+  <div class="anim-item chip-scroll">
+    <button
+      *ngFor="let t of visibleTabs"
+      type="button"
+      class="chip-btn"
+      [class.is-active]="tab === t.key"
+      (click)="setTab(t.key)"
+    >
+      {{ t.label }}
+      <span class="chip-count">{{ tabCount(t.key) }}</span>
+    </button>
+  </div>
+
+  <div class="q-grid" *ngIf="loading">
+    <div class="q-card is-skeleton" *ngFor="let i of [1, 2, 3, 4, 5, 6]">
+      <div class="flex items-center gap-3">
+        <div class="skeleton h-11 w-11 !rounded-xl"></div>
+        <div class="flex-1 space-y-2">
+          <div class="skeleton h-4 w-32"></div>
+          <div class="skeleton h-3 w-20"></div>
+        </div>
+      </div>
+      <div class="skeleton h-16 w-full mt-4"></div>
+    </div>
+  </div>
+
+  <div class="empty-state" *ngIf="!loading && !filtered.length">
+    <span class="material-symbols-outlined">request_quote</span>
+    <h3>{{ requests.length ? 'مفيش طلبات مطابقة' : 'مفيش طلبات تسعير لسه' }}</h3>
+    <p>{{ requests.length ? 'جرّب فلتر أو بحث مختلف.' : 'أول ما عميل يطلب تسعير من التطبيق هيظهر هنا.' }}</p>
+  </div>
+
+  <div class="q-grid" *ngIf="!loading && filtered.length">
+    <article
+      class="q-card"
+      *ngFor="let q of filtered"
+      [attr.data-status]="q.status"
+      tabindex="0"
+      role="button"
+      (click)="open(q)"
+      (keydown.enter)="open(q)"
+    >
+      <header class="q-top">
+        <div class="q-avatar" [class.is-trader]="q.isTrader">{{ initial(q.customerName) }}</div>
+        <div class="min-w-0 flex-1">
+          <h3 class="q-customer">{{ q.customerName }}</h3>
+          <p class="q-sub">
+            <span class="kind-pill" [class.is-trader]="q.isTrader">{{ customerKind(q) }}</span>
+            <bdi class="q-number">{{ q.number }}</bdi>
+          </p>
+        </div>
+        <app-status-badge [status]="statusBadge(q.status)" [label]="statusLabel(q.status)"></app-status-badge>
+      </header>
+
+      <div class="q-body">
+        <div class="q-type">
+          <span class="q-type-icon material-symbols-outlined">{{ typeIcon(q) }}</span>
+          <div class="min-w-0">
+            <strong>{{ typeLabel(q) }}</strong>
+            <span *ngIf="q.materialListName" class="q-type-name">{{ q.materialListName }}</span>
+          </div>
+        </div>
+        <p class="q-notes" [class.is-empty]="!q.notes" [title]="q.notes || ''">{{ q.notes || 'بدون ملاحظات من العميل' }}</p>
+      </div>
+
+      <div class="q-facts">
+        <span><span class="material-symbols-outlined">inventory_2</span><strong>{{ q.productsCount }}</strong> صنف</span>
+        <span><span class="material-symbols-outlined">stacks</span><strong>{{ q.totalQuantity }}</strong> قطعة</span>
+        <span><span class="material-symbols-outlined">attach_file</span><strong>{{ q.attachmentsCount }}</strong> مرفق</span>
+      </div>
+
+      <div class="q-prices">
+        <div class="q-price">
+          <small>سعر العميل</small>
+          <strong *ngIf="q.requestedTotal != null; else noPrice">{{ money(q.requestedTotal) }}</strong>
+        </div>
+        <span class="q-arrow material-symbols-outlined" aria-hidden="true">arrow_back</span>
+        <div class="q-price is-offer" [class.is-set]="q.offeredTotal != null">
+          <small>عرضنا</small>
+          <strong *ngIf="q.offeredTotal != null; else noOffer">{{ money(q.offeredTotal) }}</strong>
+        </div>
+      </div>
+      <ng-template #noPrice><span class="q-none">لم يحدد سعر</span></ng-template>
+      <ng-template #noOffer><span class="q-none">{{ q.status === 'pending' ? 'لسه متسعّرش' : '—' }}</span></ng-template>
+
+      <footer class="q-foot">
+        <span>
+          <span class="material-symbols-outlined">schedule</span>
+          {{ relative(q.createdAt) || displayDate(q.createdAt) }}
+        </span>
+        <span *ngIf="q.validUntil" [class.text-red-600]="q.isExpired">
+          <span class="material-symbols-outlined">event_available</span>
+          صالح لـ {{ displayDate(q.validUntil) }}
+        </span>
+        <span class="q-open">
+          {{ q.status === 'pending' ? 'سعّر الطلب' : 'التفاصيل' }}
+          <span class="material-symbols-outlined">arrow_back</span>
+        </span>
+      </footer>
+    </article>
+  </div>
+</div>
+
+<app-modal [open]="showDetail" [title]="selected ? 'طلب تسعير ' + selected.number : 'طلب تسعير'" maxWidth="920px" (close)="closeDetail()">
+  <div *ngIf="selected as q" class="q-detail">
+    <section class="d-head">
+      <div class="q-avatar lg" [class.is-trader]="q.isTrader">{{ initial(q.customerName) }}</div>
+      <div class="min-w-0 flex-1">
+        <h3>{{ q.customerName }}</h3>
+        <p class="q-sub">
+          <span class="kind-pill" [class.is-trader]="q.isTrader">{{ customerKind(q) }}</span>
+          <bdi *ngIf="q.customerPhone" dir="ltr">{{ q.customerPhone }}</bdi>
+          <span>· {{ typeLabel(q) }}</span>
+        </p>
+      </div>
+      <app-status-badge [status]="statusBadge(q.status)" [label]="statusLabel(q.status)"></app-status-badge>
+    </section>
+
+    <div class="d-meta">
+      <div><small>تاريخ الطلب</small><strong>{{ displayDate(q.createdAt) }}</strong></div>
+      <div><small>آخر تحديث</small><strong>{{ displayDate(q.updatedAt) }}</strong></div>
+      <div><small>صلاحية العرض</small><strong [class.text-red-600]="q.isExpired">{{ displayDate(q.validUntil) }}</strong></div>
+      <div><small>الكمية</small><strong>{{ q.totalQuantity }} قطعة · {{ q.productsCount }} صنف</strong></div>
+    </div>
+
+    <div class="d-note" *ngIf="q.notes || q.materialListName">
+      <span class="material-symbols-outlined">sticky_note_2</span>
+      <div class="min-w-0">
+        <strong *ngIf="q.materialListName">قائمة مواد: {{ q.materialListName }}</strong>
+        <p *ngIf="q.notes">{{ q.notes }}</p>
+        <p *ngIf="q.materialListNotes" class="muted">{{ q.materialListNotes }}</p>
+      </div>
+    </div>
+
+    <div class="d-note is-danger" *ngIf="q.status === 'rejected' && q.rejectionReason">
+      <span class="material-symbols-outlined">block</span>
+      <div class="min-w-0">
+        <strong>سبب الرفض</strong>
+        <p>{{ q.rejectionReason }}</p>
+      </div>
+    </div>
+
+    <div class="d-loading" *ngIf="detailLoading">
+      <span class="material-symbols-outlined animate-spin">progress_activity</span>
+      بيحمّل تفاصيل الطلب...
+    </div>
+
+    <section class="d-section" *ngIf="q.items.length">
+      <div class="d-section-head">
+        <h4>الأصناف والتسعير</h4>
+        <div class="quick-fill" *ngIf="canPrice(q)">
+          <button type="button" *ngIf="hasRequestedPrices(q)" (click)="fillFrom('requested')">سعر العميل</button>
+          <button type="button" *ngIf="hasListPrices(q)" (click)="fillFrom('list')">سعر الكتالوج</button>
+          <button type="button" *ngIf="hasListPrices(q)" (click)="applyDiscount(5)">كتالوج -5%</button>
+          <button type="button" *ngIf="hasListPrices(q)" (click)="applyDiscount(10)">كتالوج -10%</button>
+        </div>
+      </div>
+
+      <div class="items-table">
+        <div class="it-head">
+          <span>الصنف</span>
+          <span>الكمية</span>
+          <span>الكتالوج</span>
+          <span>مطلوب</span>
+          <span>سعرنا للوحدة</span>
+          <span>الإجمالي</span>
+        </div>
+        <div class="it-row" *ngFor="let item of q.items">
+          <div class="it-product">
+            <div class="it-thumb">
+              <img *ngIf="item.image" [src]="item.image" [alt]="item.productName" loading="lazy" />
+              <span *ngIf="!item.image" class="material-symbols-outlined">inventory_2</span>
+            </div>
+            <div class="min-w-0">
+              <p class="it-name">{{ item.productName }}</p>
+              <p class="it-meta">
+                <span *ngIf="item.variantName">{{ item.variantName }}</span>
+                <bdi *ngIf="item.productSku">{{ item.productSku }}</bdi>
+              </p>
+              <p class="it-meta italic" *ngIf="item.notes">{{ item.notes }}</p>
+            </div>
+          </div>
+          <div class="it-cell" data-label="الكمية"><strong>{{ item.quantity }}</strong> {{ item.unit || '' }}</div>
+          <div class="it-cell" data-label="الكتالوج">{{ money(item.listPrice) }}</div>
+          <div class="it-cell" data-label="مطلوب">
+            <span>{{ money(item.requestedPrice) }}</span>
+            <span
+              class="diff-chip"
+              *ngIf="diffPct(item.requestedPrice, item.listPrice) as d"
+              [class.is-down]="d < 0"
+            >{{ d > 0 ? '+' : '' }}{{ d }}%</span>
+          </div>
+          <div class="it-cell" data-label="سعرنا للوحدة">
+            <label class="price-input" *ngIf="canPrice(q); else fixedPrice">
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                dir="ltr"
+                [(ngModel)]="priceDraft[item.id]"
+                [attr.aria-label]="'سعر ' + item.productName"
+              />
+              <span class="cur">ر.س</span>
+            </label>
+            <ng-template #fixedPrice>{{ money(item.offeredPrice ?? priceDraft[item.id]) }}</ng-template>
+          </div>
+          <div class="it-cell it-total" data-label="الإجمالي">{{ money(lineTotal(item)) }}</div>
+        </div>
+        <div class="it-foot">
+          <span>الإجمالي</span>
+          <span>{{ q.totalQuantity }} قطعة</span>
+          <span>{{ money(listTotal(q)) }}</span>
+          <span>{{ money(q.requestedTotal) }}</span>
+          <span></span>
+          <strong>{{ money(canPrice(q) ? draftTotal : q.offeredTotal) }}</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="d-section" *ngIf="q.files.length">
+      <div class="d-section-head">
+        <h4>الملفات المرفقة ({{ q.files.length }})</h4>
+      </div>
+      <div class="files-grid">
+        <a class="file-tile" *ngFor="let f of q.files" [href]="fileUrl(f)" target="_blank" rel="noopener">
+          <img *ngIf="f.isImage && f.url" [src]="fileUrl(f)" [alt]="f.name" loading="lazy" />
+          <span *ngIf="!f.isImage || !f.url" class="material-symbols-outlined">description</span>
+          <span class="file-name">{{ f.name }}</span>
+        </a>
+      </div>
+    </section>
+    <p class="d-empty" *ngIf="!detailLoading && !q.items.length && q.productsCount">
+      <span class="material-symbols-outlined">info</span>
+      الطلب فيه {{ q.productsCount }} صنف بس الـ API مرجعهمش في التفاصيل.
+    </p>
+    <p class="d-empty" *ngIf="!detailLoading && !q.files.length && q.attachmentsCount">
+      <span class="material-symbols-outlined">info</span>
+      الطلب فيه {{ q.attachmentsCount }} مرفق بس الـ API مرجعهمش في التفاصيل.
+    </p>
+
+    <section class="d-summary" *ngIf="!q.items.length">
+      <div>
+        <small>السعر المطلوب من العميل</small>
+        <strong>{{ money(q.requestedTotal) }}</strong>
+      </div>
+      <div *ngIf="listTotal(q) !== null">
+        <small>إجمالي الكتالوج</small>
+        <strong>{{ money(listTotal(q)) }}</strong>
+      </div>
+      <div class="is-main">
+        <small>{{ canPrice(q) ? 'إجمالي عرضنا' : 'آخر عرض' }}</small>
+        <strong>{{ money(canPrice(q) ? draftTotal : q.offeredTotal) }}</strong>
+      </div>
+    </section>
+
+    <section class="d-offer" *ngIf="canPrice(q)">
+      <div class="d-offer-head">
+        <span class="material-symbols-outlined">edit_note</span>
+        <div>
+          <h4>{{ q.status === 'offered' ? 'تعديل عرض السعر' : 'إرسال عرض سعر' }}</h4>
+          <p>العميل هيشوف العرض ده في التطبيق ويقدر يوافق عليه أو يرفضه</p>
+        </div>
+      </div>
+      <div class="offer-fields">
+        <div class="f-side">
+          <div *ngIf="!q.items.length">
+            <label class="form-label">إجمالي العرض (ر.س)</label>
+            <input type="number" class="input-field" min="0" step="0.01" dir="ltr" [(ngModel)]="offerTotal" />
+          </div>
+          <div>
+            <label class="form-label">العرض صالح لحد</label>
+            <input type="date" class="input-field" [min]="today" [(ngModel)]="offerValidUntil" />
+            <div class="valid-chips">
+              <button
+                type="button"
+                *ngFor="let d of validityOptions"
+                [class.is-active]="offerValidUntil === daysFromNow(d)"
+                (click)="offerValidUntil = daysFromNow(d)"
+              >{{ d }} يوم</button>
+            </div>
+          </div>
+        </div>
+        <div class="f-notes">
+          <label class="form-label">ملاحظات للعميل</label>
+          <textarea
+            class="input-field py-2.5"
+            [(ngModel)]="offerNotes"
+            placeholder="مثال: السعر شامل التوصيل، والتوريد خلال 3 أيام"
+          ></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section class="d-offers" *ngIf="q.offers.length">
+      <h4>العروض السابقة</h4>
+      <div class="offer-row" *ngFor="let o of q.offers; let last = last" [class.is-last]="last">
+        <span class="material-symbols-outlined">{{ last ? 'mark_email_read' : 'history' }}</span>
+        <div class="min-w-0 flex-1">
+          <strong>{{ money(o.total) }}</strong>
+          <p *ngIf="o.notes">{{ o.notes }}</p>
+        </div>
+        <div class="offer-dates">
+          <span>{{ displayDate(o.createdAt) }}</span>
+          <span *ngIf="o.validUntil">لحد {{ displayDate(o.validUntil) }}</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="d-actions">
+      <button type="button" class="btn-outline" (click)="closeDetail()">إغلاق</button>
+      <span class="flex-1"></span>
+      <button type="button" class="act-reject" *ngIf="canReject(q)" (click)="askReject()" [disabled]="!!acting">
+        <span class="material-symbols-outlined">block</span>
+        رفض
+      </button>
+      <button type="button" class="act-accept" *ngIf="canAcceptRequested(q)" (click)="askAccept()" [disabled]="!!acting">
+        <span class="material-symbols-outlined">check_circle</span>
+        موافقة على سعر العميل
+      </button>
+      <button type="button" class="btn-primary" *ngIf="canPrice(q)" (click)="sendOffer()" [disabled]="!!acting">
+        <span class="material-symbols-outlined text-[18px]" [class.animate-spin]="acting === 'offer'">
+          {{ acting === 'offer' ? 'progress_activity' : 'send' }}
+        </span>
+        {{ q.status === 'offered' ? 'تحديث العرض' : 'إرسال العرض' }}
+      </button>
+    </div>
+  </div>
+</app-modal>
+
+<app-modal [open]="showReject" title="رفض طلب التسعير" maxWidth="480px" (close)="showReject = false">
+  <p class="text-sm text-gray-600 mb-3">السبب هيوصل للعميل في التطبيق.</p>
+  <textarea
+    class="input-field min-h-[100px] py-3"
+    [(ngModel)]="rejectReason"
+    placeholder="مثال: الكمية المطلوبة مش متوفرة حالياً / السعر المقترح أقل من التكلفة"
+  ></textarea>
+  <div class="reason-chips">
+    <button type="button" (click)="rejectReason = 'السعر المقترح أقل من التكلفة'">السعر أقل من التكلفة</button>
+    <button type="button" (click)="rejectReason = 'الكمية المطلوبة غير متوفرة حالياً'">الكمية غير متوفرة</button>
+    <button type="button" (click)="rejectReason = 'الملفات المرفقة غير واضحة، برجاء إعادة الرفع'">الملفات غير واضحة</button>
+  </div>
+  <div class="form-actions mt-5">
+    <button type="button" class="btn-outline" (click)="showReject = false" [disabled]="acting === 'reject'">إلغاء</button>
+    <button type="button" class="btn-primary !bg-red-600 hover:!bg-red-700" (click)="confirmReject()" [disabled]="acting === 'reject'">
+      {{ acting === 'reject' ? 'جاري الرفض...' : 'تأكيد الرفض' }}
+    </button>
+  </div>
+</app-modal>
+
+<app-modal [open]="showAccept" title="الموافقة على سعر العميل" maxWidth="440px" (close)="showAccept = false">
+  <p class="text-sm text-gray-600" *ngIf="selected">
+    هتوافق على السعر اللي طلبه <strong>{{ selected.customerName }}</strong> بإجمالي
+    <strong class="text-brand-primary">{{ money(selected.requestedTotal) }}</strong>؟
+  </p>
+  <div class="form-actions mt-5">
+    <button type="button" class="btn-outline" (click)="showAccept = false" [disabled]="acting === 'accept'">إلغاء</button>
+    <button type="button" class="btn-primary" (click)="confirmAccept()" [disabled]="acting === 'accept'">
+      {{ acting === 'accept' ? 'جاري الموافقة...' : 'موافقة' }}
+    </button>
+  </div>
+</app-modal>

@@ -1,0 +1,81 @@
+<div class="space-y-6">
+  <div class="anim-item page-head flex flex-wrap justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-brand-primary">مركز الإشعارات والتنبيهات</h1>
+      <p class="text-sm text-gray-500 mt-1">14 تنبيهاً يتطلب إجراءً فورياً اليوم</p>
+    </div>
+    <button type="button" class="btn-outline text-sm" (click)="markAll()">تحديد الكل كمقروء</button>
+  </div>
+
+  <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+    <div class="anim-item" *ngFor="let s of stats"><app-stat-card [data]="s"></app-stat-card></div>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+    <div class="anim-item card p-5 xl:col-span-1">
+      <h2 class="font-bold mb-4">إرسال تنبيه جماعي</h2>
+      <form class="space-y-3" [formGroup]="form" (ngSubmit)="send()">
+        <div>
+          <label class="text-sm font-semibold block mb-1">الجمهور</label>
+          <app-select formControlName="audience" [options]="audienceOptions" placeholder="اختر الجمهور"></app-select>
+        </div>
+        <div formGroupName="channels" class="flex flex-wrap gap-3 text-sm">
+          <label class="flex items-center gap-1.5"><input type="checkbox" formControlName="push" /> Push</label>
+          <label class="flex items-center gap-1.5"><input type="checkbox" formControlName="sms" /> SMS</label>
+          <label class="flex items-center gap-1.5"><input type="checkbox" formControlName="email" /> بريد</label>
+        </div>
+        <div>
+          <label class="text-sm font-semibold block mb-1">عنوان الإشعار</label>
+          <input class="input-field" formControlName="title" />
+        </div>
+        <div>
+          <label class="text-sm font-semibold block mb-1">نص الرسالة</label>
+          <textarea class="input-field h-24 py-3" formControlName="message" maxlength="240"></textarea>
+        </div>
+        <div>
+          <label class="text-sm font-semibold block mb-1">Deep Link / كود خصم</label>
+          <div class="grid grid-cols-2 gap-2">
+            <input class="input-field" formControlName="deepLink" placeholder="/offers" />
+            <input class="input-field" formControlName="coupon" placeholder="MIMAR15" />
+          </div>
+        </div>
+        <button type="submit" class="btn-primary w-full text-sm">إرسال فوري</button>
+      </form>
+    </div>
+
+    <div class="anim-item xl:col-span-2 space-y-3">
+      <div class="flex flex-wrap gap-2 mb-2">
+        <button
+          *ngFor="let f of [{k:'all',l:'الكل'},{k:'operations',l:'العمليات'},{k:'inventory',l:'المخزون'},{k:'finance',l:'المالية'},{k:'system',l:'النظام'}]"
+          type="button"
+          class="px-3 py-1 rounded-full text-xs font-bold border"
+          [class.bg-brand-primary]="filter === f.k"
+          [class.text-white]="filter === f.k"
+          (click)="filter = $any(f.k)"
+        >
+          {{ f.l }}
+        </button>
+      </div>
+
+      <div *ngIf="loading" class="space-y-3">
+        <div class="skeleton h-20 w-full" *ngFor="let i of [1,2,3]"></div>
+      </div>
+
+      <div
+        *ngFor="let n of filtered"
+        class="card p-4 border-r-4"
+        [ngClass]="priorityClass(n.priority)"
+        [class.opacity-70]="n.read"
+      >
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="font-bold text-gray-900">{{ n.title }}</p>
+            <p class="text-sm text-gray-600 mt-1">{{ n.message }}</p>
+            <p class="text-xs text-gray-400 mt-2">{{ n.time }}</p>
+          </div>
+          <span *ngIf="!n.read" class="w-2.5 h-2.5 rounded-full bg-brand-gold shrink-0 mt-1"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

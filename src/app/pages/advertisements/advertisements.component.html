@@ -1,0 +1,387 @@
+<div class="space-y-6">
+  <div class="anim-item page-head flex flex-wrap items-end justify-between gap-4">
+    <div class="min-w-0">
+      <div class="title-row">
+        <button type="button" class="am-back" (click)="goBack()" aria-label="رجوع">
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </button>
+        <h1 class="text-2xl font-bold">الإعلانات</h1>
+      </div>
+      <p class="text-sm text-gray-500 mt-1">إعلانات على المنتجات بتظهر في تطبيق معمار، ولما العميل يضغط عليها بتفتحله المنتج</p>
+    </div>
+    <div class="head-actions flex flex-wrap items-center gap-2">
+      <button type="button" class="btn-outline text-sm" (click)="goBack()">
+        <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+        رجوع
+      </button>
+      <button type="button" class="btn-primary text-sm" (click)="openAdd()">
+        <span class="material-symbols-outlined text-[18px]">add</span>
+        إعلان جديد
+      </button>
+    </div>
+  </div>
+
+  <div class="anim-item am-summary">
+    <div class="am-main">
+      <div class="min-w-0">
+        <small>ظاهر في التطبيق دلوقتي</small>
+        <strong>{{ liveCount }} <em>من {{ ads.length }}</em></strong>
+      </div>
+      <button type="button" class="am-new" (click)="openAdd()">
+        <span class="material-symbols-outlined">add</span>
+        إعلان
+      </button>
+    </div>
+    <div class="am-grid">
+      <div>
+        <strong>{{ ads.length }}</strong>
+        <small>إجمالي</small>
+      </div>
+      <div>
+        <strong>{{ ads.length - liveCount }}</strong>
+        <small>متوقف / منتهي</small>
+      </div>
+      <div>
+        <strong>{{ linkedCount }}</strong>
+        <small>مربوط بمنتج</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="anim-item mini-stats grid grid-cols-3 gap-2 sm:gap-3" *ngIf="!loading">
+    <div class="card p-4 flex items-center gap-3">
+      <span class="w-10 h-10 rounded-xl bg-brand-primary/10 text-brand-primary flex items-center justify-center">
+        <span class="material-symbols-outlined">campaign</span>
+      </span>
+      <div>
+        <p class="text-xs text-gray-500">إجمالي الإعلانات</p>
+        <p class="text-lg font-bold">{{ ads.length }}</p>
+      </div>
+    </div>
+    <div class="card p-4 flex items-center gap-3">
+      <span class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
+        <span class="material-symbols-outlined">smartphone</span>
+      </span>
+      <div>
+        <p class="text-xs text-gray-500">ظاهر في التطبيق دلوقتي</p>
+        <p class="text-lg font-bold">{{ liveCount }}</p>
+      </div>
+    </div>
+    <div class="card p-4 flex items-center gap-3">
+      <span class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+        <span class="material-symbols-outlined">link</span>
+      </span>
+      <div>
+        <p class="text-xs text-gray-500">مربوط بمنتج</p>
+        <p class="text-lg font-bold">{{ linkedCount }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="anim-item chip-rail" *ngIf="!loading && ads.length">
+    <button
+      *ngFor="let f of filters"
+      type="button"
+      class="px-3.5 py-1.5 rounded-full border text-sm font-bold transition"
+      [ngClass]="
+        filter === f.key
+          ? 'bg-brand-primary border-brand-primary text-white shadow-sm'
+          : 'bg-white border-gray-200 text-gray-600 hover:border-brand-primary/30'
+      "
+      (click)="filter = f.key"
+    >
+      {{ f.label }}
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div class="card p-4" *ngFor="let i of [1, 2, 3]">
+      <div class="skeleton h-40 w-full"></div>
+      <div class="skeleton h-4 w-2/3 mt-3"></div>
+    </div>
+  </div>
+
+  <div class="ads-grid grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" *ngIf="!loading && visibleAds.length">
+    <article class="ad-card card card-hover p-0 overflow-hidden flex flex-col" *ngFor="let ad of visibleAds">
+      <div class="ad-cover relative h-36 sm:h-40 bg-gray-100 overflow-hidden">
+        <img *ngIf="ad.image; else noImage" [src]="ad.image" [alt]="ad.title" class="w-full h-full object-cover" />
+        <ng-template #noImage>
+          <div class="w-full h-full flex items-center justify-center text-gray-300">
+            <span class="material-symbols-outlined text-[40px]">image</span>
+          </div>
+        </ng-template>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent"></div>
+
+        <div class="absolute top-3 inset-x-3 flex items-center justify-between">
+          <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold shadow-sm" [ngClass]="statusOf(ad).cls">
+            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+            {{ statusOf(ad).label }}
+          </span>
+          <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/40 backdrop-blur-sm text-white text-xs font-bold" title="ترتيب الظهور">
+            <span class="material-symbols-outlined text-[14px]">swap_vert</span>
+            {{ ad.sortOrder }}
+          </span>
+        </div>
+
+        <div class="absolute bottom-3 inset-x-3 text-white">
+          <h3 class="text-base font-bold leading-tight truncate drop-shadow">{{ ad.title }}</h3>
+          <p class="text-xs text-white/75 truncate" *ngIf="ad.titleEn"><bdi>{{ ad.titleEn }}</bdi></p>
+        </div>
+      </div>
+
+      <div class="ad-body p-4 flex-1 flex flex-col gap-3">
+        <p class="ad-desc text-sm text-gray-600 line-clamp-2" *ngIf="ad.description">{{ ad.description }}</p>
+
+        <div class="flex items-center gap-1.5 text-xs text-gray-500">
+          <span class="material-symbols-outlined text-[16px] text-gray-400">calendar_month</span>
+          <span>{{ ad.startDate }}</span>
+          <span class="text-gray-300">—</span>
+          <span [class.text-emerald-600]="!ad.endDate">{{ ad.endDate || 'بدون نهاية' }}</span>
+        </div>
+
+        <ng-container *ngIf="linkedProducts(ad) as linked">
+          <button type="button" class="am-products" [class.is-empty]="!linked.length" (click)="openProducts(ad)">
+            <span class="am-thumbs" *ngIf="linked.length">
+              <ng-container *ngFor="let p of linked | slice: 0 : 3">
+                <img *ngIf="p.image; else amNoThumb" [src]="p.image" [alt]="p.name" />
+                <ng-template #amNoThumb><span><span class="material-symbols-outlined">inventory_2</span></span></ng-template>
+              </ng-container>
+              <span class="am-more" *ngIf="linked.length > 3">+{{ linked.length - 3 }}</span>
+            </span>
+            <span class="am-products-text">
+              <strong>{{ linked.length ? linked.length + ' منتج مربوط' : 'مفيش منتج مربوط' }}</strong>
+              <small>{{ linked.length ? (linked | slice: 0 : 2).map(nameOf).join('، ') : 'اضغط عشان تضيف منتج للإعلان' }}</small>
+            </span>
+            <span class="material-symbols-outlined am-go">{{ linked.length ? 'chevron_left' : 'add_link' }}</span>
+          </button>
+        </ng-container>
+
+        <div class="ad-linked mt-auto" *ngIf="linkedProducts(ad) as linked">
+          <div class="rounded-xl border border-gray-100 overflow-hidden" *ngIf="linked.length; else notLinked">
+            <div class="flex items-center justify-between px-3 py-1.5 bg-gray-50 border-b border-gray-100">
+              <span class="text-xs font-bold text-gray-600">المنتجات المربوطة ({{ linked.length }})</span>
+              <button type="button" class="inline-flex items-center gap-0.5 text-xs font-bold text-brand-primary hover:underline" (click)="openProducts(ad)">
+                <span class="material-symbols-outlined text-[15px]">add</span>
+                إضافة منتج
+              </button>
+            </div>
+            <div class="divide-y divide-gray-50">
+              <div class="flex items-center gap-2.5 px-3 py-2" *ngFor="let p of linked | slice: 0 : 3">
+                <img *ngIf="p.image; else noThumb" [src]="p.image" [alt]="p.name" class="w-8 h-8 rounded-lg object-cover bg-gray-50 shrink-0" />
+                <ng-template #noThumb>
+                  <span class="w-8 h-8 rounded-lg bg-gray-50 text-gray-300 flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-[16px]">inventory_2</span>
+                  </span>
+                </ng-template>
+                <span class="text-sm text-gray-800 truncate flex-1 min-w-0">{{ p.name }}</span>
+                <span class="text-[10px] px-1.5 rounded-full bg-red-50 text-red-600 font-semibold shrink-0" *ngIf="!p.active">مخفي</span>
+                <span class="text-xs font-semibold text-gray-500 shrink-0 tabular-nums" *ngIf="p.price">{{ p.price }} ج.م</span>
+              </div>
+              <button
+                type="button"
+                class="w-full px-3 py-1.5 text-xs font-bold text-brand-primary hover:bg-brand-primary/5 text-center"
+                *ngIf="linked.length > 3"
+                (click)="openProducts(ad)"
+              >
+                + {{ linked.length - 3 }} منتجات كمان
+              </button>
+            </div>
+          </div>
+          <ng-template #notLinked>
+            <button
+              type="button"
+              class="w-full flex items-center justify-center gap-1 py-2.5 rounded-xl border border-dashed border-amber-300 bg-amber-50/50 text-amber-700 text-xs font-bold hover:bg-amber-50"
+              (click)="openProducts(ad)"
+            >
+              <span class="material-symbols-outlined text-[16px]">add_link</span>
+              إضافة منتج للإعلان
+            </button>
+          </ng-template>
+        </div>
+      </div>
+
+      <footer class="ad-foot flex items-center justify-between px-4 py-2.5 border-t border-gray-100">
+        <button type="button" class="am-switch" [class.is-on]="ad.active" (click)="toggleActive(ad)" [attr.aria-pressed]="ad.active">
+          <span class="am-sw"></span>
+          {{ ad.active ? 'مفعّل' : 'متوقف' }}
+        </button>
+        <button
+          type="button"
+          class="ad-toggle-desk inline-flex items-center gap-2 text-xs font-semibold"
+          [class.text-brand-primary]="ad.active"
+          [class.text-gray-500]="!ad.active"
+          (click)="toggleActive(ad)"
+          [attr.aria-pressed]="ad.active"
+        >
+          <span class="relative w-9 h-5 rounded-full transition-colors" [ngClass]="ad.active ? 'bg-brand-primary' : 'bg-gray-300'">
+            <span class="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all" [ngClass]="ad.active ? 'right-0.5' : 'right-[1.125rem]'"></span>
+          </span>
+          {{ ad.active ? 'مفعّل' : 'متوقف' }}
+        </button>
+        <div class="flex items-center">
+          <button type="button" class="ad-icon-btn w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-brand-primary hover:bg-brand-primary/5" (click)="openEdit(ad)" aria-label="تعديل" title="تعديل">
+            <span class="material-symbols-outlined text-[19px]">edit</span>
+          </button>
+          <button type="button" class="ad-icon-btn is-danger w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50" (click)="openDelete(ad)" aria-label="حذف" title="حذف">
+            <span class="material-symbols-outlined text-[19px]">delete</span>
+          </button>
+        </div>
+      </footer>
+    </article>
+  </div>
+
+  <div class="card p-10 text-center" *ngIf="!loading && !visibleAds.length">
+    <span class="w-14 h-14 mx-auto rounded-full bg-brand-primary/10 text-brand-primary flex items-center justify-center">
+      <span class="material-symbols-outlined">campaign</span>
+    </span>
+    <p class="font-bold mt-3">{{ ads.length ? 'مفيش إعلانات في الفلتر ده' : 'لسه مفيش إعلانات' }}</p>
+    <p class="text-sm text-gray-500 mt-1" *ngIf="!ads.length">اعمل أول إعلان واختار المنتج اللي هيظهر عليه</p>
+    <button type="button" class="btn-primary text-sm mt-4" (click)="openAdd()" *ngIf="!ads.length">
+      <span class="material-symbols-outlined text-[18px]">add</span>
+      إعلان جديد
+    </button>
+  </div>
+</div>
+
+<app-modal [open]="showForm" [title]="formTitle" maxWidth="640px" (close)="showForm = false">
+  <form class="grid grid-cols-1 sm:grid-cols-2 gap-4" [formGroup]="form" (ngSubmit)="save()">
+    <div class="sm:col-span-2">
+      <label class="form-label">المنتجات المعلن عنها <span class="text-red-500">*</span></label>
+      <app-select
+        [options]="pickerOptions"
+        [searchable]="true"
+        [placeholder]="selectedProducts.length ? '+ ضيف منتج كمان' : 'اختار المنتج'"
+        [ngModelOptions]="{ standalone: true }"
+        [(ngModel)]="pickerValue"
+        (selectionChange)="addProduct($event)"
+      ></app-select>
+      <p *ngIf="err('productIds')" class="form-error">اختار منتج واحد على الأقل</p>
+      <div class="space-y-1.5 mt-2" *ngIf="selectedProducts.length">
+        <div class="flex items-center gap-3 p-2 rounded-xl bg-gray-50 border border-gray-100" *ngFor="let p of selectedProducts">
+          <img *ngIf="p.image" [src]="p.image" [alt]="p.name" class="w-10 h-10 rounded-lg object-cover bg-white" />
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-semibold truncate">{{ p.name }}</p>
+            <p class="text-xs text-gray-500">
+              <bdi *ngIf="p.nameEn">{{ p.nameEn }} · </bdi>{{ p.price ? p.price + ' ج.م' : '' }}
+            </p>
+          </div>
+          <button type="button" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50" (click)="removeProduct(p.id)" aria-label="شيل المنتج">
+            <span class="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label class="form-label">عنوان الإعلان <span class="text-red-500">*</span></label>
+      <input class="input-field" formControlName="title" placeholder="مثال: خصم على دهانات جوتن" />
+      <p *ngIf="err('title')" class="form-error">العنوان مطلوب</p>
+    </div>
+    <div>
+      <label class="form-label">Title (EN)</label>
+      <input class="input-field" formControlName="titleEn" dir="ltr" placeholder="Jotun paints offer" />
+    </div>
+
+    <div class="sm:col-span-2">
+      <app-image-dropzone formControlName="image" label="صورة الإعلان (بانر عريض)" hint="اسحب صورة عرضها ضعف طولها أو اضغط للاختيار"></app-image-dropzone>
+      <p *ngIf="err('image')" class="form-error">صورة الإعلان مطلوبة</p>
+    </div>
+
+    <div>
+      <label class="form-label">الوصف بالعربي</label>
+      <textarea class="input-field min-h-[76px] py-3" formControlName="description" placeholder="اختياري"></textarea>
+    </div>
+    <div>
+      <label class="form-label">Description (EN)</label>
+      <textarea class="input-field min-h-[76px] py-3" formControlName="descriptionEn" dir="ltr" placeholder="Optional"></textarea>
+    </div>
+
+    <div>
+      <label class="form-label">يبدأ من <span class="text-red-500">*</span></label>
+      <input type="date" class="input-field" formControlName="startDate" />
+    </div>
+    <div>
+      <label class="form-label">ينتهي في</label>
+      <input type="date" class="input-field" formControlName="endDate" />
+      <p class="form-hint">سيبه فاضي لو الإعلان مفتوح</p>
+    </div>
+
+    <div>
+      <label class="form-label">ترتيب الظهور</label>
+      <input type="number" min="0" class="input-field" formControlName="sortOrder" />
+    </div>
+    <label class="flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-200 cursor-pointer self-end">
+      <span>
+        <span class="block text-sm font-bold text-gray-800">مفعّل</span>
+        <span class="block text-xs text-gray-500">يظهر في التطبيق خلال الفترة</span>
+      </span>
+      <input type="checkbox" class="w-5 h-5 accent-[#0b4a3a]" formControlName="active" />
+    </label>
+
+    <div class="form-actions">
+      <button type="button" class="btn-outline" (click)="showForm = false">إلغاء</button>
+      <button type="submit" class="btn-primary" [disabled]="saving">
+        {{ saving ? 'جاري الحفظ...' : mode === 'edit' ? 'حفظ التعديلات' : 'نشر الإعلان' }}
+      </button>
+    </div>
+  </form>
+</app-modal>
+
+<app-modal [open]="showProducts" [title]="'منتجات «' + (productsAd?.title || '') + '»'" maxWidth="520px" (close)="showProducts = false">
+  <div class="space-y-3">
+    <div>
+      <label class="form-label">ضيف منتج</label>
+      <app-select
+        [options]="draftOptions"
+        [searchable]="true"
+        placeholder="ابحث عن المنتج واختاره"
+        [(ngModel)]="productsPicker"
+        (selectionChange)="addDraftProduct($event)"
+      ></app-select>
+      <p class="form-hint">اختار منتج من القائمة وهيتضاف تحت على طول، وتقدر تضيف أكتر من منتج.</p>
+    </div>
+
+    <div class="rounded-xl border border-gray-100 overflow-hidden">
+      <div class="px-3 py-2 bg-gray-50 border-b border-gray-100 text-xs font-bold text-gray-600">
+        المنتجات في الإعلان ({{ productsDraft.length }})
+      </div>
+      <div class="divide-y divide-gray-50 max-h-72 overflow-y-auto" *ngIf="draftProducts.length; else noDraft">
+        <div class="flex items-center gap-2.5 px-3 py-2" *ngFor="let p of draftProducts">
+          <img *ngIf="p.image; else draftThumb" [src]="p.image" [alt]="p.name" class="w-9 h-9 rounded-lg object-cover bg-gray-50 shrink-0" />
+          <ng-template #draftThumb>
+            <span class="w-9 h-9 rounded-lg bg-gray-50 text-gray-300 flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined text-[18px]">inventory_2</span>
+            </span>
+          </ng-template>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-semibold text-gray-800 truncate">{{ p.name }}</p>
+            <p class="text-xs text-gray-500" *ngIf="p.price">{{ p.price }} ج.م</p>
+          </div>
+          <button type="button" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50" (click)="removeDraftProduct(p.id)" aria-label="شيل المنتج" title="شيل من الإعلان">
+            <span class="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
+      </div>
+      <ng-template #noDraft>
+        <p class="px-3 py-6 text-center text-sm text-gray-400">مفيش منتجات لسه — اختار من القائمة فوق</p>
+      </ng-template>
+    </div>
+
+    <div class="flex justify-end gap-3 pt-1">
+      <button type="button" class="btn-outline" (click)="showProducts = false">إلغاء</button>
+      <button type="button" class="btn-primary" [disabled]="savingProducts" (click)="saveProducts()">
+        {{ savingProducts ? 'جاري الحفظ...' : 'حفظ المنتجات' }}
+      </button>
+    </div>
+  </div>
+</app-modal>
+
+<app-confirm-dialog
+  [open]="showConfirm"
+  title="حذف الإعلان"
+  [message]="'حذف «' + (selected?.title || '') + '»؟ هيختفي من التطبيق فورًا.'"
+  confirmText="حذف"
+  [danger]="true"
+  (confirm)="confirmDelete()"
+  (cancel)="showConfirm = false"
+></app-confirm-dialog>

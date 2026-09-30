@@ -1,0 +1,49 @@
+<div class="dropzone-wrap">
+  <label class="form-label" *ngIf="label">{{ label }}</label>
+
+  <div
+    class="dropzone"
+    [class.is-dragging]="dragging"
+    [class.has-preview]="!!value"
+    [class.is-disabled]="disabled"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave($event)"
+    (drop)="onDrop($event)"
+    (click)="!disabled && fileInput.click()"
+    role="button"
+    tabindex="0"
+    (keydown.enter)="!disabled && fileInput.click()"
+    (keydown.space)="$event.preventDefault(); !disabled && fileInput.click()"
+  >
+    <ng-container *ngIf="!value; else preview">
+      <span class="material-symbols-outlined icon">cloud_upload</span>
+      <p class="title">{{ hint }}</p>
+      <p class="sub">PNG · JPG · WEBP · حتى {{ maxSizeMb }}MB</p>
+    </ng-container>
+
+    <ng-template #preview>
+      <img [src]="value" alt="معاينة الصورة" class="preview" />
+      <div class="preview-actions" (click)="$event.stopPropagation()">
+        <button type="button" class="btn-change" (click)="fileInput.click()" [disabled]="disabled">
+          <span class="material-symbols-outlined text-[16px]">swap_horiz</span>
+          تغيير
+        </button>
+        <button type="button" class="btn-remove" (click)="clear($event)" [disabled]="disabled">
+          <span class="material-symbols-outlined text-[16px]">delete</span>
+          حذف
+        </button>
+      </div>
+    </ng-template>
+
+    <input
+      #fileInput
+      type="file"
+      [accept]="accept"
+      hidden
+      [disabled]="disabled"
+      (change)="onFileInput($event)"
+    />
+  </div>
+
+  <p class="form-error" *ngIf="error">{{ error }}</p>
+</div>

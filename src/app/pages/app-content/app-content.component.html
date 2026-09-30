@@ -1,0 +1,306 @@
+<div class="app-content-page space-y-6">
+  <section class="page-hero anim-item">
+    <div class="min-w-0">
+      <span class="hero-chip">
+        <span class="material-symbols-outlined text-[14px]">smartphone</span>
+        واجهة التطبيق
+      </span>
+      <h1>إدارة محتوى التطبيق</h1>
+      <p>تحكم في ما يظهر للمستخدم على الهوم: الإعلانات، الأقسام، والمنتجات الجديدة</p>
+    </div>
+    <div class="hero-actions">
+      <a class="btn-primary text-sm" routerLink="/advertisements">
+        <span class="material-symbols-outlined text-[18px]">add</span>
+        إعلان جديد
+      </a>
+    </div>
+  </section>
+
+  <div class="ac-m anim-item">
+    <div class="ac-summary">
+      <div class="ac-summary-main">
+        <div class="min-w-0">
+          <small>إعلانات ظاهرة الآن</small>
+          <strong>{{ stats[0].value }} <em>من {{ stats[3].value }}</em></strong>
+        </div>
+        <a class="ac-new" routerLink="/advertisements">
+          <span class="material-symbols-outlined">add</span>
+          إعلان
+        </a>
+      </div>
+      <div class="ac-summary-grid">
+        <div>
+          <strong>{{ stats[1].value }}</strong>
+          <small>قسم ظاهر</small>
+        </div>
+        <div>
+          <strong>{{ stats[2].value }}</strong>
+          <small>وصل حديثاً</small>
+        </div>
+        <div>
+          <strong>{{ categories.length }}</strong>
+          <small>إجمالي الأقسام</small>
+        </div>
+      </div>
+    </div>
+
+    <nav class="ac-nav">
+      <button type="button" (click)="scrollTo(adsSec)">
+        <span class="material-symbols-outlined">campaign</span>
+        الإعلانات
+      </button>
+      <button type="button" (click)="scrollTo(newSec)">
+        <span class="material-symbols-outlined">new_releases</span>
+        الجديد
+      </button>
+      <button type="button" (click)="scrollTo(catSec)">
+        <span class="material-symbols-outlined">category</span>
+        الأقسام
+      </button>
+    </nav>
+  </div>
+
+  <div class="ac-stats grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+    <div class="anim-item" *ngFor="let s of stats">
+      <app-stat-card [data]="s" [loading]="loading"></app-stat-card>
+    </div>
+  </div>
+
+  <section class="anim-item panel" #adsSec>
+    <header class="panel-head">
+      <div>
+        <h2>إعلانات الهوم <span class="head-count" *ngIf="ads.length">{{ ads.length }}</span></h2>
+        <p>الإعلانات اللي بتظهر أعلى التطبيق، ومع الضغط بتفتح المنتج</p>
+      </div>
+      <a class="btn-outline text-sm" routerLink="/advertisements">إضافة إعلان</a>
+      <a class="head-icon" routerLink="/advertisements">
+        <span class="material-symbols-outlined">add</span>
+        إضافة
+      </a>
+    </header>
+
+    <div class="empty-block" *ngIf="!ads.length && !loading">
+      <span class="material-symbols-outlined">campaign</span>
+      <p>لا توجد إعلانات ظاهرة حالياً</p>
+      <a class="btn-outline text-sm mt-3" routerLink="/advertisements">إضافة إعلان</a>
+    </div>
+
+    <div class="banners-grid" *ngIf="ads.length">
+      <article class="banner-card" *ngFor="let ad of ads" [attr.data-kind]="adKind(ad)">
+        <div class="banner-cover" [class.is-empty]="!ad.image">
+          <img *ngIf="ad.image" [src]="ad.image" [alt]="ad.title" loading="lazy" />
+          <span *ngIf="!ad.image" class="material-symbols-outlined">campaign</span>
+          <div class="status-badge" [attr.data-kind]="adKind(ad)">
+            <span class="material-symbols-outlined">{{ adStatusIcon(ad) }}</span>
+            {{ adStatus(ad) }}
+          </div>
+        </div>
+        <div class="banner-body">
+          <h3>{{ ad.title }}</h3>
+          <p class="sub" *ngIf="ad.description">{{ ad.description }}</p>
+          <div class="banner-meta">
+            <span class="meta-chip is-products">
+              <span class="material-symbols-outlined">inventory_2</span>
+              {{ ad.productIds.length }} منتج
+            </span>
+            <span class="meta-chip" *ngIf="ad.endDate">
+              <span class="material-symbols-outlined">event</span>
+              حتى {{ shortDate(ad.endDate) }}
+            </span>
+            <div class="bm-ctrl">
+              <a class="bm-edit" routerLink="/advertisements" aria-label="تعديل الإعلان">
+                <span class="material-symbols-outlined">edit</span>
+              </a>
+              <button
+                type="button"
+                class="sw-btn"
+                [class.is-on]="ad.active"
+                [disabled]="busyId === 'ad-' + ad.id"
+                (click)="toggleAd(ad)"
+                [attr.aria-label]="ad.active ? 'إيقاف الإعلان' : 'تشغيل الإعلان'"
+              >
+                <span class="sw"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="banner-actions">
+          <button
+            type="button"
+            class="toggle-btn"
+            [attr.data-kind]="adKind(ad)"
+            [disabled]="busyId === 'ad-' + ad.id"
+            (click)="toggleAd(ad)"
+          >
+            <span class="material-symbols-outlined">{{ ad.active ? 'pause_circle' : 'play_circle' }}</span>
+            {{ ad.active ? 'إيقاف' : 'تشغيل' }}
+          </button>
+          <a class="edit-btn" routerLink="/advertisements" aria-label="تعديل الإعلان">
+            <span class="material-symbols-outlined">edit</span>
+            تعديل
+          </a>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="anim-item panel" #newSec>
+    <header class="panel-head">
+      <div>
+        <h2>وصل حديثاً <span class="head-count" *ngIf="newArrivals.length">{{ newArrivals.length }}</span></h2>
+        <p>المنتجات اللي بتظهر كجديدة في التطبيق</p>
+      </div>
+      <button type="button" class="btn-primary text-sm" (click)="openPick()" [disabled]="!pickOptions.length">
+        <span class="material-symbols-outlined text-[18px]">add</span>
+        إضافة منتج
+      </button>
+      <button type="button" class="head-icon" (click)="openPick()" [disabled]="!pickOptions.length">
+        <span class="material-symbols-outlined">add</span>
+        إضافة
+      </button>
+    </header>
+
+    <div class="empty-block" *ngIf="!newArrivals.length && !loading">
+      <span class="material-symbols-outlined">new_releases</span>
+      <p>لا توجد منتجات في قسم وصل حديثاً</p>
+      <button type="button" class="btn-outline text-sm mt-3" (click)="openPick()" [disabled]="!pickOptions.length">إضافة منتج</button>
+    </div>
+
+    <div class="na-list" *ngIf="newArrivals.length">
+      <div class="na-card">
+        <article class="na-row" *ngFor="let p of newArrivals | slice: 0 : (naAll ? newArrivals.length : 4)">
+          <div class="na-thumb" [class.is-empty]="!p.image">
+            <img *ngIf="p.image" [src]="p.image" [alt]="p.name" loading="lazy" />
+            <span *ngIf="!p.image" class="material-symbols-outlined">image</span>
+          </div>
+          <div class="na-info">
+            <strong>{{ p.name }}</strong>
+            <span>
+              <b>{{ p.price | number:'1.0-2' }} <small>ر.س</small></b>
+              <i></i>
+              مخزون {{ p.stock }}
+            </span>
+          </div>
+          <button
+            type="button"
+            class="na-remove"
+            [disabled]="busyId === 'prod-' + p.id"
+            (click)="removeArrival(p)"
+            aria-label="إزالة من وصل حديثاً"
+          >
+            <span class="material-symbols-outlined">remove</span>
+          </button>
+        </article>
+      </div>
+      <button type="button" class="na-more" *ngIf="newArrivals.length > 4" (click)="naAll = !naAll">
+        {{ naAll ? 'عرض أقل' : 'عرض الكل (' + newArrivals.length + ')' }}
+        <span class="material-symbols-outlined">{{ naAll ? 'expand_less' : 'expand_more' }}</span>
+      </button>
+    </div>
+
+    <div class="products-grid" *ngIf="newArrivals.length">
+      <article class="product-tile" *ngFor="let p of newArrivals">
+        <div class="product-cover" [class.is-empty]="!p.image">
+          <img *ngIf="p.image" [src]="p.image" [alt]="p.name" loading="lazy" />
+          <span *ngIf="!p.image" class="material-symbols-outlined">image</span>
+          <span class="new-chip">جديد</span>
+          <button
+            type="button"
+            class="tile-x"
+            [disabled]="busyId === 'prod-' + p.id"
+            (click)="removeArrival(p)"
+            aria-label="إزالة من القسم"
+          >
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div class="product-body">
+          <p class="sku" *ngIf="p.sku">{{ p.sku }}</p>
+          <h3>{{ p.name }}</h3>
+          <p class="product-price">{{ p.price | number:'1.0-2' }} <small>ر.س</small></p>
+          <p class="en" dir="ltr" *ngIf="p.nameEn">{{ p.nameEn }}</p>
+          <div class="product-stats">
+            <div>
+              <span class="lbl">السعر</span>
+              <strong>{{ p.price | number:'1.0-2' }} ر.س</strong>
+            </div>
+            <div>
+              <span class="lbl">المخزون</span>
+              <strong>{{ p.stock }}</strong>
+            </div>
+          </div>
+          <div class="tile-actions">
+            <a class="link-btn" routerLink="/products">فتح المنتج</a>
+            <button
+              type="button"
+              class="ghost-danger"
+              [disabled]="busyId === 'prod-' + p.id"
+              (click)="removeArrival(p)"
+            >
+              إزالة من القسم
+            </button>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="anim-item panel" #catSec>
+    <header class="panel-head">
+      <div>
+        <h2>أقسام الهوم <span class="head-count" *ngIf="categories.length">{{ visibleCategoryCount }}/{{ categories.length }}</span></h2>
+        <p>أظهر أو أخفِ الأقسام الرئيسية من التطبيق</p>
+      </div>
+      <a class="link-btn" routerLink="/categories">إدارة الفئات</a>
+      <a class="head-icon" routerLink="/categories">
+        <span class="material-symbols-outlined">tune</span>
+        إدارة
+      </a>
+    </header>
+
+    <div class="empty-block" *ngIf="!categories.length && !loading">
+      <span class="material-symbols-outlined">category</span>
+      <p>لا توجد أقسام رئيسية بعد</p>
+    </div>
+
+    <div class="cats-grid" *ngIf="categories.length">
+      <article class="cat-tile" *ngFor="let c of categories" [class.is-off]="!isCategoryVisible(c)">
+        <div class="cat-icon" [class.has-image]="c.image && !brokenImages.has(c.id)">
+          <img *ngIf="c.image && !brokenImages.has(c.id); else catGlyph" [src]="c.image" [alt]="c.name" loading="lazy" (error)="brokenImages.add(c.id)" />
+          <ng-template #catGlyph>
+            <span class="material-symbols-outlined">{{ categoryIcon(c) }}</span>
+          </ng-template>
+        </div>
+        <div class="min-w-0 flex-1">
+          <h3>{{ c.name }}</h3>
+          <p class="en" dir="ltr" *ngIf="c.nameEn">{{ c.nameEn }}</p>
+          <p class="cat-state">{{ isCategoryVisible(c) ? 'ظاهر في التطبيق' : 'مخفي من التطبيق' }}</p>
+        </div>
+        <button
+          type="button"
+          class="toggle-btn"
+          [class.is-on]="isCategoryVisible(c)"
+          [disabled]="busyId === 'cat-' + c.id"
+          (click)="toggleCategory(c)"
+        >
+          <span class="sw-text">{{ isCategoryVisible(c) ? 'ظاهر في التطبيق' : 'مخفي' }}</span>
+          <span class="sw"></span>
+        </button>
+      </article>
+    </div>
+  </section>
+</div>
+
+<app-modal [open]="showPick" title="إضافة إلى وصل حديثاً" maxWidth="480px" (close)="showPick = false">
+  <form class="grid gap-4" [formGroup]="pickForm" (ngSubmit)="addArrival()">
+    <div>
+      <label class="form-label">المنتج</label>
+      <app-select formControlName="productId" [options]="pickOptions" placeholder="اختر منتجاً"></app-select>
+      <p class="text-xs text-gray-400 mt-2">المنتج هيتعلم كجديد ويظهر في قسم وصل حديثاً</p>
+    </div>
+    <div class="form-actions">
+      <button type="button" class="btn-outline" (click)="showPick = false">إلغاء</button>
+      <button type="submit" class="btn-primary" [disabled]="!!busyId">إضافة</button>
+    </div>
+  </form>
+</app-modal>

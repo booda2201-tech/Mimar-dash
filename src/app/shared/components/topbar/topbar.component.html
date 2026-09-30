@@ -1,0 +1,80 @@
+<header class="topbar-shell">
+  <div class="search-wrap">
+    <span class="search-ico material-symbols-outlined" aria-hidden="true">search</span>
+    <input
+      type="search"
+      class="search-field"
+      placeholder="بحث في المنتجات والطلبات..."
+    />
+    <kbd class="search-kbd">⌘K</kbd>
+  </div>
+
+  <div class="actions">
+    <span class="date-chip">
+      <span class="material-symbols-outlined">calendar_today</span>
+      {{ todayHijri }} · {{ todayGregorian }}
+    </span>
+
+    <button type="button" class="add-btn" (click)="addProduct()">
+      <span class="material-symbols-outlined">add</span>
+      إضافة منتج
+    </button>
+
+    <div class="live-pill">
+      <span class="live-dot"></span>
+      <span class="live-label-full">المتجر متصل</span>
+      <span class="live-label-short">متصل</span>
+    </div>
+
+    <div class="action-cluster" #profileWrap>
+      <button
+        type="button"
+        class="cluster-btn is-add"
+        (click)="addProduct()"
+        aria-label="إضافة منتج"
+      >
+        <span class="material-symbols-outlined">add</span>
+      </button>
+
+      <button
+        type="button"
+        class="cluster-btn is-profile profile-chip"
+        [class.is-open]="menuOpen"
+        (click)="toggleProfile($event)"
+        aria-haspopup="menu"
+        [attr.aria-expanded]="menuOpen"
+        [attr.aria-label]="'حساب ' + staffName"
+      >
+        <span class="material-symbols-outlined profile-ico">person</span>
+        <span class="profile-avatar" aria-hidden="true">{{ staffInitial }}</span>
+        <span class="profile-meta">
+          <span class="profile-name">{{ staffName }}</span>
+          <span class="profile-role">Super Admin</span>
+        </span>
+        <span class="profile-caret material-symbols-outlined">{{ menuOpen ? 'expand_less' : 'expand_more' }}</span>
+      </button>
+
+      <div class="profile-menu" *ngIf="menuOpen" role="menu">
+        <div class="profile-menu-head">
+          <span class="profile-avatar sm">{{ staffInitial }}</span>
+          <div>
+            <p class="profile-name">{{ staffName }}</p>
+            <p class="profile-role">Super Admin</p>
+          </div>
+        </div>
+        <a routerLink="/settings" class="profile-menu-item" role="menuitem" (click)="closeMenu()">
+          <span class="material-symbols-outlined">settings</span>
+          الإعدادات
+        </a>
+        <a routerLink="/team" class="profile-menu-item" role="menuitem" (click)="closeMenu()">
+          <span class="material-symbols-outlined">manage_accounts</span>
+          إدارة الفريق
+        </a>
+        <button type="button" class="profile-menu-item danger" role="menuitem" (click)="logout()">
+          <span class="material-symbols-outlined">logout</span>
+          تسجيل الخروج
+        </button>
+      </div>
+    </div>
+  </div>
+</header>

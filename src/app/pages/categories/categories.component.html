@@ -1,0 +1,343 @@
+<div class="space-y-6">
+  <div class="anim-item page-head flex flex-wrap items-end justify-between gap-4">
+    <div class="title-row">
+      <button type="button" class="ct-back" (click)="goBack()" aria-label="رجوع">
+        <span class="material-symbols-outlined">arrow_forward</span>
+      </button>
+      <div class="min-w-0">
+        <h1 class="text-2xl font-bold">إدارة الفئات</h1>
+        <p class="text-sm text-gray-500 mt-1">فئات رئيسية، وتحت كل واحدة الفئات الفرعية اللي بتظهر في التطبيق</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 ct-add-desk">
+      <button type="button" class="btn-primary text-sm" (click)="openAdd()">
+        <span class="material-symbols-outlined text-[18px]">create_new_folder</span>
+        إضافة فئة رئيسية
+      </button>
+    </div>
+  </div>
+
+  <div class="anim-item ct-summary">
+    <div class="ct-main">
+      <div class="min-w-0">
+        <small>فئات رئيسية</small>
+        <strong>{{ mainCount }} <em>فئة</em></strong>
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" class="ct-new" (click)="openAdd()">
+          <span class="material-symbols-outlined">create_new_folder</span>
+          فئة
+        </button>
+      </div>
+    </div>
+    <div class="ct-grid">
+      <div>
+        <strong>{{ subCount }}</strong>
+        <small>فئة فرعية</small>
+      </div>
+      <div>
+        <strong>{{ categories.length }}</strong>
+        <small>إجمالي الفئات</small>
+      </div>
+      <div>
+        <strong>{{ categorizedProducts }}</strong>
+        <small>منتج مصنّف</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="anim-item ct-stats grid grid-cols-3 gap-2 sm:gap-3" *ngIf="!loading">
+    <div class="card p-3 sm:p-4 flex flex-col sm:flex-row items-center gap-1.5 sm:gap-3 text-center sm:text-start">
+      <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand-primary/10 text-brand-primary flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-[20px] sm:text-[24px]">folder</span>
+      </span>
+      <div class="min-w-0 w-full flex flex-col">
+        <p class="order-2 sm:order-1 text-[11px] sm:text-xs text-gray-500 truncate">فئات رئيسية</p>
+        <p class="order-1 sm:order-2 text-xl sm:text-lg font-bold leading-tight">{{ mainCount }}</p>
+      </div>
+    </div>
+    <div class="card p-3 sm:p-4 flex flex-col sm:flex-row items-center gap-1.5 sm:gap-3 text-center sm:text-start">
+      <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-[20px] sm:text-[24px]">account_tree</span>
+      </span>
+      <div class="min-w-0 w-full flex flex-col">
+        <p class="order-2 sm:order-1 text-[11px] sm:text-xs text-gray-500 truncate">فئات فرعية</p>
+        <p class="order-1 sm:order-2 text-xl sm:text-lg font-bold leading-tight">{{ subCount }}</p>
+      </div>
+    </div>
+    <div class="card p-3 sm:p-4 flex flex-col sm:flex-row items-center gap-1.5 sm:gap-3 text-center sm:text-start">
+      <span class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+        <span class="material-symbols-outlined text-[20px] sm:text-[24px]">inventory_2</span>
+      </span>
+      <div class="min-w-0 w-full flex flex-col">
+        <p class="order-2 sm:order-1 text-[11px] sm:text-xs text-gray-500 truncate">منتجات مصنّفة</p>
+        <p class="order-1 sm:order-2 text-xl sm:text-lg font-bold leading-tight">{{ categorizedProducts }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="anim-item relative max-w-md" *ngIf="!loading && categories.length">
+    <span class="material-symbols-outlined absolute top-1/2 -translate-y-1/2 right-3 text-gray-400 text-[20px]">search</span>
+    <input
+      class="input-field pr-10"
+      placeholder="ابحث باسم الفئة بالعربي أو الإنجليزي..."
+      [value]="search"
+      (input)="search = $any($event.target).value"
+    />
+  </div>
+
+  <div *ngIf="loading" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <div class="card p-5" *ngFor="let i of [1, 2]">
+      <div class="skeleton h-32 w-full"></div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start" *ngIf="!loading && roots.length">
+    <article class="anim-item card p-0 overflow-hidden" *ngFor="let root of roots">
+      <header class="p-4">
+        <div class="rc-head">
+          <div class="rc-thumb">
+            <img *ngIf="root.image; else rootIcon" [src]="root.image" [alt]="root.name" />
+            <ng-template #rootIcon><span class="material-symbols-outlined">folder</span></ng-template>
+            <span class="rc-dot" [class.is-off]="root.status !== 'active'"></span>
+          </div>
+
+          <div class="rc-info">
+            <h3 class="rc-title">{{ root.name }}</h3>
+            <p class="rc-en" *ngIf="root.nameEn"><bdi>{{ root.nameEn }}</bdi></p>
+            <div class="rc-meta">
+              <app-status-badge [status]="root.status"></app-status-badge>
+              <span class="rc-date" *ngIf="shortDate(root.createdAt)">
+                <span class="material-symbols-outlined">calendar_today</span>
+                {{ shortDate(root.createdAt) }}
+              </span>
+            </div>
+          </div>
+
+          <div class="rc-actions">
+            <button type="button" class="rc-btn" (click)="openEdit(root)" aria-label="تعديل" title="تعديل">
+              <span class="material-symbols-outlined">edit</span>
+            </button>
+            <button type="button" class="rc-btn is-danger" (click)="openDelete(root)" aria-label="حذف" title="حذف">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </div>
+        </div>
+
+        <p class="rc-desc" *ngIf="root.description">
+          <span class="material-symbols-outlined">notes</span>
+          {{ root.description }}
+        </p>
+
+        <div class="flex items-center flex-wrap gap-2 mt-3.5">
+          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-semibold" title="ترتيب العرض في التطبيق">
+            <span class="material-symbols-outlined text-[15px]">format_list_numbered</span>
+            ترتيب {{ root.sortOrder ?? 0 }}
+          </span>
+          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
+            <span class="material-symbols-outlined text-[15px]">inventory_2</span>
+            {{ productsIn(root.id) }} منتج
+          </span>
+          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold">
+            <span class="material-symbols-outlined text-[15px]">account_tree</span>
+            {{ childrenOf(root.id).length }} فئة فرعية
+          </span>
+          <button
+            type="button"
+            class="mr-auto inline-flex items-center gap-0.5 px-2 py-1 rounded-lg text-xs font-semibold text-gray-500 hover:text-brand-primary hover:bg-brand-primary/5"
+            (click)="toggle(root.id)"
+            *ngIf="childrenOf(root.id).length"
+          >
+            {{ collapsed.has(root.id) ? 'عرض الفرعية' : 'إخفاء الفرعية' }}
+            <span class="material-symbols-outlined text-[18px]">{{ collapsed.has(root.id) ? 'expand_more' : 'expand_less' }}</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="px-4 pb-4 pt-3 border-t border-gray-100 bg-gray-50/60" *ngIf="!collapsed.has(root.id)">
+        <div class="space-y-1.5 border-r-2 border-brand-primary/15 pr-2.5" *ngIf="childrenOf(root.id).length">
+          <ng-container *ngTemplateOutlet="childrenTpl; context: { $implicit: root.id, depth: 0 }"></ng-container>
+        </div>
+        <p class="text-xs text-gray-400 text-center py-1" *ngIf="!childrenOf(root.id).length">مفيش فئات فرعية لسه</p>
+        <button
+          type="button"
+          class="mt-2.5 w-full flex items-center justify-center gap-1 py-2 rounded-xl border border-dashed border-brand-primary/30 text-brand-primary text-xs font-bold bg-white hover:bg-brand-primary/5"
+          (click)="openAdd(root.id)"
+        >
+          <span class="material-symbols-outlined text-[18px]">add</span>
+          إضافة فئة فرعية
+        </button>
+      </div>
+    </article>
+  </div>
+
+  <ng-template #childrenTpl let-parentId let-depth="depth">
+    <ng-container *ngFor="let child of childrenOf(parentId)">
+      <div
+        class="group flex items-center gap-3 p-2 pl-1.5 rounded-xl bg-white border border-gray-100 hover:border-brand-primary/20 hover:shadow-sm transition"
+        [style.margin-inline-start.rem]="depth * 1.25"
+      >
+        <div class="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-gray-50 text-gray-400 flex items-center justify-center">
+          <img *ngIf="child.image; else childIcon" [src]="child.image" [alt]="child.name" class="w-full h-full object-cover" />
+          <ng-template #childIcon><span class="material-symbols-outlined text-[18px]">folder_open</span></ng-template>
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-baseline gap-1.5 min-w-0">
+            <p class="text-sm font-semibold text-gray-800 truncate">{{ child.name }}</p>
+            <span class="text-xs text-gray-400 truncate" *ngIf="child.nameEn"><bdi>{{ child.nameEn }}</bdi></span>
+          </div>
+          <div class="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 mt-0.5">
+            <span class="px-1.5 rounded-md bg-gray-100 text-gray-500 text-[11px] font-bold" title="ترتيب العرض">#{{ child.sortOrder ?? 0 }}</span>
+            <span class="text-xs text-gray-500">{{ productsIn(child.id) }} منتج</span>
+            <span class="text-[11px] text-gray-400 truncate max-w-[14rem]" *ngIf="child.description" [title]="child.description">· {{ child.description }}</span>
+            <span *ngIf="child.status === 'inactive'" class="px-1.5 rounded-full bg-red-50 text-red-600 text-xs font-semibold">مخفية</span>
+          </div>
+        </div>
+        <div class="flex items-center shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+          <button type="button" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-brand-primary hover:bg-brand-primary/5" (click)="openEdit(child)" aria-label="تعديل" title="تعديل">
+            <span class="material-symbols-outlined text-[18px]">edit</span>
+          </button>
+          <button type="button" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50" (click)="openDelete(child)" aria-label="حذف" title="حذف">
+            <span class="material-symbols-outlined text-[18px]">delete</span>
+          </button>
+        </div>
+      </div>
+      <ng-container *ngTemplateOutlet="childrenTpl; context: { $implicit: child.id, depth: depth + 1 }"></ng-container>
+    </ng-container>
+  </ng-template>
+
+  <div class="card p-8 text-center text-sm text-gray-500" *ngIf="!loading && !roots.length">
+    <ng-container *ngIf="search; else emptyAll">مفيش فئة بالاسم ده.</ng-container>
+    <ng-template #emptyAll>لا توجد فئات بعد. ابدأ بإضافة فئة رئيسية.</ng-template>
+  </div>
+</div>
+
+<app-modal [open]="showForm" [title]="formTitle" maxWidth="600px" (close)="showForm = false">
+  <form class="bf" [formGroup]="form" (ngSubmit)="save()">
+    <div class="bf-preview">
+      <div class="bf-logo">
+        <img *ngIf="form.value.image; else catInitial" [src]="form.value.image" alt="" />
+        <ng-template #catInitial>
+          <span class="material-symbols-outlined">category</span>
+        </ng-template>
+      </div>
+      <div class="min-w-0 flex-1">
+        <strong>{{ form.value.name || 'اسم الفئة' }}</strong>
+        <bdi>{{ form.value.nameEn || 'Category name' }}</bdi>
+      </div>
+    </div>
+
+    <section class="bf-section">
+      <h4><span class="material-symbols-outlined">account_tree</span> مكان الفئة</h4>
+      <app-select formControlName="parentId" [options]="parentOptions" [searchable]="true" placeholder="— فئة رئيسية —"></app-select>
+      <p class="bf-hint">سيبها «فئة رئيسية»، أو اختار الفئة اللي هتبقى دي جواها</p>
+    </section>
+
+    <section class="bf-section">
+      <h4><span class="material-symbols-outlined">badge</span> الاسم</h4>
+      <div class="bf-row">
+        <div>
+          <label class="form-label">بالعربي <span class="text-red-500">*</span></label>
+          <input class="input-field" formControlName="name" placeholder="مثال: دهانات" />
+          <p *ngIf="err('name')" class="form-error">اسم الفئة مطلوب</p>
+        </div>
+        <div>
+          <label class="form-label">بالإنجليزي</label>
+          <input class="input-field" formControlName="nameEn" dir="ltr" placeholder="Paints" />
+        </div>
+      </div>
+    </section>
+
+    <section class="bf-section">
+      <h4><span class="material-symbols-outlined">image</span> الصورة</h4>
+      <app-image-dropzone formControlName="image" label="صورة الفئة" hint="اضغط لاختيار صورة أو اسحبها هنا"></app-image-dropzone>
+    </section>
+
+    <details class="bf-section bf-more" [open]="!!(form.value.description || form.value.descriptionEn)">
+      <summary>
+        <span class="material-symbols-outlined">notes</span>
+        الوصف
+        <em>اختياري</em>
+        <span class="material-symbols-outlined bf-chev">expand_more</span>
+      </summary>
+      <textarea class="input-field bf-text" formControlName="description" placeholder="وصف قصير للفئة"></textarea>
+      <textarea class="input-field bf-text" formControlName="descriptionEn" dir="ltr" placeholder="Short description in English"></textarea>
+    </details>
+
+    <section class="bf-section">
+      <h4><span class="material-symbols-outlined">tune</span> الظهور</h4>
+      <div class="bf-inline">
+        <div>
+          <label class="form-label">الترتيب</label>
+          <input type="number" class="input-field" formControlName="order" min="0" step="1" dir="ltr" />
+        </div>
+        <label class="bf-switch">
+          <span class="min-w-0">
+            <strong>نشطة في التطبيق</strong>
+            <small>الرقم الأصغر يظهر الأول</small>
+          </span>
+          <input type="checkbox" formControlName="active" />
+          <i aria-hidden="true"></i>
+        </label>
+      </div>
+    </section>
+
+    <div class="bf-actions">
+      <button type="button" class="btn-outline" (click)="showForm = false">إلغاء</button>
+      <button type="submit" class="btn-primary" [disabled]="saving">
+        <span class="material-symbols-outlined text-[18px]" [class.animate-spin]="saving">{{ saving ? 'progress_activity' : 'check' }}</span>
+        {{ saving ? 'جاري الحفظ...' : mode === 'edit' ? 'حفظ التعديلات' : 'إضافة الفئة' }}
+      </button>
+    </div>
+  </form>
+</app-modal>
+
+<app-modal [open]="showStarter" title="فئات جاهزة بالصور والوصف" maxWidth="620px" (close)="!starterBusy && (showStarter = false)">
+  <p class="st-intro">اختار المجموعات اللي عايز تضيفها. كل فئة هتتضاف بصورتها ووصفها بالعربي والإنجليزي، والموجود قبل كدا مش هيتكرر.</p>
+
+  <div class="st-list">
+    <label class="st-pack" *ngFor="let pack of starterPacks" [class.is-on]="starterPicked.has(pack.key)">
+      <input type="checkbox" [checked]="starterPicked.has(pack.key)" (change)="toggleStarter(pack.key)" [disabled]="starterBusy" />
+      <img class="st-cover" [src]="pack.image" [alt]="pack.name" />
+      <div class="st-body">
+        <div class="st-head">
+          <strong>{{ pack.name }}</strong>
+          <span class="st-tag" *ngIf="findRoot(pack); else newTag">موجودة · هنضيف جواها</span>
+          <ng-template #newTag><span class="st-tag is-new">فئة رئيسية جديدة</span></ng-template>
+        </div>
+        <p>{{ pack.description }}</p>
+        <div class="st-chips">
+          <span class="st-chip" *ngFor="let child of pack.children" [class.is-exists]="childExists(pack, child)">
+            <img [src]="child.image" alt="" />
+            {{ child.name }}
+            <span class="material-symbols-outlined" *ngIf="childExists(pack, child)">check</span>
+          </span>
+        </div>
+      </div>
+      <span class="st-check material-symbols-outlined">{{ starterPicked.has(pack.key) ? 'check_circle' : 'radio_button_unchecked' }}</span>
+    </label>
+  </div>
+
+  <div class="st-progress" *ngIf="starterBusy">
+    <div class="st-bar"><span [style.width.%]="starterTotal ? (starterDone / starterTotal) * 100 : 0"></span></div>
+    <small>جاري الإضافة… {{ starterDone }} من {{ starterTotal }}</small>
+  </div>
+
+  <div class="bf-actions">
+    <button type="button" class="btn-outline" (click)="showStarter = false" [disabled]="starterBusy">إلغاء</button>
+    <button type="button" class="btn-primary" (click)="importStarter()" [disabled]="starterBusy || !starterPending">
+      <span class="material-symbols-outlined text-[18px]" [class.animate-spin]="starterBusy">{{ starterBusy ? 'progress_activity' : 'auto_awesome' }}</span>
+      {{ starterPending ? 'إضافة ' + starterPending + ' فئة' : 'كله موجود' }}
+    </button>
+  </div>
+</app-modal>
+
+<app-confirm-dialog
+  [open]="showConfirm"
+  title="حذف الفئة"
+  [message]="'هل أنت متأكد من حذف «' + (selected?.name || 'هذه الفئة') + '»؟'"
+  confirmText="حذف"
+  [danger]="true"
+  (confirm)="confirmDelete()"
+  (cancel)="showConfirm = false"
+></app-confirm-dialog>
