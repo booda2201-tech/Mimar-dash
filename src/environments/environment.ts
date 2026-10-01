@@ -1,7 +1,6 @@
 export const environment = {
   production: false,
-  /** عبر proxy.conf.json → https://alhendalcompany-001-site13.jtempurl.com */
-  apiUrl: '',
+  apiUrl: 'https://alhendalcompany-001-site13.jtempurl.com',
   fallbackMock: false,
   /** مفتاح Gemini — لو فاضي البوت بيستخدم المحلل المحلي */
   geminiApiKey: '',

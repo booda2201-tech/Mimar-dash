@@ -93,8 +93,7 @@
               "browserTarget": "mimar-admin:build:production"
             },
             "development": {
-              "browserTarget": "mimar-admin:build:development",
-              "proxyConfig": "proxy.conf.json"
+              "browserTarget": "mimar-admin:build:development"
             }
           },
           "defaultConfiguration": "development"
