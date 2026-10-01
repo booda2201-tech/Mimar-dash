@@ -82,6 +82,7 @@ export class ProductsService {
       hasVariants,
       price: hasVariants ? undefined : product.basePrice ?? product.price,
       stockQuantity: hasVariants ? undefined : product.stock,
+      quotationQuantity: product.quotationQuantity,
       isActive: product.showInApp !== false && product.status !== 'inactive',
       isNew: !!product.featured,
       specifications: (product.specs || []).map((s, i) => ({

@@ -87,7 +87,10 @@
       <div class="offer-cover" [class.is-empty]="!o.image">
         <img *ngIf="o.image" [src]="o.image" [alt]="o.title" loading="lazy" />
         <span *ngIf="!o.image" class="material-symbols-outlined">image</span>
-        <span class="offer-ribbon">خصم {{ discountLabel(o) }}</span>
+        <span class="offer-ribbon">
+          <span class="material-symbols-outlined">sell</span>
+          {{ discountLabel(o) }}
+        </span>
         <div class="cover-tags">
           <span class="new-pill" *ngIf="o.isNew">جديد</span>
           <app-status-badge [status]="o.status"></app-status-badge>
@@ -110,97 +113,44 @@
 
         <div class="price-row">
           <div class="price-main">
-            <span class="price-label">{{ o.variants?.length ? 'يبدأ من' : 'السعر بعد الخصم' }}</span>
-            <strong>{{ money(o.finalPrice) }}</strong>
+            <span class="price-label">{{ o.variants?.length ? 'يبدأ من' : 'بعد الخصم' }}</span>
+            <div class="price-line">
+              <strong>{{ money(o.finalPrice) }}</strong>
+              <s *ngIf="(o.price || 0) > (o.finalPrice || 0)">{{ money(o.price) }}</s>
+            </div>
           </div>
-          <div class="price-old" *ngIf="(o.price || 0) > (o.finalPrice || 0)">
-            <s>{{ money(o.price) }}</s>
-            <span class="save-chip">وفّر {{ money((o.price || 0) - (o.finalPrice || 0)) }}</span>
-          </div>
+          <span class="save-chip" *ngIf="(o.price || 0) > (o.finalPrice || 0)">
+            وفّر {{ money((o.price || 0) - (o.finalPrice || 0)) }}
+          </span>
         </div>
 
-        <div class="source-box">
-          <span class="source-icon material-symbols-outlined">{{ sourceIcon(o) }}</span>
-          <div class="min-w-0">
-            <strong>{{ sourceLabel(o) }} · {{ discountLabel(o) }}</strong>
-            <small>{{ o.discountNote || (isProductLevel(o) ? 'على المنتج كله' : sourceLabel(o)) }}</small>
-          </div>
-        </div>
+        <p class="source-line" [title]="o.discountNote || ''">
+          <span class="material-symbols-outlined">{{ sourceIcon(o) }}</span>
+          <span class="min-w-0">{{ o.discountNote || (isProductLevel(o) ? 'خصم على المنتج كله' : sourceLabel(o)) }}</span>
+        </p>
 
         <div class="facts">
-          <div class="fact">
-            <span class="material-symbols-outlined">inventory_2</span>
-            <strong>{{ o.usage }}</strong>
-            <small>المخزون</small>
-          </div>
-          <div class="fact">
-            <span class="material-symbols-outlined">style</span>
+          <span class="fact" [class.is-low]="o.usage <= 5">
+            <strong>{{ o.usage | number }}</strong>
+            <small>مخزون</small>
+          </span>
+          <span class="fact">
             <strong>{{ o.variants?.length || 0 }}</strong>
-            <small>الأنواع</small>
-          </div>
-          <div class="fact">
-            <span class="material-symbols-outlined">stacks</span>
+            <small>أنواع</small>
+          </span>
+          <span class="fact">
             <strong>{{ tierCount(o) }}</strong>
-            <small>الشرائح</small>
-          </div>
+            <small>شرائح</small>
+          </span>
         </div>
 
-        <div class="price-details is-empty" *ngIf="!o.variants?.length && !o.tiers?.length">
-          <span>مفيش أنواع أو شرائح أسعار</span>
-        </div>
 
-        <details class="price-details" *ngIf="o.variants?.length || o.tiers?.length">
-          <summary>
-            تفاصيل الأسعار
-            <span class="material-symbols-outlined">expand_more</span>
-          </summary>
-
-          <div class="detail-block" *ngIf="o.variants?.length">
-            <p class="detail-title">الأنواع</p>
-            <div class="variant-row" *ngFor="let v of o.variants">
-              <div class="min-w-0 flex-1">
-                <p class="variant-name">
-                  {{ v.name }}
-                  <span class="new-pill sm" *ngIf="v.isNew">جديد</span>
-                </p>
-                <p class="variant-meta"><bdi>{{ v.sku }}</bdi> · {{ v.stock }} مخزون</p>
-              </div>
-              <div class="variant-price">
-                <strong>{{ money(v.finalPrice) }}</strong>
-                <s *ngIf="v.price > v.finalPrice">{{ money(v.price) }}</s>
-                <span class="disc-chip" *ngIf="v.discountLabel">-{{ v.discountLabel }}</span>
-              </div>
-              <div class="tier-list" *ngIf="v.tiers.length">
-                <div class="tier-row" *ngFor="let t of v.tiers">
-                  <span>{{ t.range }}</span>
-                  <span class="tier-price">
-                    {{ money(t.finalUnitPrice) }}
-                    <s *ngIf="t.unitPrice > t.finalUnitPrice">{{ money(t.unitPrice) }}</s>
-                    <span class="disc-chip" *ngIf="t.discountLabel">-{{ t.discountLabel }}</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="detail-block" *ngIf="o.tiers?.length">
-            <p class="detail-title">شرائح الكمية</p>
-            <div class="tier-row" *ngFor="let t of o.tiers">
-              <span>{{ t.range }}</span>
-              <span class="tier-price">
-                {{ money(t.finalUnitPrice) }}
-                <s *ngIf="t.unitPrice > t.finalUnitPrice">{{ money(t.unitPrice) }}</s>
-                <span class="disc-chip" *ngIf="t.discountLabel">-{{ t.discountLabel }}</span>
-              </span>
-            </div>
-          </div>
-        </details>
       </div>
 
       <footer class="offer-actions">
         <button type="button" (click)="openView(o)">
           <span class="material-symbols-outlined">visibility</span>
-          عرض
+          التفاصيل
         </button>
         <ng-container *ngIf="isProductLevel(o); else editInProduct">
           <button type="button" class="is-primary" (click)="openEdit(o)">
@@ -209,14 +159,16 @@
           </button>
           <button type="button" class="is-danger" (click)="askRemove(o)" aria-label="إزالة الخصم" title="إزالة الخصم">
             <span class="material-symbols-outlined">block</span>
-            إزالة
           </button>
         </ng-container>
         <ng-template #editInProduct>
-          <a routerLink="/products" class="is-hint" title="الخصم ده على نوع أو شريحة، بيتعدّل من صفحة المنتج">
+          <a routerLink="/products" class="is-primary" title="الخصم ده على نوع أو شريحة، بيتعدّل من صفحة المنتج">
             <span class="material-symbols-outlined">open_in_new</span>
-            عدّل من المنتج
+            تعديل
           </a>
+          <span class="is-locked" title="الخصم ده على نوع أو شريحة — بيتشال من صفحة المنتج">
+            <span class="material-symbols-outlined">lock</span>
+          </span>
         </ng-template>
       </footer>
     </article>
@@ -257,17 +209,115 @@
 </app-modal>
 
 <app-modal [open]="showView" title="تفاصيل العرض" maxWidth="560px" (close)="showView = false">
-  <app-detail-view
-    *ngIf="selected"
-    [title]="selected.title"
-    icon="sell"
-    [status]="selected.status"
-    [image]="selected.image || ''"
-    [fields]="viewFields"
-  ></app-detail-view>
+  <div class="ov" *ngIf="selected as o" [attr.data-source]="o.discountSource || 'product'">
+    <div class="ov-hero" [class.is-empty]="!o.image">
+      <img *ngIf="o.image" [src]="o.image" [alt]="o.title" />
+      <span *ngIf="!o.image" class="material-symbols-outlined">image</span>
+      <span class="offer-ribbon">
+        <span class="material-symbols-outlined">sell</span>
+        {{ discountLabel(o) }}
+      </span>
+      <div class="cover-tags">
+        <span class="new-pill" *ngIf="o.isNew">جديد</span>
+        <app-status-badge [status]="o.status"></app-status-badge>
+      </div>
+    </div>
+
+    <div class="ov-head">
+      <p class="offer-kicker">
+        <span>{{ o.category || 'بدون فئة' }}</span>
+        <span *ngIf="o.brand" class="kicker-brand">{{ o.brand }}</span>
+      </p>
+      <h2>{{ o.title }}</h2>
+      <p class="ov-sub">
+        <bdi *ngIf="o.titleEn">{{ o.titleEn }}</bdi>
+        <bdi *ngIf="o.code" class="ov-sku">{{ o.code }}</bdi>
+      </p>
+    </div>
+
+    <div class="ov-price">
+      <div class="min-w-0">
+        <span class="price-label">{{ o.variants?.length ? 'يبدأ من' : 'السعر بعد الخصم' }}</span>
+        <div class="price-line">
+          <strong>{{ money(o.finalPrice) }}</strong>
+          <s *ngIf="(o.price || 0) > (o.finalPrice || 0)">{{ money(o.price) }}</s>
+        </div>
+      </div>
+      <span class="save-chip" *ngIf="(o.price || 0) > (o.finalPrice || 0)">
+        وفّر {{ money((o.price || 0) - (o.finalPrice || 0)) }}
+      </span>
+      <p class="source-line">
+        <span class="material-symbols-outlined">{{ sourceIcon(o) }}</span>
+        <span class="min-w-0">{{ sourceLabel(o) }} · {{ o.discountNote || (isProductLevel(o) ? 'على المنتج كله' : '') }}</span>
+      </p>
+    </div>
+
+    <div class="facts">
+      <span class="fact" [class.is-low]="o.usage <= 5">
+        <strong>{{ o.usage | number }}</strong>
+        <small>مخزون</small>
+      </span>
+      <span class="fact">
+        <strong>{{ o.variants?.length || 0 }}</strong>
+        <small>أنواع</small>
+      </span>
+      <span class="fact">
+        <strong>{{ tierCount(o) }}</strong>
+        <small>شرائح</small>
+      </span>
+    </div>
+  </div>
+  <div class="view-prices" *ngIf="selected && (selected.variants?.length || selected.tiers?.length)">
+    <div class="detail-block" *ngIf="selected.variants?.length">
+      <p class="detail-title">الأنواع</p>
+      <div class="variant-row" *ngFor="let v of selected.variants">
+        <div class="min-w-0 flex-1">
+          <p class="variant-name">
+            {{ v.name }}
+            <span class="new-pill sm" *ngIf="v.isNew">جديد</span>
+          </p>
+          <p class="variant-meta"><bdi>{{ v.sku }}</bdi> · {{ v.stock }} مخزون</p>
+        </div>
+        <div class="variant-price">
+          <strong>{{ money(v.finalPrice) }}</strong>
+          <s *ngIf="v.price > v.finalPrice">{{ money(v.price) }}</s>
+          <span class="disc-chip" *ngIf="v.discountLabel">-{{ v.discountLabel }}</span>
+        </div>
+        <div class="tier-list" *ngIf="v.tiers.length">
+          <div class="tier-row" *ngFor="let t of v.tiers">
+            <span>{{ t.range }}</span>
+            <span class="tier-price">
+              {{ money(t.finalUnitPrice) }}
+              <s *ngIf="t.unitPrice > t.finalUnitPrice">{{ money(t.unitPrice) }}</s>
+              <span class="disc-chip" *ngIf="t.discountLabel">-{{ t.discountLabel }}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-block" *ngIf="selected.tiers?.length">
+      <p class="detail-title">شرائح الكمية</p>
+      <div class="tier-row" *ngFor="let t of selected.tiers">
+        <span>{{ t.range }}</span>
+        <span class="tier-price">
+          {{ money(t.finalUnitPrice) }}
+          <s *ngIf="t.unitPrice > t.finalUnitPrice">{{ money(t.unitPrice) }}</s>
+          <span class="disc-chip" *ngIf="t.discountLabel">-{{ t.discountLabel }}</span>
+        </span>
+      </div>
+    </div>
+  </div>
   <div class="form-actions mt-5">
     <button type="button" class="btn-outline" (click)="showView = false">إغلاق</button>
-    <button type="button" class="btn-primary" *ngIf="selected && isProductLevel(selected)" (click)="openEdit(selected)">تعديل</button>
+    <button type="button" class="btn-primary" *ngIf="selected && isProductLevel(selected)" (click)="openEdit(selected)">
+      <span class="material-symbols-outlined text-[18px]">edit</span>
+      تعديل الخصم
+    </button>
+    <a routerLink="/products" class="btn-primary" *ngIf="selected && !isProductLevel(selected)" (click)="showView = false">
+      <span class="material-symbols-outlined text-[18px]">open_in_new</span>
+      تعديل من المنتج
+    </a>
   </div>
 </app-modal>
 

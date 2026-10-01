@@ -583,6 +583,18 @@
           </div>
         </div>
 
+        <div class="price-row" [class.mt-4]="!form.value.hasVariants">
+          <div>
+            <label class="form-label">كمية طلب عرض السعر</label>
+            <div class="input-affix">
+              <input type="number" class="input-field" formControlName="quotationQuantity" min="1" placeholder="اختياري" />
+              <span>وحدة</span>
+            </div>
+            <p *ngIf="err('quotationQuantity')" class="form-error">أدخل كمية أكبر من صفر</p>
+            <p *ngIf="!err('quotationQuantity')" class="form-hint">من الكمية دي العميل يقدر يطلب عرض سعر من التطبيق</p>
+          </div>
+        </div>
+
         <div class="section-divider" *ngIf="!form.value.hasVariants"></div>
         <ng-container *ngIf="!form.value.hasVariants">
           <ng-container *ngTemplateOutlet="tiersTpl; context: { $implicit: priceTiers }"></ng-container>

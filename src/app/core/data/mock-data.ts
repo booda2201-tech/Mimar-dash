@@ -32,15 +32,3 @@ export const CATEGORY_CHART_DATA = {
     },
   ],
 };
-
-export const REPORTS_BAR_DATA = {
-  labels: [] as string[],
-  datasets: [
-    {
-      label: 'التقارير',
-      data: [] as number[],
-      backgroundColor: '#0B4A3A',
-      borderRadius: 8,
-    },
-  ],
-};

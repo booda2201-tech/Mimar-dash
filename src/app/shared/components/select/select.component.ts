@@ -19,6 +19,8 @@ export interface SelectOption {
   /** النص اللي يظهر في الزرار بعد الاختيار لو مختلف عن label */
   display?: string;
   hint?: string;
+  /** يظهر كعنوان مجموعة ومينفعش يتختار */
+  disabled?: boolean;
 }
 
 @Component({
@@ -48,6 +50,8 @@ export class SelectComponent implements ControlValueAccessor {
   value: string | number | null = null;
   menuStyle: Record<string, string> = {};
   query = '';
+  expanded = new Set<string | number>();
+  private parentsCache?: { source: SelectOption[]; set: Set<string | number> };
 
   private onChange: (v: string | number | null) => void = () => undefined;
   private onTouched: () => void = () => undefined;
@@ -63,12 +67,66 @@ export class SelectComponent implements ControlValueAccessor {
     return !this.query.trim() && this.options.some((o) => (o.depth || 0) > 0);
   }
 
+  /** الفروع بتظهر بس لو كل الآباء مفتوحين */
   get visibleOptions(): SelectOption[] {
     const q = this.query.trim().toLowerCase();
-    if (!q) return this.options;
+    if (!q) {
+      if (!this.hasTree) return this.options;
+      const out: SelectOption[] = [];
+      const path: (string | number)[] = [];
+      for (const o of this.options) {
+        const depth = o.depth || 0;
+        path.length = depth;
+        if (path.every((v) => this.expanded.has(v))) out.push(o);
+        path[depth] = o.value;
+      }
+      return out;
+    }
     return this.options
-      .filter((o) => `${o.display || ''} ${o.label} ${o.hint || ''}`.toLowerCase().includes(q))
+      .filter((o) => !o.disabled && `${o.display || ''} ${o.label} ${o.hint || ''}`.toLowerCase().includes(q))
       .map((o) => ({ ...o, depth: 0, label: o.display || o.label }));
+  }
+
+  isParent(option: SelectOption): boolean {
+    if (this.parentsCache?.source !== this.options) {
+      const set = new Set<string | number>();
+      this.options.forEach((o, i) => {
+        const next = this.options[i + 1];
+        if (next && (next.depth || 0) > (o.depth || 0)) set.add(o.value);
+      });
+      this.parentsCache = { source: this.options, set };
+    }
+    return this.parentsCache.set.has(option.value);
+  }
+
+  isExpanded(option: SelectOption): boolean {
+    return this.expanded.has(option.value);
+  }
+
+  toggleExpand(option: SelectOption): void {
+    if (this.expanded.has(option.value)) this.expanded.delete(option.value);
+    else this.expanded.add(option.value);
+  }
+
+  onOptionClick(option: SelectOption): void {
+    if (option.disabled) {
+      if (this.isParent(option) && this.hasTree) this.toggleExpand(option);
+      return;
+    }
+    this.choose(option);
+  }
+
+  private expandToSelected(): void {
+    const index = this.options.findIndex((o) => o.value === this.value);
+    if (index < 0) return;
+    let depth = this.options[index].depth || 0;
+    for (let i = index - 1; i >= 0 && depth > 0; i--) {
+      const d = this.options[i].depth || 0;
+      if (d < depth) {
+        this.expanded.add(this.options[i].value);
+        depth = d;
+      }
+    }
   }
 
   get hasValue(): boolean {
@@ -80,6 +138,7 @@ export class SelectComponent implements ControlValueAccessor {
     this.open = !this.open;
     if (this.open) {
       this.query = '';
+      this.expandToSelected();
       this.updateMenuPosition();
       if (this.searchable) {
         setTimeout(() => this.host.nativeElement.querySelector<HTMLInputElement>('.select-search input')?.focus());
@@ -90,6 +149,7 @@ export class SelectComponent implements ControlValueAccessor {
   }
 
   choose(option: SelectOption): void {
+    if (option.disabled) return;
     this.value = option.value;
     this.onChange(this.value);
     this.selectionChange.emit(this.value);

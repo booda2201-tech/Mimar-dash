@@ -37,7 +37,7 @@ import { ProductsService } from './products.service';
 import { unwrapItem } from '../api/api-utils';
 
 /** الصور الجديدة من الـ dropzone بتبقى data URL — روابط الصور القديمة بترجع null */
-function dataUrlToFile(value: string | undefined, name: string): File | null {
+export function dataUrlToFile(value: string | undefined, name: string): File | null {
   const match = value?.match(/^data:(image\/[\w+.-]+);base64,(.+)$/);
   if (!match) return null;
   const bytes = atob(match[2]);

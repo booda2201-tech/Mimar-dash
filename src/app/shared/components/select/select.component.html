@@ -28,12 +28,17 @@
       [class.is-root]="opt.depth === 0 && hasTree"
       [class.is-child]="(opt.depth || 0) > 0"
       [class.is-first]="first"
+      [class.is-group]="opt.disabled"
+      [class.is-parent]="hasTree && isParent(opt)"
+      [class.is-expanded]="hasTree && isExpanded(opt)"
+      [attr.aria-disabled]="(opt.disabled && !(hasTree && isParent(opt))) || null"
+      [attr.aria-expanded]="hasTree && isParent(opt) ? isExpanded(opt) : null"
       [style.--depth]="opt.depth || 0"
-      (click)="choose(opt)"
+      (click)="onOptionClick(opt)"
     >
       <span class="option-text">
         <span class="option-icon" *ngIf="hasTree && !opt.depth">
-          <span class="material-symbols-outlined">{{ opt.value === '' ? 'apps' : 'folder' }}</span>
+          <span class="material-symbols-outlined">{{ opt.value === '' ? 'apps' : isExpanded(opt) ? 'folder_open' : 'folder' }}</span>
         </span>
         <span class="option-dot" *ngIf="opt.depth"></span>
         <span class="option-label">{{ opt.label }}</span>
@@ -41,6 +46,12 @@
       <span class="option-end">
         <span class="option-hint" *ngIf="opt.hint">{{ opt.hint }}</span>
         <span class="material-symbols-outlined check" *ngIf="opt.value === value">check</span>
+        <span
+          class="material-symbols-outlined option-toggle"
+          *ngIf="hasTree && isParent(opt)"
+          (click)="$event.stopPropagation(); toggleExpand(opt)"
+          [attr.aria-label]="isExpanded(opt) ? 'قفل الفروع' : 'افتح الفروع'"
+        >expand_more</span>
       </span>
     </button>
     <div class="select-empty" *ngIf="!visibleOptions.length">{{ query ? 'مفيش نتايج' : 'لا توجد خيارات' }}</div>

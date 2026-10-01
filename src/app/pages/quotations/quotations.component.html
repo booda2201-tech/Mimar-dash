@@ -170,6 +170,7 @@
         <p class="q-sub">
           <span class="kind-pill" [class.is-trader]="q.isTrader">{{ customerKind(q) }}</span>
           <bdi *ngIf="q.customerPhone" dir="ltr">{{ q.customerPhone }}</bdi>
+          <bdi *ngIf="!q.customerPhone && q.customerEmail" dir="ltr">{{ q.customerEmail }}</bdi>
           <span>· {{ typeLabel(q) }}</span>
         </p>
       </div>
@@ -210,6 +211,7 @@
         <h4>الأصناف والتسعير</h4>
         <div class="quick-fill" *ngIf="canPrice(q)">
           <button type="button" *ngIf="hasRequestedPrices(q)" (click)="fillFrom('requested')">سعر العميل</button>
+          <button type="button" *ngIf="q.requestedTotal && hasListPrices(q)" (click)="matchCustomerTotal()">على سعر العميل</button>
           <button type="button" *ngIf="hasListPrices(q)" (click)="fillFrom('list')">سعر الكتالوج</button>
           <button type="button" *ngIf="hasListPrices(q)" (click)="applyDiscount(5)">كتالوج -5%</button>
           <button type="button" *ngIf="hasListPrices(q)" (click)="applyDiscount(10)">كتالوج -10%</button>
@@ -221,7 +223,7 @@
           <span>الصنف</span>
           <span>الكمية</span>
           <span>الكتالوج</span>
-          <span>مطلوب</span>
+          <span>{{ hasRequestedPrices(q) ? 'مطلوب' : 'قبل الخصم' }}</span>
           <span>سعرنا للوحدة</span>
           <span>الإجمالي</span>
         </div>
@@ -238,11 +240,14 @@
                 <bdi *ngIf="item.productSku">{{ item.productSku }}</bdi>
               </p>
               <p class="it-meta italic" *ngIf="item.notes">{{ item.notes }}</p>
+              <p class="it-meta !text-amber-700 font-bold" *ngIf="availabilityLabel(item) as av">
+                {{ av }}<span *ngIf="item.alternativesCount"> · {{ item.alternativesCount }} بديل</span>
+              </p>
             </div>
           </div>
           <div class="it-cell" data-label="الكمية"><strong>{{ item.quantity }}</strong> {{ item.unit || '' }}</div>
           <div class="it-cell" data-label="الكتالوج">{{ money(item.listPrice) }}</div>
-          <div class="it-cell" data-label="مطلوب">
+          <div class="it-cell" data-label="مطلوب" *ngIf="hasRequestedPrices(q); else beforeDiscount">
             <span>{{ money(item.requestedPrice) }}</span>
             <span
               class="diff-chip"
@@ -250,6 +255,12 @@
               [class.is-down]="d < 0"
             >{{ d > 0 ? '+' : '' }}{{ d }}%</span>
           </div>
+          <ng-template #beforeDiscount>
+            <div class="it-cell" data-label="قبل الخصم">
+              <s *ngIf="item.originalPrice != null; else noOriginal" class="text-gray-400">{{ money(item.originalPrice) }}</s>
+              <ng-template #noOriginal>—</ng-template>
+            </div>
+          </ng-template>
           <div class="it-cell" data-label="سعرنا للوحدة">
             <label class="price-input" *ngIf="canPrice(q); else fixedPrice">
               <input
@@ -270,7 +281,7 @@
           <span>الإجمالي</span>
           <span>{{ q.totalQuantity }} قطعة</span>
           <span>{{ money(listTotal(q)) }}</span>
-          <span>{{ money(q.requestedTotal) }}</span>
+          <span>{{ hasRequestedPrices(q) ? money(q.requestedTotal) : '' }}</span>
           <span></span>
           <strong>{{ money(canPrice(q) ? draftTotal : q.offeredTotal) }}</strong>
         </div>
@@ -298,9 +309,9 @@
       الطلب فيه {{ q.attachmentsCount }} مرفق بس الـ API مرجعهمش في التفاصيل.
     </p>
 
-    <section class="d-summary" *ngIf="!q.items.length">
+    <section class="d-summary">
       <div>
-        <small>السعر المطلوب من العميل</small>
+        <small>{{ q.currentOfferBy === 'customer' && q.offeredTotal ? 'آخر اقتراح من العميل' : 'السعر المطلوب من العميل' }}</small>
         <strong>{{ money(q.requestedTotal) }}</strong>
       </div>
       <div *ngIf="listTotal(q) !== null">
@@ -318,7 +329,8 @@
         <span class="material-symbols-outlined">edit_note</span>
         <div>
           <h4>{{ q.status === 'offered' ? 'تعديل عرض السعر' : 'إرسال عرض سعر' }}</h4>
-          <p>العميل هيشوف العرض ده في التطبيق ويقدر يوافق عليه أو يرفضه</p>
+          <p *ngIf="waitingCustomer(q); else offerHint">عرضنا الحالي مستني رد العميل، ولو بعتّ سعر جديد هيحل محله</p>
+          <ng-template #offerHint><p>العميل هيشوف العرض ده في التطبيق ويقدر يوافق عليه أو يرفضه</p></ng-template>
         </div>
       </div>
       <div class="offer-fields">
@@ -352,10 +364,13 @@
     </section>
 
     <section class="d-offers" *ngIf="q.offers.length">
-      <h4>العروض السابقة</h4>
+      <h4>سجل التفاوض</h4>
       <div class="offer-row" *ngFor="let o of q.offers; let last = last" [class.is-last]="last">
-        <span class="material-symbols-outlined">{{ last ? 'mark_email_read' : 'history' }}</span>
+        <span class="material-symbols-outlined">{{ o.by === 'customer' ? 'person' : 'storefront' }}</span>
         <div class="min-w-0 flex-1">
+          <small class="block text-[11px] font-bold" [class.text-amber-700]="o.by === 'customer'" [class.text-emerald-700]="o.by === 'admin'">
+            {{ o.by === 'customer' ? 'اقتراح العميل' : 'عرضنا' }}{{ o.createdBy ? ' · ' + o.createdBy : '' }}
+          </small>
           <strong>{{ money(o.total) }}</strong>
           <p *ngIf="o.notes">{{ o.notes }}</p>
         </div>

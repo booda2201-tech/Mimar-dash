@@ -1,255 +1,362 @@
-<div class="dash space-y-6">
+<div class="dash space-y-5">
+  <!-- موبايل -->
   <header class="m-head anim-item">
     <h1>{{ greeting }}، {{ staffName }}</h1>
-    <p>ملخص حركة التوريد والمواد</p>
+    <p>{{ todayLabel }}</p>
   </header>
 
   <section class="m-summary anim-item">
     <div class="m-summary-main">
       <div class="min-w-0">
-        <small>قيمة أحدث الطلبات</small>
-        <strong>{{ ordersTotal | number }} <em>ر.س</em></strong>
+        <small>مبيعات {{ periodLabel }}</small>
+        <strong>{{ revenue | number }} <em>ر.س</em></strong>
       </div>
-      <a routerLink="/material-lists" class="m-new">
-        <span class="material-symbols-outlined">playlist_add</span>
-        قائمة
+      <a routerLink="/quotations" class="m-new">
+        <span class="material-symbols-outlined">request_quote</span>
+        عروض السعر
       </a>
     </div>
     <div class="m-summary-grid">
       <a routerLink="/orders">
-        <strong [class.is-alert]="pendingOrders > 0">{{ orders.length || 0 }}</strong>
+        <strong>{{ periodOrders.length }}</strong>
         <small>طلبات</small>
       </a>
+      <a routerLink="/quotations">
+        <strong [class.is-alert]="pendingQuotes.length > 0">{{ pendingQuotes.length }}</strong>
+        <small>محتاجة رد</small>
+      </a>
       <a routerLink="/products">
-        <strong>{{ statValue(0) }}</strong>
-        <small>منتجات</small>
-      </a>
-      <a routerLink="/material-lists">
-        <strong>{{ statValue(3) }}</strong>
-        <small>قوائم</small>
-      </a>
-    </div>
-  </section>
-
-  <!-- Hero -->
-  <section class="anim-item hero-panel">
-    <div class="hero-copy">
-      <span class="hero-chip">
-        <span class="material-symbols-outlined text-[14px]">workspace_premium</span>
-        الرئيس التنفيذي
-      </span>
-      <h1>{{ greeting }}، {{ staffName }}</h1>
-      <p>ملخص لحظي لحركة التوريد والمبيعات وعقود مواد البناء لهذا اليوم</p>
-    </div>
-    <div class="hero-actions">
-      <div class="period-group">
-        <button
-          *ngFor="let p of [{k:'today',l:'اليوم'},{k:'week',l:'7 أيام'},{k:'month',l:'هذا الشهر'}]"
-          type="button"
-          class="period-btn"
-          [class.active]="period === p.k"
-          (click)="period = $any(p.k)"
-        >
-          {{ p.l }}
-        </button>
-      </div>
-      <a routerLink="/material-lists" class="export-btn">
-        <span class="material-symbols-outlined text-[18px]">playlist_add</span>
-        قائمة مواد
+        <strong [class.is-alert]="stockAlerts.length > 0">{{ stockAlerts.length }}</strong>
+        <small>مخزون قليل</small>
       </a>
     </div>
   </section>
 
   <div class="anim-item chip-scroll">
     <button
-      *ngFor="let p of [{k:'today',l:'اليوم'},{k:'week',l:'7 أيام'},{k:'month',l:'هذا الشهر'}]"
+      *ngFor="let p of periods"
       type="button"
       class="chip-btn"
       [class.is-active]="period === p.k"
-      (click)="period = $any(p.k)"
+      (click)="setPeriod(p.k)"
     >
       {{ p.l }}
     </button>
   </div>
 
-  <!-- Stats -->
-  <div class="d-stats grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4" *ngIf="loading">
-    <div class="anim-item" *ngFor="let i of [1,2,3,4]">
-      <app-stat-card [data]="placeholderStat" [loading]="true"></app-stat-card>
+  <!-- الهيدر -->
+  <section class="anim-item hero-panel">
+    <div class="hero-copy">
+      <span class="hero-date">
+        <span class="material-symbols-outlined text-[14px]">calendar_today</span>
+        {{ todayLabel }}
+      </span>
+      <h1>{{ greeting }}، {{ staffName }}</h1>
+      <p>
+        <ng-container *ngIf="!loading; else heroLoading">
+          عندك <strong>{{ pendingQuotes.length }}</strong> عرض سعر محتاج رد و
+          <strong>{{ periodOrders.length }}</strong> طلب في {{ periodLabel }}
+        </ng-container>
+        <ng-template #heroLoading>بنجهّز ملخص الشغل...</ng-template>
+      </p>
     </div>
-  </div>
-  <div class="d-stats grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4" *ngIf="!loading">
-    <div class="anim-item" *ngFor="let s of stats">
-      <app-stat-card [data]="s"></app-stat-card>
+    <div class="hero-actions">
+      <div class="period-group">
+        <button
+          *ngFor="let p of periods"
+          type="button"
+          class="period-btn"
+          [class.active]="period === p.k"
+          (click)="setPeriod(p.k)"
+        >
+          {{ p.l }}
+        </button>
+      </div>
+      <a routerLink="/quotations" class="hero-btn">
+        <span class="material-symbols-outlined">request_quote</span>
+        عروض السعر
+        <span class="badge" *ngIf="pendingQuotes.length">{{ pendingQuotes.length }}</span>
+      </a>
+      <a routerLink="/orders" class="hero-btn">
+        <span class="material-symbols-outlined">local_shipping</span>
+        الطلبات
+      </a>
     </div>
+  </section>
+
+  <!-- الأرقام -->
+  <div class="d-stats grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+    <ng-container *ngIf="loading">
+      <div class="anim-item" *ngFor="let i of [1, 2, 3, 4]">
+        <app-stat-card [data]="placeholderStat" [loading]="true"></app-stat-card>
+      </div>
+    </ng-container>
+    <ng-container *ngIf="!loading">
+      <div *ngFor="let s of stats">
+        <app-stat-card [data]="s"></app-stat-card>
+      </div>
+    </ng-container>
   </div>
 
-  <!-- Charts -->
-  <div class="d-charts grid grid-cols-1 xl:grid-cols-3 gap-4">
+  <!-- المبيعات + حالة الطلبات -->
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
     <article class="anim-item panel xl:col-span-2">
       <header class="panel-head">
         <div>
-          <h2>حجم مبيعات وإيرادات التوريد</h2>
-          <p>منحنى الإيرادات خلال آخر 30 يوماً</p>
+          <h2>المبيعات وعدد الطلبات</h2>
+          <p>{{ periodLabel }} · من غير الطلبات الملغية</p>
         </div>
-        <span class="pill-live">مباشر</span>
+        <div class="sales-total">
+          <strong>{{ revenue | number }} ر.س</strong>
+          <small>{{ periodOrders.length }} طلب</small>
+        </div>
       </header>
-      <app-chart-wrapper type="line" [data]="salesData" [options]="lineOptions" [height]="compact ? '210px' : '300px'"></app-chart-wrapper>
+      <app-chart-wrapper type="bar" [data]="salesData" [options]="salesOptions" [height]="compact ? '200px' : '270px'"></app-chart-wrapper>
+      <div class="chart-legend">
+        <span><i style="background: #0b4a3a"></i> المبيعات (ر.س)</span>
+        <span><i style="background: #c8a24b"></i> أعلى {{ period === 'today' ? 'فترة' : 'يوم' }}</span>
+        <span class="ms-auto">مرّر على العمود عشان تشوف عدد الطلبات</span>
+      </div>
     </article>
 
     <article class="anim-item panel">
       <header class="panel-head">
         <div>
-          <h2>توزيع فئات المواد</h2>
-          <p>حصة كل فئة من المبيعات</p>
+          <h2>حالة الطلبات</h2>
+          <p>{{ periodLabel }}</p>
         </div>
+        <a routerLink="/orders" class="link-gold">الطلبات <span class="material-symbols-outlined">chevron_left</span></a>
       </header>
-      <app-chart-wrapper type="doughnut" [data]="categoryData" [options]="doughnutOptions" [height]="compact ? '220px' : '260px'"></app-chart-wrapper>
+      <div class="donut-wrap">
+        <app-chart-wrapper type="doughnut" [data]="statusData" [options]="statusOptions" height="190px"></app-chart-wrapper>
+        <div class="donut-center">
+          <strong>{{ periodOrders.length }}</strong>
+          <small>طلب</small>
+        </div>
+      </div>
+      <ul class="status-list">
+        <li *ngFor="let s of statusLegend">
+          <i [style.background]="s.color"></i>
+          {{ s.label }}
+          <strong>{{ s.count }}</strong>
+        </li>
+      </ul>
     </article>
   </div>
 
-  <!-- Orders + side -->
+  <!-- أحدث الطلبات + عروض السعر -->
   <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
     <article class="anim-item panel xl:col-span-2 !p-0 overflow-hidden">
-      <header class="panel-head px-5 pt-5 pb-3">
+      <header class="panel-head px-5 pt-5 !mb-3">
         <div>
-          <h2>أحدث طلبات التوريد</h2>
-          <p>آخر الحركات التشغيلية</p>
+          <h2>أحدث الطلبات</h2>
+          <p>آخر {{ latestOrders.length }} طلبات من التطبيق وخدمة العملاء</p>
         </div>
-        <a routerLink="/orders" class="link-gold">عرض الكل</a>
+        <a routerLink="/orders" class="link-gold">عرض الكل <span class="material-symbols-outlined">chevron_left</span></a>
       </header>
-      <ul class="order-list sm:hidden" *ngIf="orders.length; else noOrders">
-        <li *ngFor="let o of orders">
-          <a routerLink="/orders" class="order-row">
-            <span class="order-avatar">{{ (o.company || '؟').charAt(0) }}</span>
-            <div class="min-w-0 flex-1">
-              <p class="order-title">{{ o.company }}</p>
-              <p class="meta truncate">{{ o.id }}<ng-container *ngIf="o.location"> · {{ o.location }}</ng-container></p>
-            </div>
-            <div class="order-end">
-              <span class="order-total">{{ o.total | number }} <small>ر.س</small></span>
-              <app-status-badge [status]="o.status"></app-status-badge>
-            </div>
+
+      <ng-container *ngIf="latestOrders.length; else noOrders">
+        <ul class="order-list sm:hidden">
+          <li *ngFor="let o of latestOrders">
+            <a routerLink="/orders" class="order-row">
+              <span class="who-avatar">{{ initial(o.company || o.customer) }}</span>
+              <div class="min-w-0 flex-1">
+                <p class="order-title">{{ o.company || o.customer }}</p>
+                <p class="meta">#{{ o.id }} · {{ relative(o.date) }}</p>
+              </div>
+              <div class="order-end">
+                <span class="order-total">{{ o.total | number }} <small>ر.س</small></span>
+                <app-status-badge [status]="o.status"></app-status-badge>
+              </div>
+            </a>
+          </li>
+        </ul>
+        <div class="overflow-x-auto hidden sm:block">
+          <table class="dash-table">
+            <thead>
+              <tr>
+                <th>الطلب</th>
+                <th>العميل</th>
+                <th>المصدر</th>
+                <th>الإجمالي</th>
+                <th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let o of latestOrders">
+                <td>
+                  <div class="id-cell">#{{ o.id }}</div>
+                  <div class="meta">{{ relative(o.date) }}</div>
+                </td>
+                <td>
+                  <div class="who">
+                    <span class="who-avatar">{{ initial(o.company || o.customer) }}</span>
+                    <div class="min-w-0">
+                      <div class="font-bold text-gray-900 truncate">{{ o.company || o.customer }}</div>
+                      <div class="meta">{{ o.location || '—' }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="src-pill" [attr.data-src]="o.source">
+                    <span class="material-symbols-outlined">{{ o.source === 'admin' ? 'support_agent' : 'smartphone' }}</span>
+                    {{ o.source === 'admin' ? 'خدمة العملاء' : 'التطبيق' }}
+                  </span>
+                </td>
+                <td class="font-extrabold text-gray-900 whitespace-nowrap">{{ o.total | number }} ر.س</td>
+                <td><app-status-badge [status]="o.status"></app-status-badge></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+      <ng-template #noOrders>
+        <div class="empty-block pb-6">
+          <span class="material-symbols-outlined">local_shipping</span>
+          <p>{{ loading ? 'بيحمّل الطلبات...' : 'لا توجد طلبات بعد' }}</p>
+        </div>
+      </ng-template>
+    </article>
+
+    <article class="anim-item panel">
+      <header class="panel-head">
+        <div>
+          <h2>عروض سعر محتاجة رد</h2>
+          <p>طلبات العملاء المستنية تسعيرك</p>
+        </div>
+        <a routerLink="/quotations" class="link-gold">الكل <span class="material-symbols-outlined">chevron_left</span></a>
+      </header>
+      <ul class="quote-list" *ngIf="pendingQuotes.length; else noQuotes">
+        <li *ngFor="let q of pendingQuotes.slice(0, 5)">
+          <a routerLink="/quotations" class="quote-row">
+            <span class="quote-ico">
+              <span class="material-symbols-outlined">
+                {{ q.type === 'files' ? 'attach_file' : q.type === 'materialList' ? 'list_alt' : 'shopping_basket' }}
+              </span>
+            </span>
+            <span class="quote-copy">
+              <p>{{ q.customerName }}</p>
+              <small>{{ q.number }} · {{ relative(q.createdAt) }}</small>
+            </span>
+            <span class="quote-end">
+              <strong>{{ quoteAmount(q) ? (quoteAmount(q) | number) + ' ر.س' : '—' }}</strong>
+              <small>{{ q.requestedTotal ? 'سعر العميل' : 'تقريبي' }}</small>
+            </span>
           </a>
         </li>
       </ul>
-      <ng-template #noOrders>
-        <div class="empty-block sm:hidden">
-          <span class="material-symbols-outlined">local_shipping</span>
-          <p>لا توجد طلبات بعد</p>
-          <a routerLink="/orders" class="link-gold">فتح الطلبات</a>
+      <ng-template #noQuotes>
+        <div class="empty-block is-good">
+          <span class="material-symbols-outlined">task_alt</span>
+          <p>{{ loading ? 'بيحمّل...' : 'مفيش طلبات تسعير مستنية رد' }}</p>
         </div>
       </ng-template>
-      <div class="overflow-x-auto hidden sm:block">
-        <table class="dash-table">
-          <thead>
-            <tr>
-              <th>رقم الطلب</th>
-              <th>الجهة</th>
-              <th>الإجمالي</th>
-              <th>الحالة</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let o of orders">
-              <td class="id-cell">{{ o.id }}</td>
-              <td>
-                <div class="font-bold text-gray-900">{{ o.company }}</div>
-                <div class="meta">{{ o.location }}</div>
-              </td>
-              <td class="font-extrabold text-gray-900">{{ o.total | number }} ر.س</td>
-              <td><app-status-badge [status]="o.status"></app-status-badge></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    </article>
+  </div>
+
+  <!-- المنتجات والفئات والتنبيهات -->
+  <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <article class="anim-item panel">
+      <header class="panel-head !mb-3">
+        <div>
+          <h2>الأعلى مخزوناً</h2>
+          <p>أكتر المواد المتاحة للتوريد</p>
+        </div>
+        <a routerLink="/products" class="link-gold">المنتجات <span class="material-symbols-outlined">chevron_left</span></a>
+      </header>
+      <ol class="top-list" *ngIf="topProducts.length; else noTop">
+        <li *ngFor="let p of topProducts; let i = index">
+          <a routerLink="/products" class="top-row">
+            <span class="top-thumb">
+              <img *ngIf="p.image; else noImg" [src]="p.image" [alt]="p.name" loading="lazy" />
+              <ng-template #noImg><span class="material-symbols-outlined">inventory_2</span></ng-template>
+              <span class="top-rank" [class.is-first]="i === 0">{{ i + 1 }}</span>
+            </span>
+            <span class="top-copy">
+              <span class="top-name">{{ p.name }}</span>
+              <span class="top-sub">{{ p.category || 'بدون فئة' }} · {{ p.price | number }} ر.س</span>
+            </span>
+            <span class="top-end">
+              <strong>{{ p.stock | number }}</strong>
+              <small>وحدة</small>
+            </span>
+          </a>
+        </li>
+      </ol>
+      <ng-template #noTop>
+        <div class="empty-block">
+          <span class="material-symbols-outlined">inventory_2</span>
+          <p>{{ loading ? 'بيحمّل...' : 'لا توجد منتجات بعد' }}</p>
+        </div>
+      </ng-template>
     </article>
 
-    <div class="space-y-4">
-      <article class="anim-item panel">
-        <header class="panel-head !mb-3">
-          <div>
-            <h2>المواد الأكثر طلباً</h2>
-            <p>أعلى مخزون متاح</p>
-          </div>
-          <a routerLink="/products" class="link-gold">الكل</a>
-        </header>
-        <ol class="top-list" *ngIf="topProducts.length; else noTopProducts">
-          <li *ngFor="let p of topProducts; let i = index">
-            <a routerLink="/products" class="top-row">
-              <span class="top-thumb">
-                <img *ngIf="p.image; else noImg" [src]="p.image" [alt]="p.name" loading="lazy" />
-                <ng-template #noImg><span class="material-symbols-outlined">inventory_2</span></ng-template>
-                <span class="top-rank" [class.is-first]="i === 0">{{ i + 1 }}</span>
-              </span>
-              <span class="top-copy">
-                <span class="top-name">{{ p.name }}</span>
-                <span class="top-sub">
-                  <span class="top-tag" [attr.data-kind]="p.kind">{{ p.kind === 'new' ? 'جديد' : p.kind === 'live' ? 'نشط' : 'متوقف' }}</span>
-                  <span class="truncate">{{ p.category || 'بدون فئة' }}</span>
-                </span>
-              </span>
-              <span class="top-end">
-                <strong>{{ p.stock | number }}</strong>
-                <small>وحدة</small>
-              </span>
-            </a>
-          </li>
-        </ol>
-        <ng-template #noTopProducts>
-          <div class="empty-block">
-            <span class="material-symbols-outlined">inventory_2</span>
-            <p>لا توجد منتجات بعد</p>
-          </div>
-        </ng-template>
-      </article>
-
-      <article class="anim-item panel" *ngIf="alerts.length">
-        <header class="panel-head !mb-3">
-          <div>
-            <h2>تنبيهات فورية</h2>
-            <p>يحتاج إجراء سريع</p>
-          </div>
-        </header>
-        <div class="alert-stack">
-          <div class="alert-card" *ngFor="let a of alerts" [attr.data-type]="a.type">
-            <span class="alert-dot"></span>
-            <div>
-              <p class="alert-title">{{ a.title }}</p>
-              <p class="alert-desc">{{ a.desc }}</p>
-            </div>
-          </div>
+    <article class="anim-item panel">
+      <header class="panel-head">
+        <div>
+          <h2>توزيع المنتجات على الفئات</h2>
+          <p>عدد المنتجات في كل فئة رئيسية</p>
         </div>
-      </article>
+        <a routerLink="/categories" class="link-gold">الفئات <span class="material-symbols-outlined">chevron_left</span></a>
+      </header>
+      <ul class="cat-bars" *ngIf="categoryBars.length; else noCats">
+        <li *ngFor="let c of categoryBars">
+          <div class="cat-top">
+            <span class="truncate">{{ c.name }}</span>
+            <strong>{{ c.count }} منتج</strong>
+          </div>
+          <div class="cat-track"><div class="cat-fill" [style.width.%]="c.pct" [style.background]="c.color"></div></div>
+        </li>
+      </ul>
+      <ng-template #noCats>
+        <div class="empty-block">
+          <span class="material-symbols-outlined">category</span>
+          <p>{{ loading ? 'بيحمّل...' : 'لا توجد فئات فيها منتجات' }}</p>
+        </div>
+      </ng-template>
+    </article>
 
-      <article class="anim-item panel">
-        <header class="panel-head !mb-3">
-          <div>
-            <h2>أحدث قوائم المواد</h2>
-            <p>آخر قوائم المشاريع</p>
-          </div>
-          <a routerLink="/material-lists" class="link-gold">الكل</a>
-        </header>
-        <ol class="rank-list" *ngIf="recentLists.length; else noLists">
-          <li *ngFor="let l of recentLists">
-            <a routerLink="/material-lists" class="rank-row">
-              <span class="rank-ico material-symbols-outlined">list_alt</span>
-              <span class="rank-copy">
-                <span class="rank-name">{{ l.name }}</span>
-                <span class="rank-sub">{{ l.projectName || 'بدون مشروع' }} · {{ l.itemsCount || 0 }} صنف</span>
-              </span>
-              <app-status-badge [status]="l.status"></app-status-badge>
-            </a>
-          </li>
-        </ol>
-        <ng-template #noLists>
-          <div class="empty-block">
-            <span class="material-symbols-outlined">list_alt</span>
-            <p>لا توجد قوائم بعد</p>
-            <a routerLink="/material-lists" class="link-gold">إنشاء قائمة</a>
-          </div>
-        </ng-template>
-      </article>
-    </div>
+    <article class="anim-item panel md:col-span-2 xl:col-span-1">
+      <header class="panel-head !mb-3">
+        <div>
+          <h2>تنبيهات المخزون</h2>
+          <p>منتجات نشطة فاضل منها 10 أو أقل</p>
+        </div>
+        <a routerLink="/products" class="link-gold">المخزون <span class="material-symbols-outlined">chevron_left</span></a>
+      </header>
+      <ul class="alert-list" *ngIf="stockAlerts.length; else noAlerts">
+        <li class="alert-row" *ngFor="let a of stockAlerts" [class.is-out]="a.stock <= 0">
+          <span class="material-symbols-outlined">{{ a.stock <= 0 ? 'error' : 'warning' }}</span>
+          <p [title]="a.name">{{ a.name }}</p>
+          <strong>{{ a.stock <= 0 ? 'نفد' : 'فاضل ' + a.stock }}</strong>
+        </li>
+      </ul>
+      <ng-template #noAlerts>
+        <div class="empty-block is-good !flex-none !py-3">
+          <span class="material-symbols-outlined">verified</span>
+          <p>{{ loading ? 'بيحمّل...' : 'المخزون كله تمام' }}</p>
+        </div>
+      </ng-template>
+
+      <h3 class="sub-title">أحدث قوائم المواد</h3>
+      <ol class="rank-list" *ngIf="recentLists.length; else noLists">
+        <li *ngFor="let l of recentLists">
+          <a routerLink="/material-lists" class="rank-row">
+            <span class="rank-ico material-symbols-outlined">list_alt</span>
+            <span class="rank-copy">
+              <span class="rank-name">{{ l.name }}</span>
+              <span class="rank-sub">{{ l.projectName || 'بدون مشروع' }} · {{ l.itemsCount || 0 }} صنف</span>
+            </span>
+            <app-status-badge [status]="l.status"></app-status-badge>
+          </a>
+        </li>
+      </ol>
+      <ng-template #noLists>
+        <a routerLink="/material-lists" class="link-gold">
+          <span class="material-symbols-outlined">add</span>
+          مفيش قوائم لسه، اعمل أول قائمة
+        </a>
+      </ng-template>
+    </article>
   </div>
 </div>

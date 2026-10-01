@@ -29,6 +29,41 @@ export class AppContentComponent implements OnInit, AfterViewInit {
   showPick = false;
   busyId: string | null = null;
   naAll = false;
+  naPage = 1;
+  readonly naPageSize = 12;
+
+  get naPages(): number {
+    return Math.max(1, Math.ceil(this.newArrivals.length / this.naPageSize));
+  }
+
+  get naCurrent(): number {
+    return Math.min(this.naPage, this.naPages);
+  }
+
+  get naPaged(): Product[] {
+    const start = (this.naCurrent - 1) * this.naPageSize;
+    return this.newArrivals.slice(start, start + this.naPageSize);
+  }
+
+  get naRange(): { from: number; to: number } {
+    const from = (this.naCurrent - 1) * this.naPageSize + 1;
+    return { from, to: Math.min(from + this.naPageSize - 1, this.newArrivals.length) };
+  }
+
+  /** أرقام الصفحات مع null مكان الفجوات (…) */
+  get naPageList(): (number | null)[] {
+    const total = this.naPages;
+    const cur = this.naCurrent;
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages = new Set([1, total, cur - 1, cur, cur + 1].filter((n) => n >= 1 && n <= total));
+    const sorted = [...pages].sort((a, b) => a - b);
+    return sorted.flatMap((n, i) => (i && n - sorted[i - 1] > 1 ? [null, n] : [n]));
+  }
+
+  goNaPage(page: number, anchor?: HTMLElement): void {
+    this.naPage = Math.min(Math.max(1, page), this.naPages);
+    anchor?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   stats: StatCardData[] = [
     { title: 'إعلانات ظاهرة', value: 0, change: 'تظهر أعلى التطبيق', changeType: 'neutral', icon: 'campaign', animate: true },

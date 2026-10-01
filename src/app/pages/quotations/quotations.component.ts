@@ -277,8 +277,36 @@ export class QuotationsComponent implements OnInit, AfterViewInit {
     return !!q && ['pending', 'offered', 'expired'].includes(q.status);
   }
 
+  /** الموافقة متاحة لما آخر عرض على الطلب يكون من العميل */
   canAcceptRequested(q: QuotationRequest | null): boolean {
-    return !!q && q.status === 'pending' && q.requestedTotal != null;
+    if (!q || q.requestedTotal == null || !['pending', 'offered'].includes(q.status)) return false;
+    return q.currentOfferBy ? q.currentOfferBy === 'customer' : q.status === 'pending';
+  }
+
+  waitingCustomer(q: QuotationRequest | null): boolean {
+    return !!q && q.status === 'offered' && q.currentOfferBy === 'admin';
+  }
+
+  hasOriginalPrices(q: QuotationRequest | null): boolean {
+    return !!q && q.items.some((i) => i.originalPrice != null);
+  }
+
+  availabilityLabel(item: QuotationItem): string {
+    if (item.availability === 'unavailable') return 'غير متوفر';
+    if (item.availability === 'partial') return `متوفر ${item.availableQuantity ?? 0} بس`;
+    return '';
+  }
+
+  /** يوزّع سعر العميل على الأصناف بنفس نسبة أسعار الكتالوج */
+  matchCustomerTotal(): void {
+    const q = this.selected;
+    if (!q?.requestedTotal) return;
+    const base = q.items.reduce((s, i) => s + (i.listPrice || 0) * i.quantity, 0);
+    if (!base) return;
+    const ratio = q.requestedTotal / base;
+    q.items.forEach((i) => {
+      if (i.listPrice != null) this.priceDraft[i.id] = Math.round(i.listPrice * ratio * 100) / 100;
+    });
   }
 
   canReject(q: QuotationRequest | null): boolean {
@@ -298,7 +326,9 @@ export class QuotationsComponent implements OnInit, AfterViewInit {
   }
 
   listTotal(q: QuotationRequest | null): number | null {
-    if (!q || !this.hasListPrices(q)) return null;
+    if (!q) return null;
+    if (q.catalogTotal != null) return q.catalogTotal;
+    if (!this.hasListPrices(q)) return null;
     return q.items.reduce((s, i) => s + (i.listPrice || 0) * i.quantity, 0);
   }
 

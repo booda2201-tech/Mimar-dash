@@ -168,7 +168,7 @@
 
     <div class="na-list" *ngIf="newArrivals.length">
       <div class="na-card">
-        <article class="na-row" *ngFor="let p of newArrivals | slice: 0 : (naAll ? newArrivals.length : 4)">
+        <article class="na-row" *ngFor="let p of naAll ? naPaged : (newArrivals | slice: 0 : 4)">
           <div class="na-thumb" [class.is-empty]="!p.image">
             <img *ngIf="p.image" [src]="p.image" [alt]="p.name" loading="lazy" />
             <span *ngIf="!p.image" class="material-symbols-outlined">image</span>
@@ -192,14 +192,14 @@
           </button>
         </article>
       </div>
-      <button type="button" class="na-more" *ngIf="newArrivals.length > 4" (click)="naAll = !naAll">
+      <button type="button" class="na-more" *ngIf="newArrivals.length > 4" (click)="naAll = !naAll; naPage = 1">
         {{ naAll ? 'عرض أقل' : 'عرض الكل (' + newArrivals.length + ')' }}
         <span class="material-symbols-outlined">{{ naAll ? 'expand_less' : 'expand_more' }}</span>
       </button>
     </div>
 
     <div class="products-grid" *ngIf="newArrivals.length">
-      <article class="product-tile" *ngFor="let p of newArrivals">
+      <article class="product-tile" *ngFor="let p of naPaged">
         <div class="product-cover" [class.is-empty]="!p.image">
           <img *ngIf="p.image" [src]="p.image" [alt]="p.name" loading="lazy" />
           <span *ngIf="!p.image" class="material-symbols-outlined">image</span>
@@ -243,6 +243,32 @@
         </div>
       </article>
     </div>
+
+    <nav class="na-pager" *ngIf="naPages > 1" [class.is-open]="naAll" aria-label="صفحات وصل حديثاً">
+      <span class="na-pager-info">
+        عرض <b>{{ naRange.from }}–{{ naRange.to }}</b> من <b>{{ newArrivals.length }}</b> منتج
+      </span>
+      <div class="na-pages">
+        <button type="button" [disabled]="naCurrent === 1" (click)="goNaPage(naCurrent - 1, newSec)" aria-label="السابق">
+          <span class="material-symbols-outlined">chevron_right</span>
+        </button>
+        <ng-container *ngFor="let n of naPageList">
+          <span class="na-gap" *ngIf="n === null">…</span>
+          <button
+            type="button"
+            *ngIf="n !== null"
+            [class.is-active]="n === naCurrent"
+            [attr.aria-current]="n === naCurrent ? 'page' : null"
+            (click)="goNaPage(n, newSec)"
+          >
+            {{ n }}
+          </button>
+        </ng-container>
+        <button type="button" [disabled]="naCurrent === naPages" (click)="goNaPage(naCurrent + 1, newSec)" aria-label="التالي">
+          <span class="material-symbols-outlined">chevron_left</span>
+        </button>
+      </div>
+    </nav>
   </section>
 
   <section class="anim-item panel" #catSec>

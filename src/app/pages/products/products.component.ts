@@ -154,6 +154,7 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
     brand: [''],
     price: [null as number | null, [Validators.required, Validators.min(0.01)]],
     stock: [null as number | null, [Validators.required, Validators.min(0)]],
+    quotationQuantity: [null as number | null, [Validators.min(1)]],
     showInApp: [true],
     featured: [false],
     hasVariants: [false],
@@ -673,6 +674,7 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
       brand: '',
       price: null,
       stock: null,
+      quotationQuantity: null,
       showInApp: true,
       featured: false,
       hasVariants: false,
@@ -701,6 +703,7 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
       brand: product.brandId || '',
       price: product.basePrice ?? product.price,
       stock: product.stock,
+      quotationQuantity: product.quotationQuantity ?? null,
       showInApp: product.showInApp !== false,
       featured: !!(product.isNew ?? product.featured),
       hasVariants: !!product.hasVariants,
@@ -826,6 +829,7 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
       hasVariants,
       price: hasVariants ? undefined : Number(raw['price']),
       stockQuantity: hasVariants ? undefined : Number(raw['stock']),
+      quotationQuantity: Number(raw['quotationQuantity']) > 0 ? Number(raw['quotationQuantity']) : undefined,
       isActive: !!raw['showInApp'],
       isNew: !!raw['featured'],
       specifications,
@@ -837,6 +841,10 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private validatePayload(p: ProductFormPayload): string | null {
     if (!Number.isFinite(p.categoryId) || p.categoryId <= 0) return 'اختر الفئة';
+    const parent = this.categories.find((c) => String(c.id) === String(p.categoryId));
+    if (parent && this.categories.some((c) => String(c.parentId) === String(parent.id))) {
+      return `«${parent.name}» فيها فئات فرعية — اختار فئة فرعية من جواها`;
+    }
     if (p.hasVariants) {
       if (!p.variants.length) return 'أضف نوعاً واحداً على الأقل';
       const bad = p.variants.findIndex((v) => !v.attributes.length || v.price <= 0);
@@ -1196,7 +1204,7 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
     };
     this.categoryFilterOptions = [
       { value: '', label: 'كل الفئات', hint: `${this.products.length}` },
-      ...this.categoryOptions.map((o) => ({ ...o, hint: `${countFor(String(o.value))}` })),
+      ...this.categoryOptions.map((o) => ({ ...o, disabled: false, hint: `${countFor(String(o.value))}` })),
     ];
   }
 
@@ -1329,7 +1337,8 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
           label: c.name,
           depth,
           display: fullPath.join(' › '),
-          hint: c.status === 'inactive' ? 'مخفية' : depth === 0 && subCount ? `${subCount} فرعية` : undefined,
+          disabled: subCount > 0,
+          hint: c.status === 'inactive' ? 'مخفية' : subCount ? `${subCount} فرعية` : undefined,
         });
         if (depth < 5) walk(c.id, depth + 1, fullPath);
       }

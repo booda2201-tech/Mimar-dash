@@ -90,6 +90,8 @@ export interface ProductFormPayload {
   hasVariants: boolean;
   price?: number;
   stockQuantity?: number;
+  /** الكمية اللي من عندها العميل بيطلب عرض سعر */
+  quotationQuantity?: number;
   isActive: boolean;
   isNew: boolean;
   specifications: {
@@ -130,6 +132,8 @@ export interface Product {
   discountNote?: string;
   cost: number;
   stock: number;
+  /** الكمية اللي من عندها العميل بيطلب عرض سعر */
+  quotationQuantity?: number;
   sales: number;
   rating: number;
   status: StatusType;
@@ -437,6 +441,11 @@ export interface QuotationItem {
   quantity: number;
   /** سعر الكتالوج للوحدة */
   listPrice?: number;
+  /** سعر الوحدة قبل خصم المنتج */
+  originalPrice?: number;
+  availability?: 'available' | 'partial' | 'unavailable';
+  availableQuantity?: number;
+  alternativesCount?: number;
   /** السعر اللي العميل/التاجر مقترحه للوحدة */
   requestedPrice?: number;
   /** آخر سعر عرضه الأدمن للوحدة */
@@ -458,6 +467,7 @@ export interface QuotationOffer {
   validUntil?: string;
   createdAt?: string;
   createdBy?: string;
+  by: 'customer' | 'admin';
 }
 
 export interface QuotationRequest {
@@ -468,8 +478,13 @@ export interface QuotationRequest {
   rawStatus: string;
   customerName: string;
   customerPhone?: string;
+  customerEmail?: string;
   customerType?: string;
   isTrader: boolean;
+  /** إجمالي أسعار الكتالوج (السعر التقريبي اللي ظهر للعميل) */
+  catalogTotal?: number;
+  /** آخر عرض على الطلب: من العميل ولا من الأدمن */
+  currentOfferBy?: 'customer' | 'admin';
   materialListId?: string;
   materialListName?: string;
   materialListNotes?: string;

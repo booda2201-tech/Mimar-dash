@@ -7,7 +7,6 @@ import { StatusBadgeComponent } from '../../shared/components/status-badge/statu
 import { StatCardComponent } from '../../shared/components/stat-card/stat-card.component';
 import { ModalComponent } from '../../shared/components/modal/modal.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
-import { DetailViewComponent, DetailField } from '../../shared/components/detail-view/detail-view.component';
 import { SelectComponent, SelectOption } from '../../shared/components/select/select.component';
 import { OffersService } from '../../core/services/data.services';
 import { ProductsService } from '../../core/services/products.service';
@@ -27,7 +26,6 @@ import { Offer, StatCardData } from '../../core/models';
     StatCardComponent,
     ModalComponent,
     ConfirmDialogComponent,
-    DetailViewComponent,
     SelectComponent,
   ],
   templateUrl: './offers.component.html',
@@ -51,7 +49,6 @@ export class OffersComponent implements OnInit, AfterViewInit {
   showConfirm = false;
   mode: 'add' | 'edit' = 'add';
   selected: Offer | null = null;
-  viewFields: DetailField[] = [];
 
   stats: StatCardData[] = [
     { title: 'عروض نشطة', value: 0, change: 'ظاهرة في التطبيق', changeType: 'neutral', icon: 'sell', animate: true },
@@ -191,17 +188,6 @@ export class OffersComponent implements OnInit, AfterViewInit {
 
   openView(o: Offer): void {
     this.selected = o;
-    this.viewFields = [
-      { label: 'العنوان بالإنجليزي', value: o.titleEn || '—', span: 2 },
-      { label: 'نوع الخصم', value: this.sourceLabel(o) },
-      { label: 'SKU', value: o.code || '—' },
-      { label: 'قيمة الخصم', value: this.discountLabel(o) },
-      { label: 'مكان الخصم', value: o.discountNote || '—' },
-      { label: 'السعر', value: o.price ? `${o.price.toLocaleString('en-US')} ر.س` : '—' },
-      { label: 'السعر بعد الخصم', value: o.finalPrice ? `${o.finalPrice.toLocaleString('en-US')} ر.س` : '—' },
-      { label: 'المخزون', value: o.usage },
-      { label: 'الحالة', value: o.status, type: 'status', span: 2 },
-    ];
     this.showView = true;
   }
 

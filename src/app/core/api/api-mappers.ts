@@ -246,6 +246,7 @@ export function mapProduct(raw: unknown): Product {
     discountNote: found?.note,
     cost: num(pick(r, 'cost', 'Cost', 'costPrice', 'CostPrice')),
     stock,
+    quotationQuantity: optNum(pick(r, 'quotationQuantity', 'QuotationQuantity')),
     sales: num(pick(r, 'sales', 'Sales')),
     rating: num(pick(r, 'rating', 'Rating')),
     status: (!active ? 'inactive' : stock <= 0 ? 'out' : stock < 20 ? 'low' : 'active') as StatusType,
@@ -1014,6 +1015,49 @@ function mapQuotationItem(raw: Record<string, unknown>, index: number): Quotatio
   };
 }
 
+/** صنف العميل في requestedItems: السعر اللي ظهرله من الكتالوج */
+function mapRequestedItem(raw: Record<string, unknown>, index: number): QuotationItem {
+  const base = mapQuotationItem(raw, index);
+  const attrs = listOf(raw, 'attributes', 'Attributes')
+    .map((a) => str(pick(a, 'valueAr', 'ValueAr', 'value', 'Value')))
+    .filter(Boolean)
+    .join(' · ');
+  const unitPrice = optNum(pick(raw, 'unitPrice', 'UnitPrice'));
+  const original = optNum(pick(raw, 'originalUnitPrice', 'OriginalUnitPrice'));
+  return {
+    ...base,
+    variantName: base.variantName || attrs || undefined,
+    listPrice: unitPrice ?? base.listPrice,
+    originalPrice: original != null && unitPrice != null && original > unitPrice ? original : undefined,
+    requestedPrice: undefined,
+    offeredPrice: undefined,
+    availability: availabilityOf(raw),
+    availableQuantity: optNum(pick(raw, 'availableQuantity', 'AvailableQuantity')),
+  };
+}
+
+/** بند بناه الأدمن في quotation.items (طلبات الملفات) */
+function mapQuotedItem(raw: Record<string, unknown>, index: number): QuotationItem {
+  const base = mapQuotationItem(raw, index);
+  const name = str(pick(raw, 'productNameAr', 'ProductNameAr')) || str(pick(raw, 'requestedName', 'RequestedName'));
+  return {
+    ...base,
+    productName: name || base.productName,
+    quantity: num(pick(raw, 'requestedQuantity', 'RequestedQuantity', 'quantity', 'Quantity'), 1),
+    listPrice: undefined,
+    requestedPrice: undefined,
+    offeredPrice: optNum(pick(raw, 'unitPrice', 'UnitPrice')),
+    availability: availabilityOf(raw),
+    availableQuantity: optNum(pick(raw, 'availableQuantity', 'AvailableQuantity')),
+    alternativesCount: listOf(raw, 'alternatives', 'Alternatives').length || undefined,
+  };
+}
+
+function availabilityOf(raw: Record<string, unknown>): QuotationItem['availability'] {
+  const a = str(pick(raw, 'availability', 'Availability')).toLowerCase();
+  return a === 'available' || a === 'partial' || a === 'unavailable' ? a : undefined;
+}
+
 function mapQuotationFile(raw: Record<string, unknown>, index: number): QuotationFile {
   const url = str(pick(raw, 'fileUrl', 'FileUrl', 'url', 'Url', 'path', 'Path', 'imageUrl', 'ImageUrl'));
   const name = str(pick(raw, 'fileName', 'FileName', 'originalName', 'OriginalName', 'name', 'Name')) || url.split('/').pop() || `ملف ${index + 1}`;
@@ -1038,7 +1082,11 @@ function mapQuotationOffer(raw: Record<string, unknown>, index: number): Quotati
     notes: str(pick(raw, 'notes', 'Notes', 'message', 'Message')) || undefined,
     validUntil: str(pick(raw, 'validUntil', 'ValidUntil', 'expiresAt', 'ExpiresAt')) || undefined,
     createdAt: str(pick(raw, 'createdAt', 'CreatedAt', 'date', 'Date')) || undefined,
-    createdBy: displayPersonName(pick(raw, 'createdBy', 'CreatedBy'), pick(raw, 'adminName', 'AdminName')) || undefined,
+    createdBy:
+      str(pick(raw, 'createdByName', 'CreatedByName')) ||
+      displayPersonName(pick(raw, 'createdBy', 'CreatedBy'), pick(raw, 'adminName', 'AdminName')) ||
+      undefined,
+    by: /customer|user|client/i.test(str(pick(raw, 'offeredBy', 'OfferedBy'))) ? 'customer' : 'admin',
   };
 }
 
@@ -1047,12 +1095,23 @@ export function mapQuotationRequest(raw: unknown): QuotationRequest {
   const customer = asRecord(pick(r, 'customer', 'Customer', 'user', 'User', 'requester', 'Requester'));
   const typeRaw = str(pick(r, 'type', 'Type', 'requestType', 'RequestType')).toLowerCase();
   const materialListId = str(pick(r, 'materialListId', 'MaterialListId')) || undefined;
+  const quotation = asRecord(pick(r, 'quotation', 'Quotation'));
+  const quotedItems = listOf(quotation, 'items', 'Items');
+  const requestedItems = listOf(r, 'requestedItems', 'RequestedItems');
+  const quotationOffers = listOf(quotation, 'offers', 'Offers');
   const knownItems = listOf(r, 'items', 'Items', 'products', 'Products', 'lines', 'Lines');
   const knownFiles = listOf(r, 'files', 'Files', 'attachments', 'Attachments');
   const knownOffers = listOf(r, 'offers', 'Offers', 'priceOffers', 'PriceOffers');
-  const items = (knownItems.length ? knownItems : guessItems(r)).map(mapQuotationItem);
+  const items = quotedItems.length
+    ? quotedItems.map(mapQuotedItem)
+    : requestedItems.length
+      ? requestedItems.map(mapRequestedItem)
+      : (knownItems.length ? knownItems : guessItems(r)).map(mapQuotationItem);
   const files = (knownFiles.length ? knownFiles : guessFiles(r)).map(mapQuotationFile);
-  const offers = (knownOffers.length ? knownOffers : guessOffers(r)).map(mapQuotationOffer);
+  const offers = (quotationOffers.length ? quotationOffers : knownOffers.length ? knownOffers : guessOffers(r)).map(
+    mapQuotationOffer
+  );
+  const hasRealOffers = quotationOffers.length > 0 || Object.keys(quotation).length > 0;
   const isExpired = bool(pick(r, 'isExpired', 'IsExpired'), false);
   const rawStatus = str(pick(r, 'status', 'Status'), 'pending');
   const customerType = str(
@@ -1076,6 +1135,10 @@ export function mapQuotationRequest(raw: unknown): QuotationRequest {
     findAmount(r, /(offer|quot|admin|approv|agreed).*(price|total|amount)/i) ??
     lastOffer?.total;
   const declaredIsCustomer = status === 'pending' || explicitOffered !== undefined;
+  const lastBy = (by: QuotationOffer['by']) => [...offers].reverse().find((o) => o.by === by)?.total;
+  const catalogTotal =
+    positive(optNum(pick(r, 'catalogSubTotal', 'CatalogSubTotal'))) ??
+    positive(optNum(pick(quotation, 'itemsTotal', 'ItemsTotal')));
 
   return {
     id: str(pick(r, 'id', 'Id')),
@@ -1089,6 +1152,9 @@ export function mapQuotationRequest(raw: unknown): QuotationRequest {
         customer
       ) || str(pick(r, 'customerName', 'userName', 'UserName'), 'عميل'),
     customerPhone: str(pick(r, 'customerPhone', 'CustomerPhone', 'phoneNumber', 'PhoneNumber') ?? pick(customer, 'phoneNumber', 'PhoneNumber', 'phone')) || undefined,
+    customerEmail: str(pick(customer, 'email', 'Email')) || undefined,
+    catalogTotal,
+    currentOfferBy: offers.length ? offers[offers.length - 1].by : undefined,
     customerType: customerType || undefined,
     isTrader: traderFlag || /trader|merchant|dealer|tajer|تاجر|contractor|مقاول|company|شركة/i.test(customerType),
     materialListId,
@@ -1098,13 +1164,17 @@ export function mapQuotationRequest(raw: unknown): QuotationRequest {
     rejectionReason: str(pick(r, 'rejectionReason', 'RejectionReason')) || undefined,
     createdAt: str(pick(r, 'createdAt', 'CreatedAt')) || undefined,
     updatedAt: str(pick(r, 'updatedAt', 'UpdatedAt')) || undefined,
-    validUntil: str(pick(r, 'validUntil', 'ValidUntil')) || lastOffer?.validUntil,
+    validUntil: str(pick(r, 'validUntil', 'ValidUntil') ?? pick(quotation, 'validUntil', 'ValidUntil')) || lastOffer?.validUntil,
     isExpired,
     productsCount: num(pick(r, 'productsCount', 'ProductsCount', 'itemsCount', 'ItemsCount'), items.length),
     totalQuantity: num(pick(r, 'totalQuantity', 'TotalQuantity'), items.reduce((s, i) => s + i.quantity, 0)),
     attachmentsCount: num(pick(r, 'attachmentsCount', 'AttachmentsCount', 'filesCount', 'FilesCount'), files.length),
-    requestedTotal: positive(explicitRequested) ?? (declaredIsCustomer ? positive(declaredTotal) : undefined),
-    offeredTotal: positive(explicitOffered) ?? (declaredIsCustomer ? undefined : positive(declaredTotal)),
+    requestedTotal: hasRealOffers
+      ? positive(lastBy('customer'))
+      : positive(explicitRequested) ?? (declaredIsCustomer ? positive(declaredTotal) : undefined),
+    offeredTotal: hasRealOffers
+      ? positive(lastBy('admin'))
+      : positive(explicitOffered) ?? (declaredIsCustomer ? undefined : positive(declaredTotal)),
     items,
     files,
     offers,

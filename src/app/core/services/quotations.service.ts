@@ -39,6 +39,7 @@ export class QuotationsService {
 
   sendOffer(id: string, payload: QuotationOfferPayload): Observable<unknown> {
     const body = {
+      amount: payload.totalPrice,
       totalPrice: payload.totalPrice,
       totalAmount: payload.totalPrice,
       validUntil: payload.validUntil || null,

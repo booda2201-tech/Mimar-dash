@@ -22,6 +22,7 @@ export class SidebarComponent implements OnInit, AfterViewInit {
     { label: 'الرئيسية', route: '/dashboard', icon: 'dashboard' },
     { label: 'المنتجات', route: '/products', icon: 'inventory_2' },
     { label: 'محتوى التطبيق', route: '/app-content', icon: 'smartphone' },
+    { label: 'المجموعات', route: '/collections', icon: 'package_2' },
     { label: 'الطلبات', route: '/orders', icon: 'local_shipping' },
     { label: 'عروض السعر', route: '/quotations', icon: 'request_quote' },
     { label: 'العملاء', route: '/customers', icon: 'groups' },
@@ -29,7 +30,6 @@ export class SidebarComponent implements OnInit, AfterViewInit {
     { label: 'البراندات', route: '/brands', icon: 'workspace_premium' },
     { label: 'الفئات', route: '/categories', icon: 'category' },
     { label: 'العروض والبنرات', route: '/offers', icon: 'sell' },
-    { label: 'التقارير والتحليلات', route: '/reports', icon: 'analytics' },
   ];
 
   dragY = 0;

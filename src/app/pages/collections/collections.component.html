@@ -1,0 +1,409 @@
+﻿<div class="collections-page space-y-6">
+  <section class="page-hero anim-item">
+    <div class="min-w-0">
+      <span class="hero-chip">
+        <span class="material-symbols-outlined text-[14px]">package_2</span>
+        باقات التطبيق
+      </span>
+      <div class="title-row">
+        <button type="button" class="c-back" (click)="goBack()" aria-label="رجوع">
+          <span class="material-symbols-outlined">arrow_forward</span>
+        </button>
+        <div class="min-w-0">
+          <h1>المجموعات</h1>
+          <p>باقات جاهزة بمراحل وفئات ومنتجات بتظهر للعملاء في الهوم</p>
+        </div>
+      </div>
+    </div>
+    <div class="hero-actions">
+      <label class="search-box">
+        <span class="material-symbols-outlined">search</span>
+        <input type="search" [(ngModel)]="searchTerm" placeholder="بحث باسم المجموعة أو المرحلة..." />
+      </label>
+      <button type="button" class="btn-primary text-sm hero-add" (click)="openAdd()">
+        <span class="material-symbols-outlined text-[18px]">add</span>
+        مجموعة جديدة
+      </button>
+    </div>
+  </section>
+
+  <div class="anim-item c-summary">
+    <div class="c-main">
+      <div class="min-w-0">
+        <small>ظاهرة في التطبيق</small>
+        <strong>{{ statusCount('active') }} <em>من {{ collections.length }}</em></strong>
+      </div>
+      <button type="button" class="c-new" (click)="openAdd()">
+        <span class="material-symbols-outlined">add</span>
+        مجموعة
+      </button>
+    </div>
+    <div class="c-sgrid">
+      <div>
+        <strong>{{ totalStages }}</strong>
+        <small>مرحلة</small>
+      </div>
+      <div>
+        <strong>{{ totalOf('Category') }}</strong>
+        <small>فئة</small>
+      </div>
+      <div>
+        <strong>{{ totalOf('Product') }}</strong>
+        <small>منتج</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="desk-stats grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+    <div class="anim-item" *ngFor="let s of stats">
+      <app-stat-card [data]="s" [loading]="loading"></app-stat-card>
+    </div>
+  </div>
+
+  <div class="anim-item chip-scroll">
+    <button
+      *ngFor="let f of filters"
+      type="button"
+      class="chip-btn"
+      [class.is-active]="statusFilter === f.k"
+      (click)="statusFilter = f.k"
+    >
+      {{ f.l }}
+      <span class="chip-count">{{ statusCount(f.k) }}</span>
+    </button>
+  </div>
+
+  <div class="c-grid" *ngIf="loading">
+    <div class="c-card is-skeleton" *ngFor="let i of [1, 2, 3]">
+      <div class="skeleton h-12 w-12 rounded-2xl"></div>
+      <div class="skeleton h-4 w-40 mt-4"></div>
+      <div class="skeleton h-3 w-28 mt-2"></div>
+    </div>
+  </div>
+
+  <div class="empty-state" *ngIf="!loading && !filtered.length">
+    <span class="material-symbols-outlined">package_2</span>
+    <h3>{{ collections.length ? 'لا توجد مجموعات مطابقة' : 'لا توجد مجموعات بعد' }}</h3>
+    <p>{{ collections.length ? 'جرّب بحثاً مختلفاً أو غيّر الفلتر.' : 'اعمل باقة زي «جهّز حمامك» فيها مراحل وفئات ومنتجات.' }}</p>
+    <button type="button" class="btn-primary text-sm mt-3" (click)="openAdd()">مجموعة جديدة</button>
+  </div>
+
+  <div class="c-grid" *ngIf="!loading && filtered.length">
+    <article
+      class="c-card"
+      *ngFor="let c of filtered; trackBy: trackById"
+      [class.is-off]="!c.active"
+      (click)="openView(c)"
+    >
+      <span class="card-accent" aria-hidden="true"></span>
+      <header class="card-top">
+        <div class="c-thumb">
+          <img *ngIf="c.image; else noCover" [src]="c.image" [alt]="c.name" loading="lazy" />
+          <ng-template #noCover><span class="material-symbols-outlined">package_2</span></ng-template>
+        </div>
+        <div class="min-w-0 flex-1">
+          <h3>{{ c.name }}</h3>
+          <p class="c-sub">{{ c.description || c.nameEn || 'بدون وصف' }}</p>
+        </div>
+      </header>
+
+      <div class="meta-row">
+        <span *ngIf="c.badge; else noBadge" class="c-badge">{{ c.badge }}</span>
+        <ng-template #noBadge>
+          <span>
+            <span class="material-symbols-outlined">sell</span>
+            بدون شارة
+          </span>
+        </ng-template>
+        <span>
+          <span class="material-symbols-outlined">format_list_numbered</span>
+          ترتيب {{ c.sortOrder }}
+        </span>
+      </div>
+
+      <ul class="mini-items">
+        <li *ngFor="let s of c.stages.slice(0, 3); let i = index">
+          <span class="step-num">{{ i + 1 }}</span>
+          <span class="item-label">{{ s.name }}</span>
+          <span class="item-qty">{{ s.items.length }} عنصر</span>
+        </li>
+        <li class="is-more" *ngIf="c.stages.length > 3">+{{ c.stages.length - 3 }} مراحل أخرى</li>
+        <li class="is-empty" *ngIf="!c.stages.length">لا توجد مراحل بعد</li>
+      </ul>
+
+      <div class="total-row">
+        <span>{{ c.stages.length }} مراحل</span>
+        <strong>{{ itemCount(c, 'Category') }} فئات · {{ itemCount(c, 'Product') }} منتجات</strong>
+      </div>
+
+      <footer class="card-foot" (click)="$event.stopPropagation()">
+        <span class="c-state" [class.is-on]="c.active">
+          <i></i>{{ c.active ? 'ظاهرة في التطبيق' : 'مخفية من التطبيق' }}
+        </span>
+        <div class="card-actions">
+          <button type="button" class="icon-btn is-view" (click)="openView(c)" title="عرض" aria-label="عرض">
+            <span class="material-symbols-outlined">visibility</span>
+            <span class="btn-label">عرض</span>
+          </button>
+          <button type="button" class="icon-btn is-edit" (click)="openEdit(c)" title="تعديل" aria-label="تعديل">
+            <span class="material-symbols-outlined">edit</span>
+            <span class="btn-label">تعديل</span>
+          </button>
+          <button
+            type="button"
+            class="icon-btn"
+            [disabled]="busyToggle.has(c.id)"
+            (click)="toggleActive(c)"
+            [title]="c.active ? 'إخفاء' : 'إظهار'"
+            [attr.aria-label]="c.active ? 'إخفاء' : 'إظهار'"
+          >
+            <span class="material-symbols-outlined">{{ c.active ? 'visibility_off' : 'publish' }}</span>
+            <span class="btn-label">{{ c.active ? 'إخفاء' : 'إظهار' }}</span>
+          </button>
+          <button type="button" class="icon-btn is-danger" (click)="openDelete(c)" title="حذف" aria-label="حذف">
+            <span class="material-symbols-outlined">delete</span>
+          </button>
+        </div>
+      </footer>
+    </article>
+  </div>
+</div>
+
+<!-- ---------- عرض المجموعة ---------- -->
+<app-modal [open]="!!viewing" [title]="viewing?.name || ''" maxWidth="780px" (close)="viewing = null">
+  <div class="cv" *ngIf="viewing as c">
+    <div class="cv-hero">
+      <img *ngIf="c.image" [src]="c.image" [alt]="c.name" />
+      <div class="cv-hero-copy">
+        <span class="c-badge static" *ngIf="c.badge">{{ c.badge }}</span>
+        <h2>{{ c.name }}</h2>
+        <p *ngIf="c.description">{{ c.description }}</p>
+      </div>
+    </div>
+
+    <div class="cv-meta">
+      <span class="c-state static" [class.is-on]="c.active"><i></i>{{ c.active ? 'ظاهرة في التطبيق' : 'مخفية' }}</span>
+      <span><span class="material-symbols-outlined">format_list_numbered</span> ترتيب {{ c.sortOrder }}</span>
+      <span><span class="material-symbols-outlined">stairs</span> {{ c.stages.length }} مراحل</span>
+      <span><span class="material-symbols-outlined">inventory_2</span> {{ itemCount(c) }} عنصر</span>
+    </div>
+
+    <ol class="cv-stages">
+      <li class="cv-stage" *ngFor="let s of c.stages; let i = index">
+        <div class="cv-stage-head">
+          <span class="cv-num">{{ i + 1 }}</span>
+          <div class="min-w-0">
+            <h4>{{ s.name }}</h4>
+            <p *ngIf="s.description">{{ s.description }}</p>
+          </div>
+        </div>
+        <div class="cv-items" *ngIf="s.items.length; else noItems">
+          <div class="cv-item" *ngFor="let it of s.items" [class.is-off]="!it.active">
+            <div class="cv-thumb">
+              <img *ngIf="it.image; else itemIcon" [src]="it.image" [alt]="it.name" loading="lazy" />
+              <ng-template #itemIcon>
+                <span class="material-symbols-outlined">{{ it.type === 'Product' ? 'inventory_2' : 'category' }}</span>
+              </ng-template>
+              <em [attr.data-type]="it.type">{{ it.type === 'Product' ? 'منتج' : 'فئة' }}</em>
+            </div>
+            <strong [title]="it.name">{{ it.name }}</strong>
+            <small *ngIf="it.type === 'Product'">
+              {{ money(it.finalPrice) }}
+              <s *ngIf="(it.price || 0) > (it.finalPrice || 0)">{{ money(it.price) }}</s>
+            </small>
+            <small *ngIf="it.type === 'Category'">{{ it.productsCount || 0 }} منتج · من {{ money(it.startingPrice) }}</small>
+          </div>
+        </div>
+        <ng-template #noItems><p class="cv-none">مفيش عناصر في المرحلة دي</p></ng-template>
+      </li>
+    </ol>
+
+    <div class="bf-actions">
+      <button type="button" class="btn-outline" (click)="viewing = null">إغلاق</button>
+      <button type="button" class="btn-primary" (click)="editFromView()">
+        <span class="material-symbols-outlined text-[18px]">edit</span>
+        تعديل المجموعة
+      </button>
+    </div>
+  </div>
+</app-modal>
+
+<!-- ---------- إضافة / تعديل ---------- -->
+<app-modal [open]="showForm" [title]="formTitle" maxWidth="780px" (close)="showForm = false">
+  <form class="bf" (ngSubmit)="save()" autocomplete="off">
+    <div class="bf-preview">
+      <div class="bf-logo cf-cover">
+        <img *ngIf="draft.image; else coverIcon" [src]="draft.image" alt="" />
+        <ng-template #coverIcon><span class="material-symbols-outlined">package_2</span></ng-template>
+      </div>
+      <div class="min-w-0 flex-1">
+        <strong>{{ draft.name || 'اسم المجموعة' }}</strong>
+        <bdi>{{ draft.badge || draft.nameEn || 'Collection' }}</bdi>
+      </div>
+      <span class="bf-count">
+        <span class="material-symbols-outlined">stairs</span>
+        {{ draft.stages.length }} مراحل · {{ draftItems }} عنصر
+      </span>
+    </div>
+
+    <section class="bf-section">
+      <h4><span class="material-symbols-outlined">badge</span> الاسم</h4>
+      <div class="bf-row">
+        <div>
+          <label class="form-label">بالعربي</label>
+          <input class="input-field" name="name" [(ngModel)]="draft.name" placeholder="مثال: جهّز حمامك" />
+          <p *ngIf="submitted && draft.name.trim().length < 2" class="form-error">اسم المجموعة مطلوب</p>
+        </div>
+        <div>
+          <label class="form-label">بالإنجليزي</label>
+          <input class="input-field" name="nameEn" [(ngModel)]="draft.nameEn" dir="ltr" placeholder="Prepare your bathroom" />
+        </div>
+      </div>
+    </section>
+
+    <section class="bf-section">
+      <h4><span class="material-symbols-outlined">image</span> الغلاف والشارة</h4>
+      <app-image-dropzone name="image" [(ngModel)]="draft.image" label="صورة الغلاف" hint="اضغط لاختيار صورة أو اسحبها هنا"></app-image-dropzone>
+      <p *ngIf="submitted && !draft.image" class="form-error">صورة الغلاف مطلوبة</p>
+      <div class="bf-row">
+        <div>
+          <label class="form-label">الشارة بالعربي</label>
+          <input class="input-field" name="badge" [(ngModel)]="draft.badge" placeholder="مجموعة متكاملة" />
+        </div>
+        <div>
+          <label class="form-label">الشارة بالإنجليزي</label>
+          <input class="input-field" name="badgeEn" [(ngModel)]="draft.badgeEn" dir="ltr" placeholder="Complete set" />
+        </div>
+      </div>
+    </section>
+
+    <details class="bf-section bf-more" [open]="!!(draft.description || draft.descriptionEn)">
+      <summary>
+        <span class="material-symbols-outlined">notes</span>
+        الوصف
+        <em>اختياري</em>
+        <span class="material-symbols-outlined bf-chev">expand_more</span>
+      </summary>
+      <textarea class="input-field bf-text" name="description" [(ngModel)]="draft.description" placeholder="كل ما تحتاجه من التأسيس للتشطيب في مكان واحد"></textarea>
+      <textarea class="input-field bf-text" name="descriptionEn" [(ngModel)]="draft.descriptionEn" dir="ltr" placeholder="Short description in English"></textarea>
+    </details>
+
+    <section class="bf-section">
+      <h4>
+        <span class="material-symbols-outlined">stairs</span> المراحل
+        <em>{{ draft.stages.length }}</em>
+      </h4>
+
+      <div class="cf-stage" *ngFor="let s of draft.stages; let i = index; let last = last">
+        <div class="cf-stage-top">
+          <span class="cf-num">{{ i + 1 }}</span>
+          <input
+            class="input-field cf-stage-name"
+            [name]="'stName' + i"
+            [(ngModel)]="s.name"
+            placeholder="اسم المرحلة · مثال: العزل والتأسيس"
+            [class.is-invalid]="submitted && !s.name.trim()"
+          />
+          <div class="cf-stage-tools">
+            <button type="button" class="cf-icon" [disabled]="i === 0" (click)="moveStage(i, -1)" aria-label="لفوق" title="لفوق">
+              <span class="material-symbols-outlined">arrow_upward</span>
+            </button>
+            <button type="button" class="cf-icon" [disabled]="last" (click)="moveStage(i, 1)" aria-label="لتحت" title="لتحت">
+              <span class="material-symbols-outlined">arrow_downward</span>
+            </button>
+            <button type="button" class="cf-icon is-danger" [disabled]="draft.stages.length === 1" (click)="removeStage(i)" aria-label="حذف المرحلة" title="حذف المرحلة">
+              <span class="material-symbols-outlined">delete</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="bf-row">
+          <input class="input-field" [name]="'stNameEn' + i" [(ngModel)]="s.nameEn" dir="ltr" placeholder="Stage name (EN)" />
+          <input class="input-field" [name]="'stDesc' + i" [(ngModel)]="s.description" placeholder="وصف قصير للمرحلة" />
+        </div>
+
+        <div class="cf-items" *ngIf="s.items.length">
+          <span class="cf-item" *ngFor="let it of s.items; let k = index" [attr.data-type]="it.type">
+            <span class="cf-item-thumb">
+              <img *ngIf="it.image; else chipIcon" [src]="it.image" alt="" />
+              <ng-template #chipIcon>
+                <span class="material-symbols-outlined">{{ it.type === 'Product' ? 'inventory_2' : 'category' }}</span>
+              </ng-template>
+            </span>
+            <span class="cf-item-copy">
+              <b>{{ it.name }}</b>
+              <small>{{ it.type === 'Product' ? money(it.finalPrice) : (it.productsCount || 0) + ' منتج' }}</small>
+            </span>
+            <button type="button" (click)="removeItem(s, k)" [attr.aria-label]="'شيل ' + it.name">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </span>
+        </div>
+
+        <div class="cf-pickers">
+          <ng-container *ngFor="let _ of [pickerReset]">
+            <div class="cf-picker">
+              <span class="material-symbols-outlined">category</span>
+              <app-select
+                [options]="categoryOptions"
+                [searchable]="true"
+                placeholder="ضيف فئة"
+                (selectionChange)="addItem(s, 'Category', $event)"
+              ></app-select>
+            </div>
+            <div class="cf-picker">
+              <span class="material-symbols-outlined">inventory_2</span>
+              <app-select
+                [options]="productOptions"
+                [searchable]="true"
+                placeholder="ضيف منتج"
+                (selectionChange)="addItem(s, 'Product', $event)"
+              ></app-select>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+
+      <button type="button" class="cf-add-stage" (click)="addStage()">
+        <span class="material-symbols-outlined">add</span>
+        إضافة مرحلة
+      </button>
+    </section>
+
+    <section class="bf-section">
+      <h4><span class="material-symbols-outlined">tune</span> الظهور</h4>
+      <div class="bf-inline">
+        <div>
+          <label class="form-label">ترتيب العرض</label>
+          <input class="input-field" type="number" min="0" name="sortOrder" [(ngModel)]="draft.sortOrder" />
+        </div>
+        <label class="bf-switch">
+          <span class="min-w-0">
+            <strong>ظاهرة في التطبيق</strong>
+            <small>العملاء يشوفوها في الهوم</small>
+          </span>
+          <input type="checkbox" name="active" [(ngModel)]="draft.active" />
+          <i aria-hidden="true"></i>
+        </label>
+      </div>
+    </section>
+
+    <div class="bf-actions">
+      <button type="button" class="btn-outline" (click)="showForm = false">إلغاء</button>
+      <button type="submit" class="btn-primary" [disabled]="saving">
+        <span class="material-symbols-outlined text-[18px]" [class.animate-spin]="saving">{{ saving ? 'progress_activity' : 'check' }}</span>
+        {{ mode === 'edit' ? 'حفظ التعديلات' : 'إضافة المجموعة' }}
+      </button>
+    </div>
+  </form>
+</app-modal>
+
+<app-confirm-dialog
+  [open]="showConfirm"
+  title="حذف المجموعة"
+  [message]="'حذف «' + (selected?.name || '') + '» بكل مراحلها؟ المنتجات والفئات نفسها مش هتتمسح.'"
+  confirmText="حذف"
+  [danger]="true"
+  (confirm)="confirmDelete()"
+  (cancel)="showConfirm = false"
+></app-confirm-dialog>

@@ -222,6 +222,69 @@
   background: rgba(11, 74, 58, 0.07);
 }
 
+.select-option.is-group {
+  cursor: default;
+}
+
+.select-option.is-group:hover {
+  background: transparent;
+}
+
+.select-option.is-group.is-parent {
+  cursor: pointer;
+}
+
+.select-option.is-group.is-parent:hover {
+  background: rgba(11, 74, 58, 0.05);
+}
+
+.select-option.is-parent.is-expanded:not(.is-active) {
+  background: rgba(11, 74, 58, 0.035);
+}
+
+.option-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 0.5rem;
+  font-size: 1.15rem !important;
+  color: #6b7280;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.option-toggle:hover {
+  background: rgba(11, 74, 58, 0.08);
+  color: #0b4a3a;
+}
+
+.select-option.is-expanded .option-toggle {
+  transform: rotate(180deg);
+  color: #0b4a3a;
+}
+
+.select-option.is-child {
+  animation: childIn 0.18s ease;
+}
+
+@keyframes childIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.select-option.is-group .option-hint {
+  background: #fdf6e3;
+  color: #8a6a1f;
+}
+
 .select-option.is-child {
   min-height: 2.3rem;
   font-weight: 600;
