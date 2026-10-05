@@ -14,7 +14,6 @@ import { StatCardComponent } from '../../shared/components/stat-card/stat-card.c
 import { DataTableComponent } from '../../shared/components/data-table/data-table.component';
 import { ModalComponent } from '../../shared/components/modal/modal.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
-import { DetailViewComponent, DetailField } from '../../shared/components/detail-view/detail-view.component';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { SelectComponent, SelectOption } from '../../shared/components/select/select.component';
 import { ProductsService } from '../../core/services/products.service';
@@ -64,7 +63,6 @@ interface GalleryImage {
     DataTableComponent,
     ModalComponent,
     ConfirmDialogComponent,
-    DetailViewComponent,
     StatusBadgeComponent,
     SelectComponent,
   ],
@@ -81,7 +79,9 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
   mode: ModalMode = 'add';
   selected: Product | null = null;
   selectedId: string | null = null;
-  viewFields: DetailField[] = [];
+  readonly inputUnitPresets = ['m2', 'm3', 'm', 'kg', 'ton', 'L'];
+  viewImage = '';
+  viewDescLang: 'ar' | 'en' = 'ar';
   expandedVariant: number | null = null;
   private subs: Subscription[] = [];
 
@@ -155,6 +155,8 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
     price: [null as number | null, [Validators.required, Validators.min(0.01)]],
     stock: [null as number | null, [Validators.required, Validators.min(0)]],
     quotationQuantity: [null as number | null, [Validators.min(1)]],
+    coveragePerUnit: [null as number | null, [Validators.min(0.0001)]],
+    inputUnit: ['', [Validators.maxLength(20)]],
     showInApp: [true],
     featured: [false],
     hasVariants: [false],
@@ -675,6 +677,8 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
       price: null,
       stock: null,
       quotationQuantity: null,
+      coveragePerUnit: null,
+      inputUnit: '',
       showInApp: true,
       featured: false,
       hasVariants: false,
@@ -704,6 +708,8 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
       price: product.basePrice ?? product.price,
       stock: product.stock,
       quotationQuantity: product.quotationQuantity ?? null,
+      coveragePerUnit: product.coveragePerUnit ?? null,
+      inputUnit: product.inputUnit || '',
       showInApp: product.showInApp !== false,
       featured: !!(product.isNew ?? product.featured),
       hasVariants: !!product.hasVariants,
@@ -715,43 +721,40 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   openView(product: Product): void {
+    if (this.selected?.id !== product.id) {
+      this.viewImage = '';
+      this.viewDescLang = 'ar';
+    }
     this.selected = product;
-    this.viewFields = [
-      { label: 'الاسم بالإنجليزي', value: product.nameEn || '—', span: 2 },
-      { label: 'رمز SKU', value: product.sku },
-      { label: 'الفئة', value: product.category },
-      { label: 'البراند', value: product.brand || product.supplier || '—' },
-      { label: 'السعر الأساسي', value: product.basePrice ?? product.price, type: 'currency' },
-      { label: product.variants?.length ? 'يبدأ من' : 'السعر بعد الخصم', value: product.price, type: 'currency' },
-      {
-        label: 'الخصم',
-        value: product.discountLabel ? [product.discountLabel, product.discountNote].filter(Boolean).join(' · ') : 'لا يوجد',
-        span: 2,
-      },
-      { label: 'المخزون', value: product.stock.toLocaleString('en-US') },
-      { label: 'الحالة', value: product.status, type: 'status' },
-      { label: 'في التطبيق', value: product.showInApp === false ? 'مخفي' : 'ظاهر' },
-      { label: 'جديد', value: product.isNew ?? product.featured ? 'نعم' : 'لا' },
-      { label: 'عدد الأنواع', value: product.variants?.length || 0 },
-      { label: 'شرائح الجملة', value: this.tierCount(product) },
-      ...(product.variants || []).map((v) => ({
-        label: `نوع: ${this.variantTitle(v)}`,
-        value:
-          `${this.money(v.finalPrice ?? v.price)}` +
-          ((v.finalPrice ?? v.price) < v.price ? ` (بدل ${this.money(v.price)} · خصم ${v.discountLabel || ''})` : '') +
-          ` · مخزون ${v.stock}`,
-        span: 2 as const,
-      })),
-      ...(product.priceTiers || []).map((t) => ({
-        label: `شريحة ${t.maxQuantity ? `${t.minQuantity}–${t.maxQuantity}` : `من ${t.minQuantity}`} قطعة`,
-        value:
-          this.money(t.finalUnitPrice ?? t.unitPrice) +
-          ((t.finalUnitPrice ?? t.unitPrice) < t.unitPrice ? ` (بدل ${this.money(t.unitPrice)} · خصم ${t.discountLabel || ''})` : ''),
-      })),
-      { label: 'الوصف', value: product.description || '—', span: 2 },
-      { label: 'English description', value: product.descriptionEn || '—', span: 2 },
-    ];
+    const gallery = this.viewGallery(product);
+    if (!gallery.includes(this.viewImage)) this.viewImage = gallery[0] || '';
     this.showView = true;
+  }
+
+  viewGallery(p: Product): string[] {
+    return [...new Set([p.image, ...(p.images || [])].filter((src): src is string => !!src))];
+  }
+
+  viewHasDiscount(p: Product): boolean {
+    return (p.basePrice ?? p.price) > p.price;
+  }
+
+  viewSavePercent(p: Product): number {
+    const base = p.basePrice ?? p.price;
+    return base > 0 && base > p.price ? Math.round(((base - p.price) / base) * 100) : p.discountPercent || 0;
+  }
+
+  viewStockTone(p: Product): 'ok' | 'low' | 'out' {
+    return p.stock <= 0 ? 'out' : p.stock <= 5 ? 'low' : 'ok';
+  }
+
+  calcUnitsFor(amount: number): number {
+    const coverage = Number(this.form.value.coveragePerUnit);
+    return coverage > 0 ? Math.ceil(amount / coverage) : 0;
+  }
+
+  tierRange(t: ProductPriceTier): string {
+    return t.maxQuantity ? `${t.minQuantity}–${t.maxQuantity}` : `${t.minQuantity}+`;
   }
 
   // ---------- payload ----------
@@ -830,6 +833,8 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
       price: hasVariants ? undefined : Number(raw['price']),
       stockQuantity: hasVariants ? undefined : Number(raw['stock']),
       quotationQuantity: Number(raw['quotationQuantity']) > 0 ? Number(raw['quotationQuantity']) : undefined,
+      coveragePerUnit: Number(raw['coveragePerUnit']) > 0 ? Number(raw['coveragePerUnit']) : undefined,
+      inputUnit: (raw['inputUnit'] || '').trim() || undefined,
       isActive: !!raw['showInApp'],
       isNew: !!raw['featured'],
       specifications,

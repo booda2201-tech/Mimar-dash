@@ -595,6 +595,71 @@
           </div>
         </div>
 
+        <div class="calc-box">
+          <div class="calc-head">
+            <span class="calc-icon material-symbols-outlined">calculate</span>
+            <div>
+              <h3>حاسبة الكمية</h3>
+              <p>العميل يدخل المساحة أو الكمية المطلوبة والتطبيق يحسب عدد الوحدات</p>
+            </div>
+            <span class="calc-optional">اختياري</span>
+          </div>
+
+          <div class="price-row">
+            <div>
+              <label class="form-label">التغطية لكل وحدة</label>
+              <div class="input-affix">
+                <input
+                  type="number"
+                  class="input-field"
+                  formControlName="coveragePerUnit"
+                  min="0"
+                  step="any"
+                  inputmode="decimal"
+                  placeholder="مثال: 10"
+                />
+                <span dir="ltr">{{ form.value.inputUnit || 'وحدة' }}</span>
+              </div>
+              <p *ngIf="err('coveragePerUnit')" class="form-error">أدخل رقماً أكبر من صفر</p>
+              <p *ngIf="!err('coveragePerUnit')" class="form-hint">رقم عشري — مثال 10 أو 2.5</p>
+            </div>
+            <div>
+              <label class="form-label">وحدة الإدخال</label>
+              <input
+                type="text"
+                class="input-field"
+                formControlName="inputUnit"
+                maxlength="20"
+                dir="ltr"
+                placeholder="m2"
+              />
+              <div class="calc-units">
+                <button
+                  type="button"
+                  *ngFor="let u of inputUnitPresets"
+                  [class.active]="form.value.inputUnit === u"
+                  (click)="form.patchValue({ inputUnit: u }); form.get('inputUnit')?.markAsDirty()"
+                >
+                  {{ u }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="calc-preview" *ngIf="form.value.coveragePerUnit && form.value.inputUnit">
+            <span class="material-symbols-outlined">lightbulb</span>
+            <span>
+              كل وحدة من المنتج بتغطي
+              <b dir="ltr">{{ form.value.coveragePerUnit | number: '1.0-4' }} {{ form.value.inputUnit }}</b>
+              — لو العميل طلب
+              <b dir="ltr">100 {{ form.value.inputUnit }}</b>
+              هيحتاج
+              <b>{{ calcUnitsFor(100) | number }}</b>
+              وحدة
+            </span>
+          </div>
+        </div>
+
         <div class="section-divider" *ngIf="!form.value.hasVariants"></div>
         <ng-container *ngIf="!form.value.hasVariants">
           <ng-container *ngTemplateOutlet="tiersTpl; context: { $implicit: priceTiers }"></ng-container>
@@ -813,53 +878,222 @@
 </section>
 
 <!-- View Details -->
-<app-modal [open]="showView" title="تفاصيل المنتج" maxWidth="640px" (close)="showView = false">
-  <app-detail-view
-    *ngIf="selected"
-    [title]="selected.name"
-    [subtitle]="selected.sku"
-    icon="inventory_2"
-    [status]="selected.status"
-    [image]="selected.image || ''"
-    [images]="selected.images || []"
-    [fields]="viewFields"
-  ></app-detail-view>
+<app-modal [open]="showView" title="تفاصيل المنتج" maxWidth="780px" (close)="showView = false">
+  <div class="pv" *ngIf="selected as p">
+    <!-- Hero -->
+    <div class="pv-hero">
+      <div class="pv-media">
+        <div class="pv-main">
+          <img *ngIf="viewImage; else pvNoImg" [src]="viewImage" [alt]="p.name" />
+          <ng-template #pvNoImg>
+            <div class="pv-noimg">
+              <span class="material-symbols-outlined">image</span>
+              <small>لا توجد صورة</small>
+            </div>
+          </ng-template>
+          <span class="pv-flag pv-flag--save" *ngIf="viewHasDiscount(p)">-{{ viewSavePercent(p) }}%</span>
+          <span class="pv-flag pv-flag--new" *ngIf="p.isNew ?? p.featured">
+            <span class="material-symbols-outlined">auto_awesome</span>
+            جديد
+          </span>
+        </div>
+        <div class="pv-thumbs" *ngIf="viewGallery(p).length > 1">
+          <button
+            type="button"
+            *ngFor="let img of viewGallery(p)"
+            [class.active]="img === viewImage"
+            (click)="viewImage = img"
+            aria-label="عرض الصورة"
+          >
+            <img [src]="img" alt="" />
+          </button>
+        </div>
+      </div>
 
-  <section *ngIf="selected" class="view-specs">
-    <h4>
-      <span class="material-symbols-outlined">list_alt</span>
-      المواصفات
-      <span class="view-specs-count" *ngIf="selected.specs?.length">{{ selected.specs?.length }}</span>
-    </h4>
-    <div class="table-wrap" *ngIf="selected.specs?.length; else noSpecs">
-      <table>
-        <thead>
-          <tr>
-            <th>المواصفة</th>
-            <th>القيمة</th>
-            <th>Spec (EN)</th>
-            <th>Value (EN)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let spec of selected.specs">
-            <td class="font-bold">{{ spec.label || '—' }}</td>
-            <td>{{ spec.value || '—' }}</td>
-            <td dir="ltr" class="text-right">{{ spec.labelEn || '—' }}</td>
-            <td dir="ltr" class="text-right">{{ spec.valueEn || '—' }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="pv-info">
+        <div class="pv-tags">
+          <app-status-badge [status]="p.status"></app-status-badge>
+          <span class="pv-chip" [class.pv-chip--off]="p.showInApp === false">
+            <span class="material-symbols-outlined">{{ p.showInApp === false ? 'visibility_off' : 'visibility' }}</span>
+            {{ p.showInApp === false ? 'مخفي من التطبيق' : 'ظاهر في التطبيق' }}
+          </span>
+        </div>
+
+        <h2 class="pv-title">{{ p.name }}</h2>
+        <p class="pv-title-en" dir="ltr" *ngIf="p.nameEn">{{ p.nameEn }}</p>
+
+        <span class="pv-sku" dir="ltr" *ngIf="p.sku && p.sku !== '—'">
+          <span class="material-symbols-outlined">qr_code_2</span>
+          {{ p.sku }}
+        </span>
+
+        <div class="pv-price">
+          <span class="pv-price-label">{{ p.variants?.length ? 'يبدأ من' : 'سعر البيع' }}</span>
+          <div class="pv-price-row">
+            <strong>{{ money(p.price) }}</strong>
+            <del *ngIf="viewHasDiscount(p)">{{ money(p.basePrice) }}</del>
+          </div>
+          <span class="pv-discount" *ngIf="p.discountLabel; else pvNoDiscount">
+            <span class="material-symbols-outlined">sell</span>
+            خصم {{ p.discountLabel }}
+            <em *ngIf="p.discountNote">· {{ p.discountNote }}</em>
+          </span>
+          <ng-template #pvNoDiscount><span class="pv-discount pv-discount--none">بدون خصم</span></ng-template>
+        </div>
+
+        <div class="pv-meta">
+          <div class="pv-meta-item">
+            <span class="material-symbols-outlined">category</span>
+            <div>
+              <small>الفئة</small>
+              <b>{{ p.category || '—' }}</b>
+            </div>
+          </div>
+          <div class="pv-meta-item">
+            <span class="material-symbols-outlined">verified</span>
+            <div>
+              <small>البراند</small>
+              <b>{{ p.brand || p.supplier || '—' }}</b>
+            </div>
+          </div>
+          <div class="pv-meta-item pv-meta-item--wide" *ngIf="p.coveragePerUnit || p.inputUnit">
+            <span class="material-symbols-outlined">calculate</span>
+            <div>
+              <small>حاسبة الكمية</small>
+              <b>
+                الوحدة تغطي
+                <span dir="ltr">{{ p.coveragePerUnit ? (p.coveragePerUnit | number: '1.0-4') : '—' }} {{ p.inputUnit || '' }}</span>
+              </b>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    <ng-template #noSpecs><p class="view-specs-empty">-</p></ng-template>
-  </section>
 
-  <div class="form-actions mt-5">
-    <button type="button" class="btn-outline" (click)="showView = false">إغلاق</button>
-    <button type="button" class="btn-primary" (click)="switchViewToEdit()">
-      <span class="material-symbols-outlined text-[18px]">edit</span>
-      تعديل
-    </button>
+    <!-- Stats -->
+    <div class="pv-stats">
+      <div class="pv-stat" [attr.data-tone]="viewStockTone(p)">
+        <span class="pv-stat-icon material-symbols-outlined">inventory_2</span>
+        <small>المخزون</small>
+        <b>{{ p.stock | number }}</b>
+        <span class="pv-stat-hint">
+          {{ viewStockTone(p) === 'out' ? 'نفد' : viewStockTone(p) === 'low' ? 'منخفض' : 'متوفر' }}
+        </span>
+      </div>
+      <div class="pv-stat">
+        <span class="pv-stat-icon material-symbols-outlined">style</span>
+        <small>الأنواع</small>
+        <b>{{ p.variants?.length || 0 }}</b>
+        <span class="pv-stat-hint">{{ p.variants?.length ? 'نوع متاح' : 'منتج بسيط' }}</span>
+      </div>
+      <div class="pv-stat">
+        <span class="pv-stat-icon material-symbols-outlined">stacks</span>
+        <small>شرائح الجملة</small>
+        <b>{{ tierCount(p) }}</b>
+        <span class="pv-stat-hint">{{ tierCount(p) ? 'تسعير بالكمية' : 'غير مفعّل' }}</span>
+      </div>
+      <div class="pv-stat">
+        <span class="pv-stat-icon material-symbols-outlined">request_quote</span>
+        <small>عرض سعر من</small>
+        <b>{{ p.quotationQuantity ? (p.quotationQuantity | number) : '—' }}</b>
+        <span class="pv-stat-hint">{{ p.quotationQuantity ? 'قطعة' : 'غير محدد' }}</span>
+      </div>
+    </div>
+
+    <!-- Variants -->
+    <section class="pv-section" *ngIf="p.variants?.length">
+      <header class="pv-section-head">
+        <h4><span class="material-symbols-outlined">style</span> الأنواع</h4>
+        <span class="pv-count">{{ p.variants?.length }}</span>
+      </header>
+      <div class="pv-variants">
+        <div class="pv-variant" *ngFor="let v of p.variants" [class.pv-variant--off]="v.isActive === false">
+          <div class="pv-variant-main">
+            <b>{{ variantTitle(v) }}</b>
+            <small dir="ltr" *ngIf="v.sku">{{ v.sku }}</small>
+          </div>
+          <div class="pv-variant-price">
+            <strong>{{ money(v.finalPrice ?? v.price) }}</strong>
+            <del *ngIf="(v.finalPrice ?? v.price) < v.price">{{ money(v.price) }}</del>
+          </div>
+          <span
+            class="pv-pill"
+            [class.pv-pill--low]="v.stock > 0 && v.stock <= 5"
+            [class.pv-pill--out]="v.stock <= 0"
+          >
+            {{ v.stock | number }} قطعة
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Wholesale tiers -->
+    <section class="pv-section" *ngIf="p.priceTiers?.length">
+      <header class="pv-section-head">
+        <h4><span class="material-symbols-outlined">stacks</span> أسعار الجملة</h4>
+        <span class="pv-count">{{ p.priceTiers?.length }}</span>
+      </header>
+      <div class="pv-tiers">
+        <div class="pv-tier" *ngFor="let t of p.priceTiers">
+          <span class="pv-tier-range" dir="ltr">{{ tierRange(t) }}</span>
+          <small>قطعة</small>
+          <strong>{{ money(t.finalUnitPrice ?? t.unitPrice) }}</strong>
+          <del *ngIf="(t.finalUnitPrice ?? t.unitPrice) < t.unitPrice">{{ money(t.unitPrice) }}</del>
+          <span class="pv-tier-off" *ngIf="t.discountLabel">خصم {{ t.discountLabel }}</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Description -->
+    <section class="pv-section" *ngIf="p.description || p.descriptionEn">
+      <header class="pv-section-head">
+        <h4><span class="material-symbols-outlined">notes</span> الوصف</h4>
+        <div class="pv-seg" *ngIf="p.description && p.descriptionEn" role="tablist">
+          <button type="button" [class.active]="viewDescLang === 'ar'" (click)="viewDescLang = 'ar'">عربي</button>
+          <button type="button" [class.active]="viewDescLang === 'en'" (click)="viewDescLang = 'en'">EN</button>
+        </div>
+      </header>
+      <p
+        class="pv-desc"
+        [attr.dir]="(viewDescLang === 'en' && p.descriptionEn) || !p.description ? 'ltr' : 'rtl'"
+      >
+        {{ (viewDescLang === 'en' && p.descriptionEn) || !p.description ? p.descriptionEn : p.description }}
+      </p>
+    </section>
+
+    <!-- Specs -->
+    <section class="pv-section">
+      <header class="pv-section-head">
+        <h4><span class="material-symbols-outlined">list_alt</span> المواصفات</h4>
+        <span class="pv-count" *ngIf="p.specs?.length">{{ p.specs?.length }}</span>
+      </header>
+      <dl class="pv-specs" *ngIf="p.specs?.length; else pvNoSpecs">
+        <div class="pv-spec" *ngFor="let spec of p.specs">
+          <dt>
+            {{ spec.label || '—' }}
+            <small dir="ltr" *ngIf="spec.labelEn">{{ spec.labelEn }}</small>
+          </dt>
+          <dd>
+            {{ spec.value || '—' }}
+            <small dir="ltr" *ngIf="spec.valueEn">{{ spec.valueEn }}</small>
+          </dd>
+        </div>
+      </dl>
+      <ng-template #pvNoSpecs>
+        <div class="pv-empty">
+          <span class="material-symbols-outlined">playlist_add</span>
+          لم تتم إضافة مواصفات لهذا المنتج بعد
+        </div>
+      </ng-template>
+    </section>
+
+    <div class="pv-actions">
+      <button type="button" class="btn-outline" (click)="showView = false">إغلاق</button>
+      <button type="button" class="btn-primary" (click)="switchViewToEdit()">
+        <span class="material-symbols-outlined text-[18px]">edit</span>
+        تعديل المنتج
+      </button>
+    </div>
   </div>
 </app-modal>
 

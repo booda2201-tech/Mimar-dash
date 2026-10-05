@@ -247,6 +247,8 @@ export function mapProduct(raw: unknown): Product {
     cost: num(pick(r, 'cost', 'Cost', 'costPrice', 'CostPrice')),
     stock,
     quotationQuantity: optNum(pick(r, 'quotationQuantity', 'QuotationQuantity')),
+    coveragePerUnit: optNum(pick(r, 'coveragePerUnit', 'CoveragePerUnit')),
+    inputUnit: str(pick(r, 'inputUnit', 'InputUnit')) || undefined,
     sales: num(pick(r, 'sales', 'Sales')),
     rating: num(pick(r, 'rating', 'Rating')),
     status: (!active ? 'inactive' : stock <= 0 ? 'out' : stock < 20 ? 'low' : 'active') as StatusType,

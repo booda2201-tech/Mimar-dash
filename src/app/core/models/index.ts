@@ -92,6 +92,10 @@ export interface ProductFormPayload {
   stockQuantity?: number;
   /** الكمية اللي من عندها العميل بيطلب عرض سعر */
   quotationQuantity?: number;
+  /** حاسبة الكمية — المساحة/الكمية اللي بتغطيها الوحدة الواحدة */
+  coveragePerUnit?: number;
+  /** حاسبة الكمية — وحدة إدخال العميل (m2, m3, m ...) */
+  inputUnit?: string;
   isActive: boolean;
   isNew: boolean;
   specifications: {
@@ -134,6 +138,8 @@ export interface Product {
   stock: number;
   /** الكمية اللي من عندها العميل بيطلب عرض سعر */
   quotationQuantity?: number;
+  coveragePerUnit?: number;
+  inputUnit?: string;
   sales: number;
   rating: number;
   status: StatusType;
