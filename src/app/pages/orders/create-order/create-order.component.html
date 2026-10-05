@@ -68,6 +68,8 @@
               <app-select
                 [options]="productOptions"
                 [searchable]="true"
+                [cards]="true"
+                [menuMinWidth]="560"
                 placeholder="اختار المنتج"
                 [(ngModel)]="line.productId"
                 (selectionChange)="onProduct(line)"

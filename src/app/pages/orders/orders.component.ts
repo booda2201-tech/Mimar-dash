@@ -1,6 +1,7 @@
 import { AfterViewInit, Component, ElementRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { StatCardComponent } from '../../shared/components/stat-card/stat-card.component';
 import { DataTableComponent } from '../../shared/components/data-table/data-table.component';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
@@ -61,7 +62,7 @@ export class OrdersComponent implements OnInit, AfterViewInit {
   };
 
   stats: StatCardData[] = [
-    { title: 'قيمة الطلبات', value: 0, change: 'جاري التحميل', changeType: 'neutral', icon: 'payments', suffix: ' ر.س', animate: true },
+    { title: 'قيمة الطلبات', value: 0, change: 'جاري التحميل', changeType: 'neutral', icon: 'payments', suffix: ' د.ك', animate: true },
     { title: 'طلبات معلّقة', value: 0, change: 'جاري التحميل', changeType: 'neutral', icon: 'hourglass_top', animate: true },
     { title: 'طلبات مؤكدة', value: 0, change: 'جاري التحميل', changeType: 'neutral', icon: 'task_alt', animate: true },
     { title: 'معدل التسليم', value: 0, change: 'جاري التحميل', changeType: 'neutral', icon: 'verified', suffix: '%', animate: true },
@@ -123,7 +124,9 @@ export class OrdersComponent implements OnInit, AfterViewInit {
     private toast: ToastService,
     private animation: AnimationService,
     private host: ElementRef,
-    private auth: AuthService
+    private auth: AuthService,
+    private route: ActivatedRoute,
+    private router: Router
   ) {}
 
   sourceCount(key: SourceFilter): number {
@@ -152,7 +155,18 @@ export class OrdersComponent implements OnInit, AfterViewInit {
       this.refreshStats();
       this.loading = false;
       this.selected = this.filtered[0] || null;
+      this.openFromLink();
     });
+  }
+
+  /** فتح طلب مباشرة من رابط زي /orders?view=12 (من الرئيسية مثلاً) */
+  private openFromLink(): void {
+    const key = this.route.snapshot.queryParamMap.get('view');
+    if (!key) return;
+    const order = this.orders.find((o) => String(o.id) === key || String(o.dbId) === key);
+    this.router.navigate([], { relativeTo: this.route, queryParams: { view: null }, queryParamsHandling: 'merge', replaceUrl: true });
+    if (order) this.openView(order);
+    else this.toast.error('الطلب ده مش موجود أو اتمسح');
   }
 
   select(order: Order): void {
@@ -287,7 +301,7 @@ export class OrdersComponent implements OnInit, AfterViewInit {
   }
 
   money(value?: number): string {
-    return `${(value || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })} ر.س`;
+    return `${(value || 0).toLocaleString('en-US', { maximumFractionDigits: 3 })} د.ك`;
   }
 
   viewDate(value?: string): string {

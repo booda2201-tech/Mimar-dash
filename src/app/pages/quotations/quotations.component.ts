@@ -1,6 +1,7 @@
 import { AfterViewInit, Component, ElementRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { StatCardComponent } from '../../shared/components/stat-card/stat-card.component';
 import { ModalComponent } from '../../shared/components/modal/modal.component';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
@@ -73,7 +74,9 @@ export class QuotationsComponent implements OnInit, AfterViewInit {
     private materialLists: MaterialListsService,
     private animation: AnimationService,
     private host: ElementRef,
-    private toast: ToastService
+    private toast: ToastService,
+    private route: ActivatedRoute,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -103,6 +106,7 @@ export class QuotationsComponent implements OnInit, AfterViewInit {
     this.loading = false;
     this.applyFilter();
     this.refreshStats();
+    this.openFromLink();
     setTimeout(() => this.animation.fadeUpStagger(this.host.nativeElement.querySelectorAll('.q-card')), 30);
   }
 
@@ -166,7 +170,7 @@ export class QuotationsComponent implements OnInit, AfterViewInit {
 
   money(value?: number | null): string {
     if (value === null || value === undefined) return '—';
-    return `${value.toLocaleString('en-US', { maximumFractionDigits: 2 })} ر.س`;
+    return `${value.toLocaleString('en-US', { maximumFractionDigits: 3 })} د.ك`;
   }
 
   displayDate(value?: string): string {
@@ -193,6 +197,16 @@ export class QuotationsComponent implements OnInit, AfterViewInit {
   }
 
   /* ------------ تفاصيل الطلب ------------ */
+
+  /** فتح طلب مباشرة من رابط زي /quotations?view=5 (من الرئيسية مثلاً) */
+  private openFromLink(): void {
+    const key = this.route.snapshot.queryParamMap.get('view');
+    if (!key) return;
+    this.router.navigate([], { relativeTo: this.route, queryParams: { view: null }, queryParamsHandling: 'merge', replaceUrl: true });
+    const q = this.requests.find((r) => String(r.id) === key);
+    if (q) this.open(q);
+    else this.toast.error('طلب التسعير ده مش موجود');
+  }
 
   open(q: QuotationRequest): void {
     this.selected = q;

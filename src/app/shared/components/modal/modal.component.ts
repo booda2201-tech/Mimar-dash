@@ -126,14 +126,8 @@ import { LayoutService } from '../../../core/services/layout.service';
       }
 
       @keyframes sheetUp {
-        from {
-          opacity: 0.6;
-          transform: translateY(24px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+        from { opacity: 0; }
+        to { opacity: 1; }
       }
 
       @media (min-width: 768px) {
@@ -167,14 +161,8 @@ import { LayoutService } from '../../../core/services/layout.service';
       }
 
       @keyframes modalIn {
-        from {
-          opacity: 0;
-          transform: translateY(10px) scale(0.98);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0) scale(1);
-        }
+        from { opacity: 0; }
+        to { opacity: 1; }
       }
     `,
   ],

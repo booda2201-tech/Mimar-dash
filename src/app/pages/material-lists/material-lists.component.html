@@ -131,7 +131,7 @@
 
       <div class="total-row">
         <span>{{ list.itemsCount || list.items?.length || 0 }} أصناف</span>
-        <strong>{{ listTotal(list) ? (listTotal(list) | number) + ' ر.س' : 'بدون تقدير' }}</strong>
+        <strong>{{ listTotal(list) ? (listTotal(list) | number) + ' د.ك' : 'بدون تقدير' }}</strong>
       </div>
 
       <footer class="card-foot" (click)="$event.stopPropagation()">
@@ -161,7 +161,7 @@
   <form class="grid grid-cols-1 sm:grid-cols-2 gap-4" [formGroup]="form" (ngSubmit)="save()">
     <div class="sm:col-span-2">
       <label class="form-label">اسم القائمة بالعربي</label>
-      <input class="input-field" formControlName="name" placeholder="قائمة فيلا الرياض" />
+      <input class="input-field" formControlName="name" placeholder="قائمة فيلا السالمية" />
       <p *ngIf="err('name')" class="form-error">الاسم مطلوب</p>
     </div>
     <div class="sm:col-span-2">
@@ -222,7 +222,7 @@
         </div>
         <div class="item-figures">
           <span class="item-qty">{{ item.quantity }} {{ item.unit || '' }}</span>
-          <span class="item-price" *ngIf="item.price">{{ item.price * item.quantity | number }} ر.س</span>
+          <span class="item-price" *ngIf="item.price">{{ item.price * item.quantity | number }} د.ك</span>
         </div>
         <button type="button" class="item-del" (click)="removeItem(item)" aria-label="حذف الصنف">
           <span class="material-symbols-outlined text-[18px]">delete</span>
@@ -231,7 +231,7 @@
     </ul>
     <div class="items-total" *ngIf="listTotal(selected)">
       <span>تقدير قيمة القائمة</span>
-      <strong>{{ listTotal(selected) | number }} ر.س</strong>
+      <strong>{{ listTotal(selected) | number }} د.ك</strong>
     </div>
   </div>
 

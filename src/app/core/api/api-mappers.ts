@@ -241,7 +241,7 @@ export function mapProduct(raw: unknown): Product {
     price: num(pick(r, 'finalPrice', 'FinalPrice', 'price', 'Price')),
     basePrice,
     isNew: bool(pick(r, 'isNew', 'IsNew')),
-    discountLabel: found ? (found.kind === 'amount' ? `${found.value.toLocaleString('en-US')} ر.س` : `${found.value}%`) : undefined,
+    discountLabel: found ? (found.kind === 'amount' ? `${found.value.toLocaleString('en-US')} د.ك` : `${found.value}%`) : undefined,
     discountSource: found?.source,
     discountNote: found?.note,
     cost: num(pick(r, 'cost', 'Cost', 'costPrice', 'CostPrice')),
@@ -285,6 +285,39 @@ export function mapProduct(raw: unknown): Product {
 
 export function mapProducts(payload: unknown): Product[] {
   return unwrapList(payload).map(mapProduct);
+}
+
+/** GET /api/Products/new — كل عنصر يا `{ product }` يا `{ variant }` (نوع جديد جوه منتج) */
+export function mapNewArrivals(payload: unknown): Product[] {
+  return unwrapList(payload).flatMap((row) => {
+    const product = pick(row, 'product', 'Product');
+    if (product) return [mapProduct(product)];
+
+    const variantRaw = pick(row, 'variant', 'Variant');
+    if (!variantRaw) {
+      const flat = mapProduct(row);
+      return flat.id ? [flat] : [];
+    }
+
+    const v = asRecord(variantRaw);
+    const base = mapProduct(v);
+    const variantId = str(pick(v, 'variantId', 'VariantId'));
+    const attributes = pick(v, 'attributes', 'Attributes');
+    const values = Array.isArray(attributes) ? attributes.map((a) => asRecord(a)) : [];
+    const label = values.map((a) => str(pick(a, 'valueAr', 'ValueAr', 'value', 'Value'))).filter(Boolean).join(' / ');
+    const labelEn = values.map((a) => str(pick(a, 'valueEn', 'ValueEn'))).filter(Boolean).join(' / ');
+    if (!base.id || !variantId) return [];
+
+    return [
+      {
+        ...base,
+        id: `${base.id}:v${variantId}`,
+        name: label ? `${base.name} — ${label}` : base.name,
+        nameEn: base.nameEn && labelEn ? `${base.nameEn} — ${labelEn}` : base.nameEn,
+        variantOf: { productId: base.id, variantId, label: label || base.sku },
+      },
+    ];
+  });
 }
 
 /** منتجات مخفضة من الـ API → عروض الداشبورد */
@@ -358,7 +391,7 @@ function discountText(raw: unknown): string | undefined {
   const value = num(pick(d, 'value', 'Value'));
   if (!value) return undefined;
   const isAmount = str(pick(d, 'type', 'Type')).toLowerCase() === 'amount';
-  return isAmount ? `${value.toLocaleString('en-US')} ر.س` : `${value}%`;
+  return isAmount ? `${value.toLocaleString('en-US')} د.ك` : `${value}%`;
 }
 
 function mapOfferTiers(raw: unknown): OfferTier[] {
@@ -440,8 +473,10 @@ const PAYMENT_LABELS: Record<string, string> = {
   cod: 'الدفع عند الاستلام',
   card: 'بطاقة',
   creditcard: 'بطاقة ائتمان',
-  debitcard: 'بطاقة مدى',
+  debitcard: 'بطاقة خصم',
   mada: 'مدى',
+  knet: 'كي نت',
+  'k-net': 'كي نت',
   visa: 'فيزا',
   mastercard: 'ماستركارد',
   applepay: 'Apple Pay',

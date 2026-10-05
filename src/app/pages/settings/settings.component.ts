@@ -21,14 +21,14 @@ export class SettingsComponent implements AfterViewInit {
   tabs: { key: SettingsTab; label: string; icon: string; desc: string }[] = [
     { key: 'general', label: 'الإعدادات العامة', icon: 'tune', desc: 'هوية المنصة وبيانات التواصل الرسمية' },
     { key: 'logistics', label: 'اللوجستيات والأسطول', icon: 'local_shipping', desc: 'تتبع الشحنات وتسعير النقل والتفريغ' },
-    { key: 'tax', label: 'الضرائب وZATCA', icon: 'receipt_long', desc: 'ضريبة القيمة المضافة والربط مع فاتورة' },
+    { key: 'tax', label: 'الضرائب', icon: 'receipt_long', desc: 'إعدادات الضريبة وفق أنظمة دولة الكويت' },
     { key: 'payments', label: 'بوابات الدفع', icon: 'credit_card', desc: 'تفعيل قنوات التحصيل المتاحة للمقاولين' },
     { key: 'maintenance', label: 'وضع الصيانة', icon: 'construction', desc: 'إيقاف مؤقت للواجهة دون تعطيل التوصيل الجاري' },
   ];
 
   paymentOptions = [
-    { control: 'mada' as const, label: 'مدى', desc: 'بطاقات مدى المحلية', icon: 'account_balance' },
-    { control: 'sadad' as const, label: 'سداد', desc: 'فواتير سداد الحكومية', icon: 'receipt' },
+    { control: 'mada' as const, label: 'كي نت', desc: 'بطاقة كي نت المحلية', icon: 'account_balance' },
+    { control: 'sadad' as const, label: 'تحويل بنكي', desc: 'حوالات البنوك الكويتية', icon: 'receipt' },
     { control: 'visa' as const, label: 'فيزا / ماستركارد', desc: 'بطاقات ائتمان دولية', icon: 'credit_card' },
     { control: 'credit60' as const, label: 'ائتمان آجل 60 يوم', desc: 'للمقاولين المعتمدين', icon: 'schedule' },
   ];
@@ -38,19 +38,19 @@ export class SettingsComponent implements AfterViewInit {
     nameEn: ['MIMAR'],
     tagline: ['منصة مواد البناء للمقاولين'],
     adminName: ['م. عبد الرحمن'],
-    cr: ['1010123456'],
-    vat: ['300123456700003'],
-    email: ['support@mimar.sa'],
-    hotline: ['920012345'],
-    city: ['الرياض'],
-    address: ['حي النرجس، طريق الملك سلمان'],
+    cr: ['45821'],
+    vat: [''],
+    email: ['support@mimar.com.kw'],
+    hotline: ['+965 2225 1234'],
+    city: ['الكويت'],
+    address: ['شرق، شارع أحمد الجابر، مدينة الكويت'],
     gps: [true],
     hydraulic: [true],
     nightDelivery: [false],
-    kmRate: [4.75],
-    tonRate: [28],
+    kmRate: [0.4],
+    tonRate: [2.5],
     minTrailer: [30],
-    vatRate: [15],
+    vatRate: [0],
     zatcaEnv: ['production'],
     mada: [true],
     sadad: [true],
@@ -106,7 +106,7 @@ export class SettingsComponent implements AfterViewInit {
       case 'payments':
         return `${this.activePayments} من ${this.paymentOptions.length} قنوات مفعّلة`;
       case 'tax':
-        return `ضريبة ${v.vatRate}% · ${v.zatcaEnv === 'production' ? 'بيئة إنتاج' : 'بيئة تجريبية'}`;
+        return Number(v.vatRate) > 0 ? `ضريبة ${v.vatRate}% · الكويت` : 'بدون ضريبة قيمة مضافة · الكويت';
       case 'maintenance':
         return v.maintenance ? 'المنصة في وضع الصيانة' : 'المنصة شغّالة طبيعي';
     }
@@ -146,19 +146,19 @@ export class SettingsComponent implements AfterViewInit {
       nameEn: 'MIMAR',
       tagline: 'منصة مواد البناء للمقاولين',
       adminName: 'م. عبد الرحمن',
-      cr: '1010123456',
-      vat: '300123456700003',
-      email: 'support@mimar.sa',
-      hotline: '920012345',
-      city: 'الرياض',
-      address: 'حي النرجس، طريق الملك سلمان',
+      cr: '45821',
+      vat: '',
+      email: 'support@mimar.com.kw',
+      hotline: '+965 2225 1234',
+      city: 'الكويت',
+      address: 'شرق، شارع أحمد الجابر، مدينة الكويت',
       gps: true,
       hydraulic: true,
       nightDelivery: false,
-      kmRate: 4.75,
-      tonRate: 28,
+      kmRate: 0.4,
+      tonRate: 2.5,
       minTrailer: 30,
-      vatRate: 15,
+      vatRate: 0,
       zatcaEnv: 'production',
       mada: true,
       sadad: true,

@@ -9,7 +9,7 @@
     <div class="m-summary-main">
       <div class="min-w-0">
         <small>مبيعات {{ periodLabel }}</small>
-        <strong>{{ revenue | number }} <em>ر.س</em></strong>
+        <strong>{{ revenue | number }} <em>د.ك</em></strong>
       </div>
       <a routerLink="/quotations" class="m-new">
         <span class="material-symbols-outlined">request_quote</span>
@@ -107,13 +107,13 @@
           <p>{{ periodLabel }} · من غير الطلبات الملغية</p>
         </div>
         <div class="sales-total">
-          <strong>{{ revenue | number }} ر.س</strong>
+          <strong>{{ revenue | number }} د.ك</strong>
           <small>{{ periodOrders.length }} طلب</small>
         </div>
       </header>
       <app-chart-wrapper type="bar" [data]="salesData" [options]="salesOptions" [height]="compact ? '200px' : '270px'"></app-chart-wrapper>
       <div class="chart-legend">
-        <span><i style="background: #0b4a3a"></i> المبيعات (ر.س)</span>
+        <span><i style="background: #0b4a3a"></i> المبيعات (د.ك)</span>
         <span><i style="background: #c8a24b"></i> أعلى {{ period === 'today' ? 'فترة' : 'يوم' }}</span>
         <span class="ms-auto">مرّر على العمود عشان تشوف عدد الطلبات</span>
       </div>
@@ -158,17 +158,17 @@
       <ng-container *ngIf="latestOrders.length; else noOrders">
         <ul class="order-list sm:hidden">
           <li *ngFor="let o of latestOrders">
-            <a routerLink="/orders" class="order-row">
+            <button type="button" class="order-row" (click)="openOrder(o)" [attr.aria-label]="'تفاصيل الطلب #' + o.id">
               <span class="who-avatar">{{ initial(o.company || o.customer) }}</span>
               <div class="min-w-0 flex-1">
                 <p class="order-title">{{ o.company || o.customer }}</p>
                 <p class="meta">#{{ o.id }} · {{ relative(o.date) }}</p>
               </div>
               <div class="order-end">
-                <span class="order-total">{{ o.total | number }} <small>ر.س</small></span>
+                <span class="order-total">{{ o.total | number }} <small>د.ك</small></span>
                 <app-status-badge [status]="o.status"></app-status-badge>
               </div>
-            </a>
+            </button>
           </li>
         </ul>
         <div class="overflow-x-auto hidden sm:block">
@@ -180,10 +180,19 @@
                 <th>المصدر</th>
                 <th>الإجمالي</th>
                 <th>الحالة</th>
+                <th class="w-10"></th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let o of latestOrders">
+              <tr
+                *ngFor="let o of latestOrders"
+                class="is-clickable"
+                tabindex="0"
+                role="button"
+                [attr.aria-label]="'تفاصيل الطلب #' + o.id"
+                (click)="openOrder(o)"
+                (keydown.enter)="openOrder(o)"
+              >
                 <td>
                   <div class="id-cell">#{{ o.id }}</div>
                   <div class="meta">{{ relative(o.date) }}</div>
@@ -203,8 +212,13 @@
                     {{ o.source === 'admin' ? 'خدمة العملاء' : 'التطبيق' }}
                   </span>
                 </td>
-                <td class="font-extrabold text-gray-900 whitespace-nowrap">{{ o.total | number }} ر.س</td>
+                <td class="font-extrabold text-gray-900 whitespace-nowrap">{{ o.total | number }} د.ك</td>
                 <td><app-status-badge [status]="o.status"></app-status-badge></td>
+                <td>
+                  <span class="row-go" title="عرض التفاصيل">
+                    <span class="material-symbols-outlined">visibility</span>
+                  </span>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -228,7 +242,7 @@
       </header>
       <ul class="quote-list" *ngIf="pendingQuotes.length; else noQuotes">
         <li *ngFor="let q of pendingQuotes.slice(0, 5)">
-          <a routerLink="/quotations" class="quote-row">
+          <button type="button" class="quote-row" (click)="openQuote(q)" [attr.aria-label]="'تفاصيل طلب التسعير ' + q.number">
             <span class="quote-ico">
               <span class="material-symbols-outlined">
                 {{ q.type === 'files' ? 'attach_file' : q.type === 'materialList' ? 'list_alt' : 'shopping_basket' }}
@@ -239,10 +253,10 @@
               <small>{{ q.number }} · {{ relative(q.createdAt) }}</small>
             </span>
             <span class="quote-end">
-              <strong>{{ quoteAmount(q) ? (quoteAmount(q) | number) + ' ر.س' : '—' }}</strong>
+              <strong>{{ quoteAmount(q) ? (quoteAmount(q) | number) + ' د.ك' : '—' }}</strong>
               <small>{{ q.requestedTotal ? 'سعر العميل' : 'تقريبي' }}</small>
             </span>
-          </a>
+          </button>
         </li>
       </ul>
       <ng-template #noQuotes>
@@ -274,7 +288,7 @@
             </span>
             <span class="top-copy">
               <span class="top-name">{{ p.name }}</span>
-              <span class="top-sub">{{ p.category || 'بدون فئة' }} · {{ p.price | number }} ر.س</span>
+              <span class="top-sub">{{ p.category || 'بدون فئة' }} · {{ p.price | number }} د.ك</span>
             </span>
             <span class="top-end">
               <strong>{{ p.stock | number }}</strong>
@@ -360,3 +374,227 @@
     </article>
   </div>
 </div>
+
+<!-- معاينة طلب -->
+<app-modal [open]="!!viewOrder" [title]="viewOrder ? 'الطلب #' + viewOrder.id : ''" maxWidth="640px" (close)="closeOrder()">
+  <div class="qv" *ngIf="viewOrder as o">
+    <section class="qv-hero">
+      <span class="qv-avatar">{{ initial(o.company || o.customer) }}</span>
+      <div class="qv-hero-copy">
+        <h4>{{ o.company || o.customer }}</h4>
+        <p>
+          <span class="material-symbols-outlined">schedule</span>
+          {{ fullDate(o.date) }}
+        </p>
+      </div>
+      <app-status-badge [status]="o.status"></app-status-badge>
+    </section>
+
+    <div class="qv-tiles">
+      <div class="qv-tile is-main">
+        <small>الإجمالي</small>
+        <strong>{{ money(o.total) }}</strong>
+      </div>
+      <div class="qv-tile">
+        <small>عدد القطع</small>
+        <strong>{{ o.quantity || (o.lines?.length ?? 0) | number }}</strong>
+      </div>
+      <div class="qv-tile">
+        <small>المصدر</small>
+        <strong class="qv-src" [attr.data-src]="o.source">
+          <span class="material-symbols-outlined">{{ o.source === 'admin' ? 'support_agent' : 'smartphone' }}</span>
+          {{ o.source === 'admin' ? 'خدمة العملاء' : 'التطبيق' }}
+        </strong>
+      </div>
+    </div>
+
+    <section class="qv-card">
+      <h5><span class="material-symbols-outlined">person</span> بيانات العميل</h5>
+      <dl class="qv-info">
+        <div><dt>الاسم</dt><dd>{{ o.customer || '—' }}</dd></div>
+        <div *ngIf="o.phone">
+          <dt>الموبايل</dt>
+          <dd><a class="qv-link" [href]="'tel:' + o.phone" dir="ltr">{{ o.phone }}</a></dd>
+        </div>
+        <div *ngIf="o.email"><dt>الإيميل</dt><dd dir="ltr" class="truncate">{{ o.email }}</dd></div>
+        <div *ngIf="o.payment && o.payment !== '—'"><dt>الدفع</dt><dd>{{ o.payment }}</dd></div>
+        <div *ngIf="addressLine(o)" class="is-wide"><dt>العنوان</dt><dd>{{ addressLine(o) }}</dd></div>
+        <div *ngIf="o.address?.landmark" class="is-wide"><dt>علامة مميزة</dt><dd>{{ o.address?.landmark }}</dd></div>
+      </dl>
+    </section>
+
+    <section class="qv-card">
+      <h5>
+        <span class="material-symbols-outlined">inventory_2</span> الأصناف
+        <em *ngIf="o.lines?.length">{{ o.lines?.length }}</em>
+      </h5>
+      <ng-container *ngIf="o.lines?.length; else orderNoLines">
+        <ul class="qv-lines">
+          <li *ngFor="let l of o.lines">
+            <span class="qv-thumb">
+              <img *ngIf="l.image; else lineIco" [src]="l.image" [alt]="l.name" loading="lazy" />
+              <ng-template #lineIco><span class="material-symbols-outlined">inventory_2</span></ng-template>
+            </span>
+            <span class="qv-line-copy">
+              <b>{{ l.name }}</b>
+              <small>
+                <ng-container *ngIf="l.variant">{{ l.variant }} · </ng-container>
+                {{ l.quantity | number }} × {{ money(l.unitPrice) }}
+                <s *ngIf="l.originalUnitPrice && l.originalUnitPrice > l.unitPrice">{{ money(l.originalUnitPrice) }}</s>
+              </small>
+              <i *ngIf="l.discountLabel" class="qv-chip">{{ l.discountLabel }}</i>
+            </span>
+            <strong>{{ money(l.total) }}</strong>
+          </li>
+        </ul>
+        <dl class="qv-sum">
+          <div><dt>المجموع</dt><dd>{{ money(o.subtotal || orderLinesSum(o)) }}</dd></div>
+          <div *ngIf="o.discount"><dt>الخصم</dt><dd class="is-off">− {{ money(o.discount) }}</dd></div>
+          <div *ngIf="o.shippingFee"><dt>التوصيل</dt><dd>{{ money(o.shippingFee) }}</dd></div>
+          <div *ngIf="o.tax"><dt>الضريبة</dt><dd>{{ money(o.tax) }}</dd></div>
+          <div class="is-total"><dt>الإجمالي</dt><dd>{{ money(o.total) }}</dd></div>
+        </dl>
+      </ng-container>
+      <ng-template #orderNoLines>
+        <div class="qv-skel" *ngIf="orderLoading; else orderItemsText">
+          <span></span><span></span><span></span>
+        </div>
+        <ng-template #orderItemsText>
+          <p class="qv-muted">{{ o.items || 'مفيش أصناف متسجلة' }}</p>
+        </ng-template>
+      </ng-template>
+    </section>
+
+    <section class="qv-card" *ngIf="o.notes">
+      <h5><span class="material-symbols-outlined">sticky_note_2</span> ملاحظات</h5>
+      <p class="qv-note">{{ o.notes }}</p>
+    </section>
+
+    <footer class="qv-actions">
+      <button type="button" class="qv-btn" (click)="closeOrder()">إغلاق</button>
+      <button type="button" class="qv-btn is-primary" (click)="goToOrder(o)">
+        <span class="material-symbols-outlined">open_in_new</span>
+        إدارة الطلب
+      </button>
+    </footer>
+  </div>
+</app-modal>
+
+<!-- معاينة عرض سعر -->
+<app-modal [open]="!!viewQuote" [title]="viewQuote ? 'طلب تسعير ' + viewQuote.number : ''" maxWidth="640px" (close)="closeQuote()">
+  <div class="qv" *ngIf="viewQuote as q">
+    <section class="qv-hero">
+      <span class="qv-avatar is-gold">
+        <span class="material-symbols-outlined">{{ quoteTypeIcon(q) }}</span>
+      </span>
+      <div class="qv-hero-copy">
+        <h4>{{ q.customerName }}</h4>
+        <p>
+          <span class="qv-kind" [class.is-trader]="q.isTrader">{{ q.isTrader ? 'تاجر' : 'مستخدم' }}</span>
+          {{ quoteTypeLabel(q) }} · {{ relative(q.createdAt) }}
+        </p>
+      </div>
+      <app-status-badge [status]="quoteStatusBadge(q)" [label]="quoteStatusLabel(q)"></app-status-badge>
+    </section>
+
+    <div class="qv-tiles">
+      <div class="qv-tile is-main">
+        <small>{{ q.requestedTotal ? 'سعر العميل' : 'السعر التقريبي' }}</small>
+        <strong>{{ money(q.requestedTotal ?? q.catalogTotal) }}</strong>
+      </div>
+      <div class="qv-tile">
+        <small>سعر الكتالوج</small>
+        <strong>{{ money(q.catalogTotal) }}</strong>
+      </div>
+      <div class="qv-tile">
+        <small>{{ q.type === 'files' ? 'المرفقات' : 'الأصناف' }}</small>
+        <strong>{{ q.type === 'files' ? q.attachmentsCount || q.files.length : q.productsCount || q.items.length }}</strong>
+      </div>
+    </div>
+
+    <section class="qv-card" *ngIf="q.customerPhone || q.customerEmail || q.materialListName">
+      <h5><span class="material-symbols-outlined">person</span> بيانات العميل</h5>
+      <dl class="qv-info">
+        <div *ngIf="q.customerPhone">
+          <dt>الموبايل</dt>
+          <dd><a class="qv-link" [href]="'tel:' + q.customerPhone" dir="ltr">{{ q.customerPhone }}</a></dd>
+        </div>
+        <div *ngIf="q.customerEmail"><dt>الإيميل</dt><dd dir="ltr" class="truncate">{{ q.customerEmail }}</dd></div>
+        <div *ngIf="q.materialListName" class="is-wide"><dt>قائمة المواد</dt><dd>{{ q.materialListName }}</dd></div>
+        <div *ngIf="q.validUntil"><dt>صالح لحد</dt><dd>{{ fullDate(q.validUntil) }}</dd></div>
+      </dl>
+    </section>
+
+    <section class="qv-card" *ngIf="q.items.length || (quoteLoading && q.type !== 'files')">
+      <h5>
+        <span class="material-symbols-outlined">inventory_2</span> الأصناف المطلوبة
+        <em *ngIf="q.items.length">{{ q.items.length }}</em>
+      </h5>
+      <div class="qv-skel" *ngIf="!q.items.length; else quoteLines"><span></span><span></span><span></span></div>
+      <ng-template #quoteLines>
+        <ul class="qv-lines">
+          <li *ngFor="let it of q.items">
+            <span class="qv-thumb">
+              <img *ngIf="it.image; else itIco" [src]="it.image" [alt]="it.productName" loading="lazy" />
+              <ng-template #itIco><span class="material-symbols-outlined">inventory_2</span></ng-template>
+            </span>
+            <span class="qv-line-copy">
+              <b>{{ it.productName }}</b>
+              <small>
+                <ng-container *ngIf="it.variantName">{{ it.variantName }} · </ng-container>
+                {{ it.quantity | number }} {{ it.unit || 'وحدة' }}
+                <ng-container *ngIf="it.listPrice"> · الكتالوج {{ money(it.listPrice) }}</ng-container>
+              </small>
+            </span>
+            <span class="qv-line-end">
+              <strong *ngIf="it.requestedPrice; else noReq">{{ money(it.requestedPrice) }}</strong>
+              <ng-template #noReq><strong class="qv-muted-strong">{{ money(it.listPrice) }}</strong></ng-template>
+              <small>{{ it.requestedPrice ? 'مقترح العميل' : 'للوحدة' }}</small>
+            </span>
+          </li>
+        </ul>
+      </ng-template>
+    </section>
+
+    <section class="qv-card" *ngIf="q.files.length">
+      <h5>
+        <span class="material-symbols-outlined">attach_file</span> الملفات
+        <em>{{ q.files.length }}</em>
+      </h5>
+      <div class="qv-files">
+        <a *ngFor="let f of q.files" class="qv-file" [href]="fileUrl(f)" target="_blank" rel="noopener">
+          <img *ngIf="f.isImage; else fileIco" [src]="fileUrl(f)" [alt]="f.name" loading="lazy" />
+          <ng-template #fileIco><span class="material-symbols-outlined">description</span></ng-template>
+          <span>{{ f.name }}</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="qv-card" *ngIf="q.offers.length">
+      <h5><span class="material-symbols-outlined">forum</span> سجل العروض</h5>
+      <ol class="qv-offers">
+        <li *ngFor="let of of q.offers" [class.is-admin]="of.by === 'admin'">
+          <span class="qv-dot"></span>
+          <div>
+            <b>{{ of.by === 'admin' ? 'عرضنا' : 'عرض العميل' }} · {{ money(of.total) }}</b>
+            <small>{{ fullDate(of.createdAt) }}</small>
+            <p *ngIf="of.notes">{{ of.notes }}</p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <section class="qv-card" *ngIf="q.notes || q.materialListNotes">
+      <h5><span class="material-symbols-outlined">sticky_note_2</span> ملاحظات العميل</h5>
+      <p class="qv-note">{{ q.notes || q.materialListNotes }}</p>
+    </section>
+
+    <footer class="qv-actions">
+      <button type="button" class="qv-btn" (click)="closeQuote()">إغلاق</button>
+      <button type="button" class="qv-btn is-primary" (click)="goToQuote(q)">
+        <span class="material-symbols-outlined">request_quote</span>
+        {{ q.status === 'pending' ? 'سعّر الطلب' : 'إدارة العرض' }}
+      </button>
+    </footer>
+  </div>
+</app-modal>

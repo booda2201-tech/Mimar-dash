@@ -5,18 +5,6 @@
       <p class="text-sm text-gray-500 mt-1">الكتالوج الشامل · {{ products.length }} صنف</p>
     </div>
     <div class="ph-actions flex flex-wrap gap-2">
-      <button type="button" class="btn-outline text-sm">
-        <span class="material-symbols-outlined text-[18px]">upload</span>
-        استيراد Excel
-      </button>
-      <button type="button" class="btn-outline text-sm">
-        <span class="material-symbols-outlined text-[18px]">download</span>
-        تصدير
-      </button>
-      <button type="button" class="btn-outline text-sm" (click)="openStarter()">
-        <span class="material-symbols-outlined text-[18px]">auto_awesome</span>
-        منتجات جاهزة
-      </button>
       <button type="button" class="btn-primary text-sm" (click)="openAdd()">
         <span class="material-symbols-outlined text-[18px]">add</span>
         إضافة منتج
@@ -569,7 +557,7 @@
             <label class="form-label">السعر <span class="req">*</span></label>
             <div class="input-affix">
               <input type="number" class="input-field" formControlName="price" min="0" step="0.01" placeholder="0.00" />
-              <span>ر.س</span>
+              <span>د.ك</span>
             </div>
             <p *ngIf="err('price')" class="form-error">أدخل سعراً صالحاً</p>
           </div>

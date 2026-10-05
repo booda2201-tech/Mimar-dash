@@ -59,6 +59,7 @@ export class BrandsComponent implements OnInit, AfterViewInit {
   selected: Brand | null = null;
 
   countryOptions: SelectOption[] = [
+    'الكويت',
     'السعودية',
     'الإمارات',
     'مصر',
@@ -93,7 +94,7 @@ export class BrandsComponent implements OnInit, AfterViewInit {
   form = this.fb.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
     nameEn: ['', [Validators.required, Validators.minLength(2)]],
-    country: ['السعودية', Validators.required],
+    country: ['الكويت', Validators.required],
     category: ['', Validators.required],
     description: [''],
     descriptionEn: [''],
@@ -132,7 +133,7 @@ export class BrandsComponent implements OnInit, AfterViewInit {
     this.form.reset({
       name: '',
       nameEn: '',
-      country: 'السعودية',
+      country: 'الكويت',
       category: '',
       description: '',
       descriptionEn: '',

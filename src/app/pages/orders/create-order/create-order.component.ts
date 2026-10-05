@@ -65,9 +65,11 @@ export class CreateOrderComponent implements OnChanges {
       this.products = list;
       this.productOptions = list.map((p) => ({
         value: p.id,
-        label: p.name,
-        display: p.name,
-        hint: [p.sku !== '—' ? p.sku : '', this.money(p.price), p.status === 'inactive' ? 'غير نشط' : ''].filter(Boolean).join(' · '),
+        label: this.productTitle(p),
+        display: this.productTitle(p),
+        image: p.image,
+        sub: this.productMeta(p),
+        hint: this.money(p.price),
       }));
     });
     this.customersService.getAll().subscribe((list) => {
@@ -111,6 +113,17 @@ export class CreateOrderComponent implements OnChanges {
 
   addLine(): void {
     this.lines = [...this.lines, { key: this.nextKey++, productId: '', variantId: '', quantity: 1 }];
+  }
+
+  productTitle(p: Product): string {
+    return p.name || p.nameEn || (p.sku !== '—' ? p.sku : 'منتج');
+  }
+
+  productMeta(p: Product): string {
+    const name = this.productTitle(p);
+    const category = p.category && p.category !== '—' && p.category !== name ? p.category : '';
+    const sku = p.sku && p.sku !== '—' && p.sku !== name ? p.sku : '';
+    return [category, sku].filter(Boolean).join(' · ');
   }
 
   removeLine(line: OrderLine): void {
@@ -200,7 +213,7 @@ export class CreateOrderComponent implements OnChanges {
   }
 
   money(value?: number): string {
-    return `${(value || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })} ر.س`;
+    return `${(value || 0).toLocaleString('en-US', { maximumFractionDigits: 3 })} د.ك`;
   }
 
   /* ---------- الإرسال ---------- */

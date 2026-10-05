@@ -4,7 +4,7 @@
     <span class="select-chevron material-symbols-outlined">{{ open ? 'expand_less' : 'expand_more' }}</span>
   </button>
 
-  <div class="select-menu" *ngIf="open" [ngStyle]="menuStyle">
+  <div class="select-menu" *ngIf="open" [class.is-cards]="cards" [ngStyle]="menuStyle">
     <div class="select-search" *ngIf="searchable">
       <label class="select-search-box">
         <span class="material-symbols-outlined">search</span>
@@ -20,6 +20,29 @@
         </button>
       </label>
     </div>
+    <div class="select-cards" *ngIf="cards && visibleOptions.length; else optionList">
+      <button
+        type="button"
+        class="select-card"
+        *ngFor="let opt of visibleOptions"
+        [class.is-active]="opt.value === value"
+        [attr.aria-disabled]="opt.disabled || null"
+        (click)="onOptionClick(opt)"
+      >
+        <span class="select-card-photo">
+          <img *ngIf="opt.image" [src]="opt.image" [alt]="opt.label" />
+          <span *ngIf="!opt.image" class="material-symbols-outlined">inventory_2</span>
+        </span>
+        <span class="select-card-body">
+          <span class="select-card-name">{{ opt.label }}</span>
+          <span class="select-card-meta">
+            <span class="select-card-sub" *ngIf="opt.sub">{{ opt.sub }}</span>
+            <span class="select-card-price" *ngIf="opt.hint">{{ opt.hint }}</span>
+          </span>
+        </span>
+      </button>
+    </div>
+    <ng-template #optionList>
     <button
       type="button"
       class="select-option"
@@ -29,6 +52,7 @@
       [class.is-child]="(opt.depth || 0) > 0"
       [class.is-first]="first"
       [class.is-group]="opt.disabled"
+      [class.has-media]="!!(opt.image || opt.sub)"
       [class.is-parent]="hasTree && isParent(opt)"
       [class.is-expanded]="hasTree && isExpanded(opt)"
       [attr.aria-disabled]="(opt.disabled && !(hasTree && isParent(opt))) || null"
@@ -41,7 +65,14 @@
           <span class="material-symbols-outlined">{{ opt.value === '' ? 'apps' : isExpanded(opt) ? 'folder_open' : 'folder' }}</span>
         </span>
         <span class="option-dot" *ngIf="opt.depth"></span>
-        <span class="option-label">{{ opt.label }}</span>
+        <span class="option-thumb" *ngIf="opt.image || opt.sub">
+          <img *ngIf="opt.image" [src]="opt.image" alt="" />
+          <span *ngIf="!opt.image" class="material-symbols-outlined">inventory_2</span>
+        </span>
+        <span class="option-copy">
+          <span class="option-label">{{ opt.label }}</span>
+          <span class="option-sub" *ngIf="opt.sub">{{ opt.sub }}</span>
+        </span>
       </span>
       <span class="option-end">
         <span class="option-hint" *ngIf="opt.hint">{{ opt.hint }}</span>
@@ -54,6 +85,7 @@
         >expand_more</span>
       </span>
     </button>
+    </ng-template>
     <div class="select-empty" *ngIf="!visibleOptions.length">{{ query ? 'مفيش نتايج' : 'لا توجد خيارات' }}</div>
   </div>
 </div>

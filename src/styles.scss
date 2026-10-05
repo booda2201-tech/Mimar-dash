@@ -635,14 +635,25 @@ video {
 
 .bf-actions {
   position: sticky;
-  bottom: -1px;
+  bottom: -1.25rem;
   z-index: 2;
   display: flex;
   justify-content: flex-end;
   gap: 0.6rem;
-  margin-inline: -0.25rem;
-  padding: 0.75rem 0.25rem 0.25rem;
-  background: linear-gradient(to top, #fff 75%, rgba(255, 255, 255, 0));
+  margin: 0.25rem -1.25rem -1.25rem;
+  padding: 0.9rem 1.25rem 1.25rem;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(11, 74, 58, 0.08);
+  box-shadow: 0 -14px 24px -18px rgba(11, 74, 58, 0.35);
+}
+
+@media (max-width: 767px) {
+  .bf-actions {
+    bottom: -0.9rem;
+    margin: 0.25rem -0.9rem -0.9rem;
+    padding: 0.75rem 0.9rem 0.9rem;
+  }
 }
 
 .bf-actions .btn-primary {

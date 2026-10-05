@@ -85,7 +85,7 @@ export class CustomersService {
   }
 
   delete(id: string): Observable<boolean> {
-    return this.http.delete<unknown>(`${this.apiUrl}/${id}`).pipe(
+    return this.http.delete(`${this.apiUrl}/${id}`, { responseType: 'text' }).pipe(
       map(() => true),
       catchError((err) => throwError(() => err))
     );
@@ -131,7 +131,7 @@ export class BrandsService {
   }
 
   delete(id: string): Observable<boolean> {
-    return this.http.delete<unknown>(`${this.apiUrl}/${id}`).pipe(map(() => true));
+    return this.http.delete(`${this.apiUrl}/${id}`, { responseType: 'text' }).pipe(map(() => true));
   }
 }
 
@@ -178,7 +178,7 @@ export class CategoriesService {
   }
 
   delete(id: string): Observable<boolean> {
-    return this.http.delete<unknown>(`${this.apiUrl}/${id}`).pipe(map(() => true));
+    return this.http.delete(`${this.apiUrl}/${id}`, { responseType: 'text' }).pipe(map(() => true));
   }
 }
 
@@ -239,7 +239,7 @@ export class AppContentService {
   }
 
   deleteBanner(id: string): Observable<boolean> {
-    return this.http.delete<unknown>(`${this.bannersUrl}/${id}`).pipe(map(() => true));
+    return this.http.delete(`${this.bannersUrl}/${id}`, { responseType: 'text' }).pipe(map(() => true));
   }
 
   getHomeCategories(): Observable<Category[]> {
@@ -284,7 +284,7 @@ export class AdvertisementsService {
   }
 
   delete(id: string): Observable<boolean> {
-    return this.http.delete<unknown>(`${this.apiUrl}/${id}`).pipe(map(() => true));
+    return this.http.delete(`${this.apiUrl}/${id}`, { responseType: 'text' }).pipe(map(() => true));
   }
 
   /** صورة المنتج بتيجي رابط — الـ API عايز ملف، فبننزّلها ونرفعها */
@@ -393,7 +393,7 @@ export class MaterialListsService {
   }
 
   delete(id: string): Observable<boolean> {
-    return this.http.delete<unknown>(`${this.apiUrl}/${id}`).pipe(map(() => true));
+    return this.http.delete(`${this.apiUrl}/${id}`, { responseType: 'text' }).pipe(map(() => true));
   }
 
   addItem(
@@ -416,7 +416,7 @@ export class MaterialListsService {
   }
 
   deleteItem(listId: string, itemId: string): Observable<boolean> {
-    return this.http.delete<unknown>(`${this.apiUrl}/${listId}/items/${itemId}`).pipe(map(() => true));
+    return this.http.delete(`${this.apiUrl}/${listId}/items/${itemId}`, { responseType: 'text' }).pipe(map(() => true));
   }
 }
 

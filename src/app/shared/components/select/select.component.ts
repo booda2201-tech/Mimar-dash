@@ -18,6 +18,10 @@ export interface SelectOption {
   depth?: number;
   /** النص اللي يظهر في الزرار بعد الاختيار لو مختلف عن label */
   display?: string;
+  /** سطر ثانوي تحت الاسم، زي الفئة أو الكود */
+  sub?: string;
+  /** صورة مصغرة للخيار */
+  image?: string;
   hint?: string;
   /** يظهر كعنوان مجموعة ومينفعش يتختار */
   disabled?: boolean;
@@ -42,6 +46,10 @@ export class SelectComponent implements ControlValueAccessor {
   @Input() placeholder = 'اختر...';
   @Input() disabled = false;
   @Input() searchable = false;
+  /** أقل عرض للقائمة المفتوحة، عشان الأسماء متتقطعش */
+  @Input() menuMinWidth = 0;
+  /** يعرض الخيارات ككروت جوه القائمة */
+  @Input() cards = false;
   @Output() selectionChange = new EventEmitter<string | number | null>();
 
   @ViewChild('trigger') triggerRef?: ElementRef<HTMLButtonElement>;
@@ -83,7 +91,7 @@ export class SelectComponent implements ControlValueAccessor {
       return out;
     }
     return this.options
-      .filter((o) => !o.disabled && `${o.display || ''} ${o.label} ${o.hint || ''}`.toLowerCase().includes(q))
+      .filter((o) => !o.disabled && `${o.display || ''} ${o.label} ${o.sub || ''} ${o.hint || ''}`.toLowerCase().includes(q))
       .map((o) => ({ ...o, depth: 0, label: o.display || o.label }));
   }
 
@@ -178,10 +186,40 @@ export class SelectComponent implements ControlValueAccessor {
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom;
+    const panel = this.cards ? (this.host.nativeElement.closest('.modal-panel') as HTMLElement | null) : null;
+    const box = panel?.getBoundingClientRect();
+
+    if (this.cards && box) {
+      const margin = 14;
+      const boundsTop = Math.max(8, box.top + margin);
+      const boundsBottom = Math.min(window.innerHeight - 8, box.bottom - margin);
+      const width = Math.max(280, Math.min(box.width - 32, window.innerWidth - 16));
+      const left = Math.min(Math.max(8, box.left + (box.width - width) / 2), window.innerWidth - width - 8);
+      const below = boundsBottom - rect.bottom - 8;
+      const above = rect.top - boundsTop - 8;
+      const openUp = below < 280 && above > below;
+      const room = Math.max(180, openUp ? above : below);
+      const height = Math.min(440, room, boundsBottom - boundsTop);
+      const top = openUp
+        ? Math.max(boundsTop, rect.top - 8 - height)
+        : Math.max(boundsTop, Math.min(rect.bottom + 8, boundsBottom - height));
+
+      this.menuStyle = {
+        position: 'fixed',
+        left: `${left}px`,
+        width: `${width}px`,
+        top: `${top}px`,
+        maxHeight: `${height}px`,
+        bottom: 'auto',
+        zIndex: '120',
+      };
+      return;
+    }
+
     const openUp = spaceBelow < 260 && rect.top > spaceBelow;
-    const maxH = Math.min(320, openUp ? rect.top - 16 : spaceBelow - 16);
-    const width = Math.min(Math.max(rect.width, 240), window.innerWidth - 16);
+    const width = Math.min(Math.max(rect.width, this.menuMinWidth || 0, 240), window.innerWidth - 16);
     const left = Math.min(Math.max(8, rect.right - width), window.innerWidth - width - 8);
+    const maxH = Math.min(320, openUp ? rect.top - 16 : spaceBelow - 16);
 
     this.menuStyle = {
       position: 'fixed',

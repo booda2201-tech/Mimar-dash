@@ -1,6 +1,6 @@
 import { AfterViewInit, Component, ElementRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ChartConfiguration } from 'chart.js';
 import { catchError, forkJoin, of } from 'rxjs';
 import { StatCardComponent } from '../../shared/components/stat-card/stat-card.component';
@@ -12,7 +12,9 @@ import { ProductsService } from '../../core/services/products.service';
 import { QuotationsService } from '../../core/services/quotations.service';
 import { AuthService } from '../../core/services/auth.service';
 import { AnimationService } from '../../core/services/animation.service';
-import { Category, MaterialList, Order, Product, QuotationRequest, StatCardData } from '../../core/models';
+import { ModalComponent } from '../../shared/components/modal/modal.component';
+import { Category, MaterialList, Order, Product, QuotationFile, QuotationRequest, QuotationStatus, StatCardData } from '../../core/models';
+import { environment } from '../../../environments/environment';
 
 type Period = 'today' | 'week' | 'month';
 
@@ -23,12 +25,22 @@ const STATUS_GROUPS: { key: string; label: string; color: string; match: string[
   { key: 'cancelled', label: 'ملغية', color: '#E5A3A3', match: ['cancelled', 'rejected'] },
 ];
 
+const QUOTE_STATUS: Record<QuotationStatus, { label: string; badge: string }> = {
+  pending: { label: 'بانتظار التسعير', badge: 'pending' },
+  offered: { label: 'تم إرسال العرض', badge: 'info' },
+  accepted: { label: 'مقبول', badge: 'approved' },
+  rejected: { label: 'مرفوض', badge: 'rejected' },
+  ordered: { label: 'تحوّل لطلب', badge: 'completed' },
+  expired: { label: 'منتهي الصلاحية', badge: 'inactive' },
+  cancelled: { label: 'ملغي', badge: 'cancelled' },
+};
+
 const CATEGORY_COLORS = ['#0B4A3A', '#C8A24B', '#2D6A4F', '#95D5B2', '#D4A373', '#ADB5BD'];
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, StatCardComponent, ChartWrapperComponent, StatusBadgeComponent],
+  imports: [CommonModule, RouterLink, StatCardComponent, ChartWrapperComponent, StatusBadgeComponent, ModalComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.scss'],
 })
@@ -58,6 +70,11 @@ export class DashboardComponent implements OnInit, AfterViewInit {
 
   placeholderStat: StatCardData = { title: '', value: 0, icon: 'payments' };
 
+  viewOrder: Order | null = null;
+  orderLoading = false;
+  viewQuote: QuotationRequest | null = null;
+  quoteLoading = false;
+
   /** عدد الطلبات في كل عمود، بيظهر في الـ tooltip */
   private salesCounts: number[] = [];
 
@@ -77,7 +94,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         bodyFont: { family: 'Cairo', size: 13 },
         callbacks: {
           label: (ctx) => [
-            `${Number(ctx.parsed.y).toLocaleString('en-US')} ر.س`,
+            `${Number(ctx.parsed.y).toLocaleString('en-US')} د.ك`,
             `${this.salesCounts[ctx.dataIndex] || 0} طلب`,
           ],
         },
@@ -114,7 +131,8 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     private materialLists: MaterialListsService,
     private auth: AuthService,
     private animation: AnimationService,
-    private host: ElementRef
+    private host: ElementRef,
+    private router: Router
   ) {}
 
   get staffName(): string {
@@ -194,7 +212,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
       {
         title: `مبيعات ${this.periodLabel}`,
         value: this.revenue,
-        suffix: ' ر.س',
+        suffix: ' د.ك',
         change: `${orders.filter((o) => o.status !== 'cancelled').length} طلب غير ملغي`,
         changeType: 'up',
         icon: 'payments',
@@ -343,6 +361,109 @@ export class DashboardComponent implements OnInit, AfterViewInit {
           : from.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' });
       return { from: from.getTime(), to: to.getTime(), label };
     });
+  }
+
+  /* ------------ معاينة سريعة ------------ */
+
+  openOrder(o: Order): void {
+    this.viewOrder = o;
+    this.orderLoading = true;
+    this.ordersService.getById(o.dbId || o.id).pipe(catchError(() => of(undefined))).subscribe((full) => {
+      if (this.viewOrder !== o) return;
+      this.orderLoading = false;
+      if (!full) return;
+      const merged = { ...o } as Record<string, unknown>;
+      Object.entries(full).forEach(([k, v]) => {
+        if (v === undefined || v === null || v === '' || v === '—' || v === 0) return;
+        if (k === 'source' || k === 'createdBy' || k === 'createdById') return;
+        merged[k] = v;
+      });
+      const next = merged as unknown as Order;
+      this.viewOrder = next;
+      this.allOrders = this.allOrders.map((x) => (x === o ? next : x));
+    });
+  }
+
+  closeOrder(): void {
+    this.viewOrder = null;
+  }
+
+  openQuote(q: QuotationRequest): void {
+    this.viewQuote = q;
+    this.quoteLoading = true;
+    this.quotationsService.getById(q.id).pipe(catchError(() => of(null))).subscribe((full) => {
+      if (this.viewQuote !== q) return;
+      this.quoteLoading = false;
+      if (!full) return;
+      const next: QuotationRequest = {
+        ...q,
+        ...full,
+        customerName: full.customerName !== 'عميل' ? full.customerName : q.customerName,
+        items: full.items.length ? full.items : q.items,
+        files: full.files.length ? full.files : q.files,
+        offers: full.offers.length ? full.offers : q.offers,
+      };
+      this.viewQuote = next;
+      this.quotations = this.quotations.map((x) => (x.id === q.id ? next : x));
+    });
+  }
+
+  closeQuote(): void {
+    this.viewQuote = null;
+  }
+
+  goToOrder(o: Order): void {
+    this.viewOrder = null;
+    this.router.navigate(['/orders'], { queryParams: { view: o.id } });
+  }
+
+  goToQuote(q: QuotationRequest): void {
+    this.viewQuote = null;
+    this.router.navigate(['/quotations'], { queryParams: { view: q.id } });
+  }
+
+  money(value?: number | null): string {
+    if (value === null || value === undefined) return '—';
+    return `${value.toLocaleString('en-US', { maximumFractionDigits: 3 })} د.ك`;
+  }
+
+  fullDate(value?: string): string {
+    const t = this.time(value);
+    if (!t) return '—';
+    return new Date(t).toLocaleString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+
+  addressLine(o: Order): string {
+    const a = o.address;
+    if (!a) return o.location && o.location !== '—' ? o.location : '';
+    return [a.governorate, a.city, a.area, a.street, a.buildingNumber && `عمارة ${a.buildingNumber}`, a.floor && `دور ${a.floor}`, a.apartment && `شقة ${a.apartment}`]
+      .filter(Boolean)
+      .join('، ');
+  }
+
+  orderLinesSum(o: Order): number {
+    return (o.lines || []).reduce((s, l) => s + (l.total || 0), 0);
+  }
+
+  quoteStatusLabel(q: QuotationRequest): string {
+    return QUOTE_STATUS[q.status]?.label || q.status;
+  }
+
+  quoteStatusBadge(q: QuotationRequest): string {
+    return QUOTE_STATUS[q.status]?.badge || 'pending';
+  }
+
+  quoteTypeLabel(q: QuotationRequest): string {
+    return q.type === 'files' ? 'ملفات مرفوعة' : q.type === 'materialList' ? 'قائمة مواد' : 'منتجات';
+  }
+
+  quoteTypeIcon(q: QuotationRequest): string {
+    return q.type === 'files' ? 'attach_file' : q.type === 'materialList' ? 'list_alt' : 'shopping_basket';
+  }
+
+  fileUrl(f: QuotationFile): string {
+    if (!f.url || /^(https?:|data:|blob:)/i.test(f.url)) return f.url;
+    return `${environment.apiUrl}${f.url.startsWith('/') ? '' : '/'}${f.url}`;
   }
 
   quoteAmount(q: QuotationRequest): number | undefined {

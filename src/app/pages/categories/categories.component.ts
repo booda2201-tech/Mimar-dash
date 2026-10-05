@@ -494,6 +494,205 @@ import { STARTER_PACKS, StarterCategory, StarterPack } from './categories-starte
           color: rgba(255, 255, 255, 0.7);
         }
       }
+
+      /* ---------- delete choice ---------- */
+      .dl {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .dl-head {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+      }
+      .dl-head strong {
+        display: block;
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: #111827;
+      }
+      .dl-head p {
+        margin: 0.15rem 0 0;
+        font-size: 0.8rem;
+        color: #6b7280;
+      }
+      .dl-head b {
+        color: #111827;
+      }
+      .dl-icon {
+        width: 2.75rem;
+        height: 2.75rem;
+        flex-shrink: 0;
+        display: grid;
+        place-items: center;
+        border-radius: 0.9rem;
+        color: #d92d20;
+        background: rgba(217, 45, 32, 0.1);
+      }
+      .dl-options {
+        display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+      }
+      .dl-option {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        width: 100%;
+        padding: 0.8rem 0.9rem;
+        border-radius: 0.95rem;
+        border: 1.5px solid rgba(11, 74, 58, 0.12);
+        background: #fff;
+        text-align: start;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .dl-option:hover:not(:disabled) {
+        border-color: rgba(11, 74, 58, 0.3);
+        box-shadow: 0 6px 16px -10px rgba(11, 74, 58, 0.4);
+      }
+      .dl-option:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(200, 162, 75, 0.45);
+      }
+      .dl-option:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .dl-option.active {
+        border-color: #0b4a3a;
+        background: rgba(11, 74, 58, 0.04);
+      }
+      .dl-option.is-danger.active {
+        border-color: #d92d20;
+        background: rgba(217, 45, 32, 0.04);
+      }
+      .dl-radio {
+        width: 1.1rem;
+        height: 1.1rem;
+        flex-shrink: 0;
+        border-radius: 999px;
+        border: 2px solid #cbd5e1;
+        transition: all 0.25s ease;
+      }
+      .dl-option.active .dl-radio {
+        border-color: #0b4a3a;
+        box-shadow: inset 0 0 0 3px #fff;
+        background: #0b4a3a;
+      }
+      .dl-option.is-danger.active .dl-radio {
+        border-color: #d92d20;
+        background: #d92d20;
+      }
+      .dl-option-body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+      }
+      .dl-option-body b {
+        font-size: 0.875rem;
+        font-weight: 800;
+        color: #111827;
+      }
+      .dl-option-body small {
+        font-size: 0.74rem;
+        line-height: 1.55;
+        color: #6b7280;
+      }
+      .dl-option-icon {
+        font-size: 1.35rem;
+        color: #9ca3af;
+        transition: color 0.25s ease;
+      }
+      .dl-option.active .dl-option-icon {
+        color: #0b4a3a;
+      }
+      .dl-option.is-danger.active .dl-option-icon {
+        color: #d92d20;
+      }
+      .dl-warn {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.6rem 0.75rem;
+        border-radius: 0.8rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #b54708;
+        background: #fffaeb;
+        border: 1px solid #fedf89;
+      }
+      .dl-warn .material-symbols-outlined {
+        font-size: 1.05rem;
+      }
+      .dl-progress {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+      }
+      .dl-progress small {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #6b7280;
+      }
+      .dl-bar {
+        height: 0.4rem;
+        border-radius: 999px;
+        background: #f1f4f2;
+        overflow: hidden;
+      }
+      .dl-bar span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #f04438, #d92d20);
+        transition: width 0.3s ease;
+      }
+      .dl-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.6rem;
+        padding-top: 0.9rem;
+        border-top: 1px solid rgba(11, 74, 58, 0.08);
+      }
+      .dl-confirm {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        height: 2.6rem;
+        padding: 0 1.1rem;
+        border: 0;
+        border-radius: 0.8rem;
+        font-family: inherit;
+        font-size: 0.85rem;
+        font-weight: 800;
+        color: #fff;
+        background: linear-gradient(135deg, #f04438, #d92d20);
+        box-shadow: 0 8px 18px -10px rgba(217, 45, 32, 0.9);
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      .dl-confirm:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 22px -10px rgba(217, 45, 32, 0.9);
+      }
+      .dl-confirm:active:not(:disabled) {
+        transform: translateY(0);
+      }
+      .dl-confirm:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(217, 45, 32, 0.35);
+      }
+      .dl-confirm:disabled {
+        opacity: 0.7;
+        cursor: wait;
+      }
+      .dl-confirm .material-symbols-outlined {
+        font-size: 1.1rem;
+      }
     `,
   ],
 })
@@ -506,6 +705,12 @@ export class CategoriesComponent implements OnInit, AfterViewInit {
   collapsed = new Set<string>();
   showForm = false;
   showConfirm = false;
+  showDeleteChoice = false;
+  deleteMode: 'children' | 'all' = 'children';
+  deleting = false;
+  deleteDone = 0;
+  deleteTotal = 0;
+  productIdsByCategory = new Map<string, string[]>();
   mode: 'add' | 'edit' = 'add';
   selected: Category | null = null;
 
@@ -545,6 +750,8 @@ export class CategoriesComponent implements OnInit, AfterViewInit {
     }
     this.router.navigateByUrl('/dashboard');
   }
+
+  addingMain = false;
 
   get formTitle(): string {
     if (this.mode === 'edit') return 'تعديل الفئة';
@@ -588,10 +795,15 @@ export class CategoriesComponent implements OnInit, AfterViewInit {
     this.load();
     this.productsService.getAll().subscribe((products) => {
       const counts = new Map<string, number>();
+      const ids = new Map<string, string[]>();
       products.forEach((p) => {
-        if (p.categoryId) counts.set(String(p.categoryId), (counts.get(String(p.categoryId)) || 0) + 1);
+        if (!p.categoryId) return;
+        const key = String(p.categoryId);
+        counts.set(key, (counts.get(key) || 0) + 1);
+        ids.set(key, [...(ids.get(key) || []), String(p.id)]);
       });
       this.productCounts = counts;
+      this.productIdsByCategory = ids;
     });
   }
 
@@ -599,9 +811,9 @@ export class CategoriesComponent implements OnInit, AfterViewInit {
     setTimeout(() => this.animation.fadeUpStagger(this.host.nativeElement.querySelectorAll('.anim-item')), 80);
   }
 
-  load(): void {
+  load(skip: Set<string> = new Set()): void {
     this.service.getAll().subscribe((d) => {
-      this.categories = d;
+      this.categories = d.filter((c) => !skip.has(c.id));
       this.loading = false;
       setTimeout(() => this.animation.fadeUpStagger(this.host.nativeElement.querySelectorAll('.anim-item')), 50);
     });
@@ -624,9 +836,15 @@ export class CategoriesComponent implements OnInit, AfterViewInit {
     else this.collapsed.add(id);
   }
 
+  /** اختيار مكان الفئة مالوش لازمة وإحنا بنضيف فئة رئيسية */
+  get showParentField(): boolean {
+    return this.mode === 'edit' || !this.addingMain;
+  }
+
   openAdd(parentId: string | null = null): void {
     this.mode = 'add';
     this.selected = null;
+    this.addingMain = !parentId;
     const siblings = this.categories.filter((c) => (c.parentId || null) === (parentId || null));
     const nextOrder = siblings.reduce((max, c) => Math.max(max, c.sortOrder || 0), 0) + 1;
     this.form.reset({
@@ -660,16 +878,76 @@ export class CategoriesComponent implements OnInit, AfterViewInit {
   }
 
   openDelete(c: Category): void {
-    if (this.categories.some((x) => x.parentId === c.id) || (c.childrenCount || 0) > 0) {
-      this.toast.error('احذف الفئات الفرعية أولاً، أو انقلها لفئة تانية');
-      return;
-    }
-    if (this.productsIn(c.id) > 0) {
-      this.toast.error('الفئة فيها منتجات — انقل المنتجات لفئة تانية الأول');
-      return;
-    }
     this.selected = c;
-    this.showConfirm = true;
+    const subs = this.descendants(c.id).length;
+    if (!subs && !this.productsIn(c.id)) {
+      this.showConfirm = true;
+      return;
+    }
+    this.deleteMode = subs ? 'children' : 'all';
+    this.showDeleteChoice = true;
+  }
+
+  /** ملخص اللي هيتمسح حسب الاختيار — للعرض في التأكيد */
+  get deleteImpact(): { subs: number; products: number; ownProducts: number } {
+    const c = this.selected;
+    if (!c) return { subs: 0, products: 0, ownProducts: 0 };
+    const subs = this.descendants(c.id);
+    const own = this.productCounts.get(c.id) || 0;
+    const inSubs = subs.reduce((n, s) => n + (this.productCounts.get(s.id) || 0), 0);
+    return { subs: subs.length, products: inSubs, ownProducts: own };
+  }
+
+  async runDelete(): Promise<void> {
+    const root = this.selected;
+    if (!root || this.deleting) return;
+    const subs = this.descendants(root.id);
+    const deepestFirst = [...subs].sort((a, b) => this.depthOf(b) - this.depthOf(a));
+    const categoryIds = [...deepestFirst.map((c) => c.id), ...(this.deleteMode === 'all' ? [root.id] : [])];
+    const productIds = categoryIds.flatMap((id) => this.productIdsByCategory.get(id) || []);
+
+    this.deleting = true;
+    this.deleteDone = 0;
+    this.deleteTotal = productIds.length + categoryIds.length;
+    const removed = new Set<string>();
+    try {
+      for (const pid of productIds) {
+        await firstValueFrom(this.productsService.delete(pid));
+        this.deleteDone++;
+      }
+      for (const cid of categoryIds) {
+        await firstValueFrom(this.service.delete(cid));
+        removed.add(cid);
+        this.categories = this.categories.filter((c) => c.id !== cid);
+        this.deleteDone++;
+      }
+      this.toast.success(
+        this.deleteMode === 'all' ? `تم حذف «${root.name}» نهائياً` : `تم حذف الفئات الفرعية من «${root.name}»`
+      );
+      this.showDeleteChoice = false;
+      this.selected = null;
+    } catch (err: unknown) {
+      const status = (err as { status?: number })?.status;
+      this.toast.error(status === 401 ? 'سجّل الدخول بحساب أدمن' : 'حصلت مشكلة أثناء الحذف — اتحذف جزء بس');
+    } finally {
+      removed.forEach((id) => {
+        this.productCounts.delete(id);
+        this.productIdsByCategory.delete(id);
+      });
+      this.productCounts = new Map(this.productCounts);
+      this.deleting = false;
+      this.load(removed);
+    }
+  }
+
+  private depthOf(c: Category): number {
+    let depth = 0;
+    let cur = c.parentId ? this.byId(c.parentId) : undefined;
+    while (cur && depth < 20) {
+      depth++;
+      cur = cur.parentId ? this.byId(cur.parentId) : undefined;
+    }
+    return depth;
   }
 
   err(control: string): boolean {
@@ -684,7 +962,7 @@ export class CategoriesComponent implements OnInit, AfterViewInit {
       return;
     }
     const raw = this.form.getRawValue();
-    const parentId = raw.parentId || null;
+    const parentId = this.mode === 'add' && this.addingMain ? null : raw.parentId || null;
     const payload: Partial<Category> = {
       name: raw.name!.trim(),
       nameEn: (raw.nameEn || '').trim(),
@@ -724,7 +1002,10 @@ export class CategoriesComponent implements OnInit, AfterViewInit {
         this.showConfirm = false;
         this.selected = null;
       },
-      error: () => this.toast.error('فشل حذف الفئة من الـ API'),
+      error: (err) => {
+        this.toast.error(err?.status === 401 ? 'سجّل الدخول بحساب أدمن' : 'فشل حذف الفئة من الـ API');
+        this.load();
+      },
     });
   }
 

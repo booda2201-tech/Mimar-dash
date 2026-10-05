@@ -66,12 +66,6 @@ export const routes: Routes = [
           import('./pages/app-content/app-content.component').then((m) => m.AppContentComponent),
       },
       {
-        path: 'collections',
-        loadComponent: () =>
-          import('./pages/collections/collections.component').then((m) => m.CollectionsComponent),
-      },
-      { path: 'packages', redirectTo: 'collections', pathMatch: 'full' },
-      {
         path: 'advertisements',
         loadComponent: () =>
           import('./pages/advertisements/advertisements.component').then((m) => m.AdvertisementsComponent),

@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map, catchError, of } from 'rxjs';
 import { Product, ProductDiscount, ProductFormPayload } from '../models';
 import { environment } from '../../../environments/environment';
-import { mapProduct, mapProducts } from '../api/api-mappers';
+import { mapNewArrivals, mapProduct, mapProducts } from '../api/api-mappers';
 import { unwrapItem } from '../api/api-utils';
 
 @Injectable({ providedIn: 'root' })
@@ -13,7 +13,7 @@ export class ProductsService {
   constructor(private http: HttpClient) {}
 
   getNew(): Observable<Product[]> {
-    return this.http.get<unknown>(`${this.apiUrl}/new`).pipe(map(mapProducts), catchError(() => of([])));
+    return this.http.get<unknown>(`${this.apiUrl}/new`).pipe(map(mapNewArrivals), catchError(() => of([])));
   }
 
   getDiscounted(): Observable<Product[]> {
@@ -52,7 +52,7 @@ export class ProductsService {
   }
 
   delete(id: string): Observable<boolean> {
-    return this.http.delete<unknown>(`${this.apiUrl}/${id}`).pipe(map(() => true));
+    return this.http.delete(`${this.apiUrl}/${id}`, { responseType: 'text' }).pipe(map(() => true));
   }
 
   productToPayload(product: Partial<Product>): ProductFormPayload {

@@ -15,9 +15,9 @@ import gsap from 'gsap';
     >
       <div class="text-center">
         <div
-          class="w-24 h-24 mx-auto mb-6 rounded-2xl bg-white/10 border border-brand-gold/40 flex items-center justify-center logo-box"
+          class="w-28 h-28 mx-auto mb-6 rounded-2xl bg-white shadow-lg flex items-center justify-center logo-box overflow-hidden p-1.5"
         >
-          <span class="text-3xl font-extrabold text-brand-gold tracking-wide">معمار</span>
+          <img src="assets/brand/mimar-logo.jpg" alt="معمار" class="w-full h-full object-contain" />
         </div>
         <p class="text-emerald-100/90 text-sm font-medium mb-4">جاري تحميل لوحة التحكم...</p>
         <div class="w-40 h-1.5 mx-auto rounded-full bg-white/10 overflow-hidden">

@@ -140,6 +140,8 @@ export interface Product {
   quotationQuantity?: number;
   coveragePerUnit?: number;
   inputUnit?: string;
+  /** عنصر "وصل حديثاً" بيمثل نوع جديد جوه منتج مش المنتج كله */
+  variantOf?: { productId: string; variantId: string; label: string };
   sales: number;
   rating: number;
   status: StatusType;

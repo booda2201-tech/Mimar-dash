@@ -24,7 +24,7 @@
     <div class="om-main">
       <div class="min-w-0">
         <small>قيمة الطلبات الفعّالة</small>
-        <strong>{{ stats[0].value | number }} <em>ر.س</em></strong>
+        <strong>{{ stats[0].value | number }} <em>د.ك</em></strong>
       </div>
       <button type="button" class="om-new" (click)="openAdd()">
         <span class="material-symbols-outlined">add</span>
@@ -303,7 +303,7 @@
         </div>
         <div class="fact-total">
           <p class="block-label">الإجمالي</p>
-          <p class="total-value">{{ selected.total | number }} <span>ر.س</span></p>
+          <p class="total-value">{{ selected.total | number }} <span>د.ك</span></p>
         </div>
       </div>
 

@@ -227,7 +227,7 @@
       </div>
     </div>
 
-    <section class="bf-section">
+    <section class="bf-section" *ngIf="showParentField">
       <h4><span class="material-symbols-outlined">account_tree</span> مكان الفئة</h4>
       <app-select formControlName="parentId" [options]="parentOptions" [searchable]="true" placeholder="— فئة رئيسية —"></app-select>
       <p class="bf-hint">سيبها «فئة رئيسية»، أو اختار الفئة اللي هتبقى دي جواها</p>
@@ -329,6 +329,94 @@
       <span class="material-symbols-outlined text-[18px]" [class.animate-spin]="starterBusy">{{ starterBusy ? 'progress_activity' : 'auto_awesome' }}</span>
       {{ starterPending ? 'إضافة ' + starterPending + ' فئة' : 'كله موجود' }}
     </button>
+  </div>
+</app-modal>
+
+<app-modal
+  [open]="showDeleteChoice"
+  title="حذف الفئة"
+  maxWidth="500px"
+  (close)="!deleting && (showDeleteChoice = false)"
+>
+  <div class="dl" *ngIf="selected as c">
+    <div class="dl-head">
+      <div class="dl-icon">
+        <span class="material-symbols-outlined">delete_forever</span>
+      </div>
+      <div class="min-w-0">
+        <strong>«{{ c.name }}»</strong>
+        <p>
+          جواها
+          <b *ngIf="deleteImpact.subs">{{ deleteImpact.subs }} فئة فرعية</b>
+          <ng-container *ngIf="deleteImpact.subs && (deleteImpact.products + deleteImpact.ownProducts)"> و</ng-container>
+          <b *ngIf="deleteImpact.products + deleteImpact.ownProducts">{{ deleteImpact.products + deleteImpact.ownProducts }} منتج</b>
+          — عايز تعمل إيه؟
+        </p>
+      </div>
+    </div>
+
+    <div class="dl-options" role="radiogroup">
+      <button
+        type="button"
+        role="radio"
+        class="dl-option"
+        *ngIf="deleteImpact.subs"
+        [class.active]="deleteMode === 'children'"
+        [attr.aria-checked]="deleteMode === 'children'"
+        [disabled]="deleting"
+        (click)="deleteMode = 'children'"
+      >
+        <span class="dl-radio"></span>
+        <span class="dl-option-body">
+          <b>حذف الفئات الفرعية بس</b>
+          <small>
+            «{{ c.name }}» هتفضل موجودة، وهيتمسح {{ deleteImpact.subs }} فئة فرعية
+            <ng-container *ngIf="deleteImpact.products">و{{ deleteImpact.products }} منتج جواهم</ng-container>
+          </small>
+        </span>
+        <span class="material-symbols-outlined dl-option-icon">account_tree</span>
+      </button>
+
+      <button
+        type="button"
+        role="radio"
+        class="dl-option is-danger"
+        [class.active]="deleteMode === 'all'"
+        [attr.aria-checked]="deleteMode === 'all'"
+        [disabled]="deleting"
+        (click)="deleteMode = 'all'"
+      >
+        <span class="dl-radio"></span>
+        <span class="dl-option-body">
+          <b>حذف الفئة نهائياً</b>
+          <small>
+            الفئة وكل اللي جواها هيتمسح
+            ({{ deleteImpact.subs ? deleteImpact.subs + ' فئة فرعية · ' : '' }}{{ deleteImpact.products + deleteImpact.ownProducts }} منتج)
+          </small>
+        </span>
+        <span class="material-symbols-outlined dl-option-icon">delete_sweep</span>
+      </button>
+    </div>
+
+    <div class="dl-warn">
+      <span class="material-symbols-outlined">warning</span>
+      المنتجات اللي جوا الفئات المحذوفة هتتمسح هي كمان، ومفيش تراجع.
+    </div>
+
+    <div class="dl-progress" *ngIf="deleting">
+      <div class="dl-bar"><span [style.width.%]="deleteTotal ? (deleteDone / deleteTotal) * 100 : 0"></span></div>
+      <small>جاري الحذف… {{ deleteDone }} / {{ deleteTotal }}</small>
+    </div>
+
+    <div class="dl-actions">
+      <button type="button" class="btn-outline" [disabled]="deleting" (click)="showDeleteChoice = false">إلغاء</button>
+      <button type="button" class="dl-confirm" [disabled]="deleting" (click)="runDelete()">
+        <span class="material-symbols-outlined" [class.animate-spin]="deleting">
+          {{ deleting ? 'progress_activity' : 'delete' }}
+        </span>
+        {{ deleteMode === 'all' ? 'حذف نهائي' : 'حذف الفئات الفرعية' }}
+      </button>
+    </div>
   </div>
 </app-modal>
 

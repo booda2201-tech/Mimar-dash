@@ -47,8 +47,8 @@ export class CustomersComponent implements OnInit, AfterViewInit {
   stats: StatCardData[] = [
     { title: 'عملاء التطبيق', value: 0, change: 'من طلبات التطبيق', changeType: 'neutral', icon: 'groups', animate: true },
     { title: 'إجمالي الطلبات', value: 0, change: 'عبر التطبيق', changeType: 'neutral', icon: 'local_shipping', animate: true },
-    { title: 'إجمالي المدفوعات', value: 0, change: 'من طلبات التطبيق', changeType: 'neutral', icon: 'payments', suffix: ' ر.س', animate: true },
-    { title: 'متوسط إنفاق العميل', value: 0, change: 'لكل عميل', changeType: 'neutral', icon: 'monitoring', suffix: ' ر.س', animate: true },
+    { title: 'إجمالي المدفوعات', value: 0, change: 'من طلبات التطبيق', changeType: 'neutral', icon: 'payments', suffix: ' د.ك', animate: true },
+    { title: 'متوسط إنفاق العميل', value: 0, change: 'لكل عميل', changeType: 'neutral', icon: 'monitoring', suffix: ' د.ك', animate: true },
   ];
 
   constructor(

@@ -214,7 +214,7 @@ export class DataTableComponent implements OnChanges {
   }
 
   asCurrency(value: unknown): string {
-    return Number(value || 0).toLocaleString('en-US') + ' ر.س';
+    return Number(value || 0).toLocaleString('en-US') + ' د.ك';
   }
 
   asDate(value: unknown): string {

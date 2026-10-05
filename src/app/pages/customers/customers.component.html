@@ -25,7 +25,7 @@
       <div class="cm-summary-main">
         <div class="min-w-0">
           <small>إجمالي المدفوعات</small>
-          <strong>{{ stats[2].value | number }} <em>ر.س</em></strong>
+          <strong>{{ stats[2].value | number }} <em>د.ك</em></strong>
         </div>
         <span class="cm-summary-icon"><span class="material-symbols-outlined">account_balance_wallet</span></span>
       </div>
@@ -109,7 +109,7 @@
             </div>
             <div>
               <small>المدفوعات</small>
-              <strong>{{ p.spent | number }} <em>ر.س</em></strong>
+              <strong>{{ p.spent | number }} <em>د.ك</em></strong>
             </div>
             <div>
               <small>آخر طلب</small>
@@ -162,7 +162,7 @@
           <p class="m-0 mt-0.5 sm:mt-1 text-xs sm:text-sm text-gray-500 truncate">{{ p.company !== '—' ? p.company : 'عميل التطبيق' }}</p>
           <p class="sm:hidden m-0 mt-1 flex items-center gap-2 text-xs text-gray-400">
             <span class="inline-flex items-center gap-0.5 font-bold text-brand-primary"><span class="material-symbols-outlined text-[14px]">receipt_long</span>{{ p.orders }} طلب</span>
-            <span class="font-bold text-gray-700">{{ p.spent | number }} ر.س</span>
+            <span class="font-bold text-gray-700">{{ p.spent | number }} د.ك</span>
             <span *ngIf="p.city !== '—'" class="truncate">{{ p.city }}</span>
           </p>
         </div>
@@ -253,7 +253,7 @@
       </div>
       <div>
         <small>المدفوعات</small>
-        <strong>{{ selected.spent | number }} <em>ر.س</em></strong>
+        <strong>{{ selected.spent | number }} <em>د.ك</em></strong>
       </div>
       <div>
         <small>آخر طلب</small>
@@ -280,7 +280,7 @@
                 <span class="material-symbols-outlined">location_on</span>{{ order.location }}
               </ng-container>
             </span>
-            <strong>{{ order.total | number }} ر.س</strong>
+            <strong>{{ order.total | number }} د.ك</strong>
           </div>
         </article>
       </ng-container>
@@ -301,7 +301,7 @@
             <p>{{ slice.method }}</p>
             <small>{{ slice.count }} عملية</small>
           </div>
-          <strong>{{ slice.total | number }} ر.س</strong>
+          <strong>{{ slice.total | number }} د.ك</strong>
         </div>
       </ng-container>
       <ng-template #noPay>

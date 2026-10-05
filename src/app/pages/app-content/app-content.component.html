@@ -6,7 +6,7 @@
         واجهة التطبيق
       </span>
       <h1>إدارة محتوى التطبيق</h1>
-      <p>تحكم في ما يظهر للمستخدم على الهوم: الإعلانات، الأقسام، والمنتجات الجديدة</p>
+      <p>تحكم في ما يظهر للمستخدم على الرئيسية: الإعلانات، الأقسام، والمنتجات الجديدة</p>
     </div>
     <div class="hero-actions">
       <a class="btn-primary text-sm" routerLink="/advertisements">
@@ -49,6 +49,10 @@
         <span class="material-symbols-outlined">campaign</span>
         الإعلانات
       </button>
+      <button type="button" (click)="scrollTo(dcSec)">
+        <span class="material-symbols-outlined">sell</span>
+        الخصومات
+      </button>
       <button type="button" (click)="scrollTo(newSec)">
         <span class="material-symbols-outlined">new_releases</span>
         الجديد
@@ -69,7 +73,7 @@
   <section class="anim-item panel" #adsSec>
     <header class="panel-head">
       <div>
-        <h2>إعلانات الهوم <span class="head-count" *ngIf="ads.length">{{ ads.length }}</span></h2>
+        <h2>إعلانات الرئيسية <span class="head-count" *ngIf="ads.length">{{ ads.length }}</span></h2>
         <p>الإعلانات اللي بتظهر أعلى التطبيق، ومع الضغط بتفتح المنتج</p>
       </div>
       <a class="btn-outline text-sm" routerLink="/advertisements">إضافة إعلان</a>
@@ -144,6 +148,93 @@
     </div>
   </section>
 
+  <section class="anim-item panel" #dcSec>
+    <header class="panel-head">
+      <div>
+        <h2>الخصومات <span class="head-count" *ngIf="discounted.length">{{ discounted.length }}</span></h2>
+        <p>المنتجات المخفضة اللي بتظهر في قسم العروض بالتطبيق</p>
+      </div>
+      <button type="button" class="btn-primary text-sm" (click)="openDiscount()" [disabled]="!discountPickOptions.length">
+        <span class="material-symbols-outlined text-[18px]">add</span>
+        إضافة خصم
+      </button>
+      <button type="button" class="head-icon" (click)="openDiscount()" [disabled]="!discountPickOptions.length">
+        <span class="material-symbols-outlined">add</span>
+        خصم
+      </button>
+    </header>
+
+    <div class="empty-block" *ngIf="!discounted.length && !loading">
+      <span class="material-symbols-outlined">sell</span>
+      <p>لا توجد منتجات عليها خصم حالياً</p>
+      <button type="button" class="btn-outline text-sm mt-3" (click)="openDiscount()" [disabled]="!discountPickOptions.length">
+        إضافة خصم
+      </button>
+    </div>
+
+    <div class="dc-grid" *ngIf="discounted.length">
+      <article class="dc-row" *ngFor="let p of dcAll ? discounted : (discounted | slice: 0 : 8)">
+        <div class="dc-thumb" [class.is-empty]="!p.image">
+          <img *ngIf="p.image" [src]="p.image" [alt]="p.name" loading="lazy" />
+          <span *ngIf="!p.image" class="material-symbols-outlined">image</span>
+        </div>
+
+        <div class="dc-info">
+          <h3 [title]="p.name">{{ p.name }}</h3>
+          <div class="dc-prices" *ngIf="dcPrice(p) as price">
+            <strong>{{ price.now | number: '1.0-3' }} <small>د.ك</small></strong>
+            <del *ngIf="price.was">{{ price.was | number: '1.0-3' }}</del>
+          </div>
+          <div class="dc-meta">
+            <span class="dc-chip is-alt" *ngIf="!isProductDiscount(p)">
+              <span class="material-symbols-outlined">{{ p.discountSource === 'variant' ? 'style' : 'stacks' }}</span>
+              {{ discountSourceLabel(p) }}<ng-container *ngIf="dcPrice(p).note"> · {{ dcPrice(p).note }}</ng-container>
+            </span>
+            <span class="dc-chip" *ngIf="discountEnd(p)">
+              <span class="material-symbols-outlined">schedule</span>
+              حتى {{ discountEnd(p) }}
+            </span>
+          </div>
+        </div>
+
+        <div class="dc-side">
+          <span class="dc-badge">{{ discountBadge(p) ? '-' + discountBadge(p) : 'خصم' }}</span>
+          <div class="dc-actions">
+            <button
+              type="button"
+              class="dc-icon"
+              [disabled]="busyId === 'dc-' + p.id || busyId === 'open-' + p.id"
+              (click)="openDiscount(p)"
+              aria-label="تعديل الخصم"
+              title="تعديل"
+            >
+              <span class="material-symbols-outlined" [class.animate-spin]="busyId === 'open-' + p.id">
+                {{ busyId === 'open-' + p.id ? 'progress_activity' : 'edit' }}
+              </span>
+            </button>
+            <button
+              type="button"
+              class="dc-icon is-danger"
+              [disabled]="busyId === 'dc-' + p.id"
+              (click)="removeTarget = p"
+              aria-label="إزالة الخصم"
+              title="إزالة"
+            >
+              <span class="material-symbols-outlined" [class.animate-spin]="busyId === 'dc-' + p.id">
+                {{ busyId === 'dc-' + p.id ? 'progress_activity' : 'delete' }}
+              </span>
+            </button>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <button type="button" class="dc-more" *ngIf="discounted.length > 8" (click)="dcAll = !dcAll">
+      {{ dcAll ? 'عرض أقل' : 'عرض الكل (' + discounted.length + ')' }}
+      <span class="material-symbols-outlined">{{ dcAll ? 'expand_less' : 'expand_more' }}</span>
+    </button>
+  </section>
+
   <section class="anim-item panel" #newSec>
     <header class="panel-head">
       <div>
@@ -176,7 +267,8 @@
           <div class="na-info">
             <strong>{{ p.name }}</strong>
             <span>
-              <b>{{ p.price | number:'1.0-2' }} <small>ر.س</small></b>
+              <em class="na-variant" *ngIf="p.variantOf">نوع</em>
+              <b>{{ p.price | number:'1.0-3' }} <small>د.ك</small></b>
               <i></i>
               مخزون {{ p.stock }}
             </span>
@@ -203,7 +295,7 @@
         <div class="product-cover" [class.is-empty]="!p.image">
           <img *ngIf="p.image" [src]="p.image" [alt]="p.name" loading="lazy" />
           <span *ngIf="!p.image" class="material-symbols-outlined">image</span>
-          <span class="new-chip">جديد</span>
+          <span class="new-chip" [class.is-variant]="p.variantOf">{{ p.variantOf ? 'نوع جديد' : 'جديد' }}</span>
           <button
             type="button"
             class="tile-x"
@@ -217,12 +309,12 @@
         <div class="product-body">
           <p class="sku" *ngIf="p.sku">{{ p.sku }}</p>
           <h3>{{ p.name }}</h3>
-          <p class="product-price">{{ p.price | number:'1.0-2' }} <small>ر.س</small></p>
+          <p class="product-price">{{ p.price | number:'1.0-3' }} <small>د.ك</small></p>
           <p class="en" dir="ltr" *ngIf="p.nameEn">{{ p.nameEn }}</p>
           <div class="product-stats">
             <div>
               <span class="lbl">السعر</span>
-              <strong>{{ p.price | number:'1.0-2' }} ر.س</strong>
+              <strong>{{ p.price | number:'1.0-3' }} د.ك</strong>
             </div>
             <div>
               <span class="lbl">المخزون</span>
@@ -274,7 +366,7 @@
   <section class="anim-item panel" #catSec>
     <header class="panel-head">
       <div>
-        <h2>أقسام الهوم <span class="head-count" *ngIf="categories.length">{{ visibleCategoryCount }}/{{ categories.length }}</span></h2>
+        <h2>أقسام الرئيسية <span class="head-count" *ngIf="categories.length">{{ visibleCategoryCount }}/{{ categories.length }}</span></h2>
         <p>أظهر أو أخفِ الأقسام الرئيسية من التطبيق</p>
       </div>
       <a class="link-btn" routerLink="/categories">إدارة الفئات</a>
@@ -330,3 +422,135 @@
     </div>
   </form>
 </app-modal>
+
+<app-modal
+  [open]="showDiscount"
+  [title]="discountTarget ? 'تعديل الخصم' : 'إضافة خصم'"
+  maxWidth="520px"
+  (close)="!busyId && (showDiscount = false)"
+>
+  <form class="dcf" [formGroup]="discountForm" (ngSubmit)="saveDiscount()">
+    <div>
+      <label class="form-label">المنتج</label>
+      <app-select
+        formControlName="productId"
+        [options]="discountPickOptions"
+        [searchable]="true"
+        placeholder="اختر منتجاً"
+      ></app-select>
+      <p class="form-error" *ngIf="discountForm.controls.productId.touched && discountForm.controls.productId.invalid">
+        اختر المنتج
+      </p>
+      <p class="dcf-scope" *ngIf="discountNote">{{ discountNote }}</p>
+    </div>
+
+    <div>
+      <label class="form-label">نوع الخصم</label>
+      <div class="dcf-seg" role="radiogroup">
+        <button
+          type="button"
+          role="radio"
+          [attr.aria-checked]="discountForm.value.kind === 'percentage'"
+          [class.active]="discountForm.value.kind === 'percentage'"
+          (click)="setDiscountKind('percentage')"
+        >
+          <span class="material-symbols-outlined">percent</span>
+          نسبة مئوية
+        </button>
+        <button
+          type="button"
+          role="radio"
+          [attr.aria-checked]="discountForm.value.kind === 'amount'"
+          [class.active]="discountForm.value.kind === 'amount'"
+          (click)="setDiscountKind('amount')"
+        >
+          <span class="material-symbols-outlined">payments</span>
+          مبلغ ثابت
+        </button>
+      </div>
+    </div>
+
+    <div class="dcf-row">
+      <div>
+        <label class="form-label">قيمة الخصم</label>
+        <div class="dcf-affix">
+          <input
+            type="number"
+            class="input-field"
+            formControlName="value"
+            min="0"
+            step="any"
+            inputmode="decimal"
+            [placeholder]="discountForm.value.kind === 'amount' ? '50' : '15'"
+          />
+          <span>{{ discountForm.value.kind === 'amount' ? 'د.ك' : '%' }}</span>
+        </div>
+        <p class="form-error" *ngIf="discountForm.controls.value.touched && discountForm.controls.value.invalid">
+          أدخل قيمة أكبر من صفر
+        </p>
+      </div>
+      <div>
+        <label class="form-label">المدة</label>
+        <div class="dcf-affix">
+          <input type="number" class="input-field" formControlName="durationDays" min="1" step="1" placeholder="30" />
+          <span>يوم</span>
+        </div>
+        <div class="dcf-presets">
+          <button
+            type="button"
+            *ngFor="let d of durationPresets"
+            [class.active]="discountForm.value.durationDays === d"
+            (click)="discountForm.patchValue({ durationDays: d })"
+          >
+            {{ d }} يوم
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="dcf-preview" *ngIf="discountProduct as dp">
+      <div class="dcf-thumb" [class.is-empty]="!dp.image">
+        <img *ngIf="dp.image" [src]="dp.image" alt="" />
+        <span *ngIf="!dp.image" class="material-symbols-outlined">image</span>
+      </div>
+      <div class="min-w-0 flex-1">
+        <b>{{ dp.name }}</b>
+        <div class="dcf-price">
+          <ng-container *ngIf="discountPreviewPrice !== null; else dcfBase">
+            <strong>{{ money(discountPreviewPrice) }}</strong>
+            <del>{{ money(discountBase) }}</del>
+            <span class="dcf-saving">
+              <span class="material-symbols-outlined">savings</span>
+              توفير {{ money(discountBase - discountPreviewPrice) }}
+            </span>
+          </ng-container>
+          <ng-template #dcfBase><strong>{{ money(discountBase) }}</strong></ng-template>
+        </div>
+        <small *ngIf="discountEndPreview">
+          <span class="material-symbols-outlined">event</span>
+          يبدأ النهارده وينتهي {{ discountEndPreview }}
+        </small>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn-outline" (click)="showDiscount = false" [disabled]="!!busyId">إلغاء</button>
+      <button type="submit" class="btn-primary" [disabled]="!!busyId">
+        <span class="material-symbols-outlined text-[18px]" [class.animate-spin]="!!busyId">
+          {{ busyId ? 'progress_activity' : 'check' }}
+        </span>
+        {{ discountTarget ? 'حفظ التعديل' : 'إضافة الخصم' }}
+      </button>
+    </div>
+  </form>
+</app-modal>
+
+<app-confirm-dialog
+  [open]="!!removeTarget"
+  title="إزالة الخصم"
+  [message]="'هيرجع «' + (removeTarget?.name || '') + '» لسعره الأصلي ويختفي من العروض. متأكد؟'"
+  confirmText="إزالة"
+  [danger]="true"
+  (confirm)="confirmRemoveDiscount()"
+  (cancel)="removeTarget = null"
+></app-confirm-dialog>

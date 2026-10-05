@@ -154,7 +154,7 @@ export class OffersComponent implements OnInit, AfterViewInit {
   }
 
   money(value?: number): string {
-    return `${(value || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })} ر.س`;
+    return `${(value || 0).toLocaleString('en-US', { maximumFractionDigits: 3 })} د.ك`;
   }
 
   sourceLabel(o: Offer): string {
@@ -164,7 +164,7 @@ export class OffersComponent implements OnInit, AfterViewInit {
   }
 
   discountLabel(o: Offer): string {
-    if (o.discountKind === 'amount' && o.discountValue) return `${o.discountValue.toLocaleString('en-US')} ر.س`;
+    if (o.discountKind === 'amount' && o.discountValue) return `${o.discountValue.toLocaleString('en-US')} د.ك`;
     return o.discount ? o.discount + '%' : '—';
   }
 

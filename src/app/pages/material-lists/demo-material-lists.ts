@@ -32,7 +32,7 @@ export function buildDemoMaterialLists(products: Product[] = []): MaterialList[]
       id: 'DEMO-1',
       name: 'تشطيب فيلا النرجس',
       nameEn: 'Al Narjis villa finishing',
-      projectName: 'فيلا النرجس — الرياض',
+      projectName: 'فيلا الشويخ — الكويت',
       ownerName: 'محمود حسن',
       description: 'قائمة المقاول للتشطيبات الداخلية: سيراميك، دهانات، وأدوات تركيب.',
       status: 'active' as StatusType,

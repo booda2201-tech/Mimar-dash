@@ -9,6 +9,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription, firstValueFrom } from 'rxjs';
 import { StatCardComponent } from '../../shared/components/stat-card/stat-card.component';
 import { DataTableComponent } from '../../shared/components/data-table/data-table.component';
@@ -188,7 +189,9 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
     private host: ElementRef,
     private layout: LayoutService,
     private cdRef: ChangeDetectorRef,
-    private gemini: GeminiAiService
+    private gemini: GeminiAiService,
+    private route: ActivatedRoute,
+    private router: Router
   ) {}
 
   get formTitle(): string {
@@ -591,8 +594,24 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
     this.subs.push(
       this.form.get('hasVariants')!.valueChanges.subscribe((has) => this.applyVariantValidators(!!has)),
-      this.layout.createProduct$.subscribe(() => this.openAdd())
+      this.layout.createProduct$.subscribe(() => this.openAdd()),
+      this.route.queryParamMap.subscribe((params) => {
+        const id = params.get('edit');
+        if (id) this.openEditById(id);
+      })
     );
+  }
+
+  /** فتح التعديل من رابط خارجي (مثلاً /products?edit=12 من صفحة محتوى التطبيق) */
+  private openEditById(id: string): void {
+    this.productsService.getById(id).subscribe({
+      next: (product) => {
+        if (product) this.openEdit(product);
+        else this.toast.error('المنتج غير موجود');
+        this.router.navigate([], { relativeTo: this.route, queryParams: { edit: null }, replaceUrl: true });
+      },
+      error: () => this.toast.error('تعذر تحميل المنتج'),
+    });
   }
 
   ngAfterViewInit(): void {
@@ -1258,7 +1277,7 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   money(value?: number): string {
-    return `${(value || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })} ر.س`;
+    return `${(value || 0).toLocaleString('en-US', { maximumFractionDigits: 3 })} د.ك`;
   }
 
   tierCount(p: Product): number {
@@ -1311,10 +1330,22 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   confirmDelete(): void {
     if (!this.selectedId) return;
-    this.productsService.delete(this.selectedId).subscribe(() => {
-      this.products = this.products.filter((p) => p.id !== this.selectedId);
-      this.showConfirm = false;
-      this.toast.success('تم حذف المنتج');
+    const id = this.selectedId;
+    this.productsService.delete(id).subscribe({
+      next: () => {
+        this.products = this.products.filter((p) => p.id !== id);
+        this.refreshStats(this.products);
+        this.refreshCategoryFilter();
+        this.showConfirm = false;
+        this.showView = false;
+        this.selected = null;
+        this.selectedId = null;
+        this.toast.success('تم حذف المنتج');
+      },
+      error: (err) => {
+        this.toast.error(err?.status === 401 ? 'سجّل الدخول بحساب أدمن' : 'فشل حذف المنتج');
+        this.load();
+      },
     });
   }
 

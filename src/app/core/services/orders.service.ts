@@ -60,7 +60,7 @@ export class OrdersService {
   }
 
   delete(id: string): Observable<boolean> {
-    return this.http.delete<unknown>(`${this.apiUrl}/${id}`).pipe(
+    return this.http.delete(`${this.apiUrl}/${id}`, { responseType: 'text' }).pipe(
       map(() => true),
       catchError((err) => throwError(() => err))
     );

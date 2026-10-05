@@ -132,7 +132,7 @@
               </div>
               <div>
                 <label class="form-label">الرقم الضريبي</label>
-                <input class="input-field" formControlName="vat" dir="ltr" />
+                <input class="input-field" formControlName="vat" dir="ltr" placeholder="غير مطبّقة في الكويت" />
               </div>
             </div>
           </section>
@@ -209,15 +209,15 @@
               <div class="metric-field">
                 <label class="form-label">معامل الكيلومتر</label>
                 <div class="input-with-suffix">
-                  <input type="number" class="input-field" formControlName="kmRate" step="0.01" />
-                  <span>ر.س</span>
+                  <input type="number" class="input-field" formControlName="kmRate" step="0.001" />
+                  <span>د.ك</span>
                 </div>
               </div>
               <div class="metric-field">
                 <label class="form-label">سعر الطن</label>
                 <div class="input-with-suffix">
                   <input type="number" class="input-field" formControlName="tonRate" />
-                  <span>ر.س</span>
+                  <span>د.ك</span>
                 </div>
               </div>
               <div class="metric-field">
@@ -244,7 +244,7 @@
                 </div>
               </div>
               <div>
-                <label class="form-label">بيئة الربط</label>
+                <label class="form-label">بيئة التشغيل</label>
                 <div class="env-pills">
                   <label class="env-pill" [class.is-active]="form.value.zatcaEnv === 'sandbox'">
                     <input type="radio" formControlName="zatcaEnv" value="sandbox" />
@@ -260,12 +260,12 @@
           </section>
 
           <section class="form-section">
-            <p class="form-section-title">حالة ZATCA</p>
+            <p class="form-section-title">حالة الضريبة</p>
             <div class="status-banner is-success">
               <span class="status-banner-icon"><span class="material-symbols-outlined">verified</span></span>
               <div>
-                <p class="status-banner-title">الربط مع منصة فاتورة متصل</p>
-                <p class="status-banner-desc">نسبة نجاح المزامنة اليوم 99.98% · آخر مزامنة منذ 12 دقيقة</p>
+                <p class="status-banner-title">المقر في دولة الكويت</p>
+                <p class="status-banner-desc">لا تُطبَّق ضريبة القيمة المضافة حالياً، والنسبة الافتراضية 0%</p>
               </div>
             </div>
             <div class="info-grid">
