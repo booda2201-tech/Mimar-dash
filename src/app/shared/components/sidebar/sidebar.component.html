@@ -1,23 +1,25 @@
 <!-- Desktop sidebar -->
-<aside class="sidebar-shell">
+<aside class="sidebar-shell" aria-label="القائمة الرئيسية">
   <div class="sidebar-glow" aria-hidden="true"></div>
 
-  <div class="sidebar-brand">
+  <a routerLink="/dashboard" class="sidebar-brand" aria-label="منصة معمار">
     <img class="brand-logo" src="assets/brand/mimar-logo.jpg" alt="معمار" />
-    <div class="min-w-0">
-      <p class="brand-title">منصة معمار</p>
-      <p class="brand-sub">لوحة التحكم التنفيذية</p>
-    </div>
-  </div>
+    <span class="brand-copy">
+      <span class="brand-title">منصة معمار</span>
+      <span class="brand-sub">لوحة التحكم التنفيذية</span>
+    </span>
+  </a>
+
+  <span class="rail-divider" aria-hidden="true"></span>
 
   <nav #navList class="sidebar-nav">
-    <p class="nav-section">القائمة الرئيسية</p>
     <a
       *ngFor="let item of navItems"
       [routerLink]="item.route"
       routerLinkActive="nav-active"
       [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
       class="nav-item"
+      [attr.aria-label]="item.label"
     >
       <span class="nav-icon">
         <span class="material-symbols-outlined">{{ item.icon }}</span>
@@ -28,16 +30,13 @@
 
   <div class="sidebar-footer">
     <div class="user-card">
-      <div class="user-row">
-        <div class="user-avatar">{{ staffInitial }}</div>
-        <div class="min-w-0 flex-1">
-          <p class="user-name">{{ staffName }}</p>
-          <p class="user-role">Super Admin</p>
-        </div>
+      <div class="user-avatar">{{ staffInitial }}</div>
+      <div class="user-copy">
+        <p class="user-name">{{ staffName }}</p>
+        <p class="user-role">Super Admin</p>
       </div>
-      <a routerLink="/login" class="logout-btn" (click)="logout()">
-        <span class="material-symbols-outlined text-[18px]">logout</span>
-        تسجيل الخروج
+      <a routerLink="/login" class="logout-btn" (click)="logout()" aria-label="تسجيل الخروج" title="تسجيل الخروج">
+        <span class="material-symbols-outlined">logout</span>
       </a>
     </div>
   </div>

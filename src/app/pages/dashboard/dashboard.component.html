@@ -111,7 +111,9 @@
           <small>{{ periodOrders.length }} طلب</small>
         </div>
       </header>
-      <app-chart-wrapper type="bar" [data]="salesData" [options]="salesOptions" [height]="compact ? '200px' : '270px'"></app-chart-wrapper>
+      <div class="sales-chart">
+        <app-chart-wrapper type="bar" [data]="salesData" [options]="salesOptions" height="100%"></app-chart-wrapper>
+      </div>
       <div class="chart-legend">
         <span><i style="background: #0b4a3a"></i> المبيعات (د.ك)</span>
         <span><i style="background: #c8a24b"></i> أعلى {{ period === 'today' ? 'فترة' : 'يوم' }}</span>
@@ -119,7 +121,7 @@
       </div>
     </article>
 
-    <article class="anim-item panel">
+    <article class="anim-item panel status-panel">
       <header class="panel-head">
         <div>
           <h2>حالة الطلبات</h2>
@@ -127,20 +129,24 @@
         </div>
         <a routerLink="/orders" class="link-gold">الطلبات <span class="material-symbols-outlined">chevron_left</span></a>
       </header>
-      <div class="donut-wrap">
-        <app-chart-wrapper type="doughnut" [data]="statusData" [options]="statusOptions" height="190px"></app-chart-wrapper>
-        <div class="donut-center">
-          <strong>{{ periodOrders.length }}</strong>
-          <small>طلب</small>
+      <div class="status-body">
+        <div class="donut-wrap">
+          <app-chart-wrapper type="doughnut" [data]="statusData" [options]="statusOptions" height="100%"></app-chart-wrapper>
+          <div class="donut-center">
+            <strong>{{ periodOrders.length }}</strong>
+            <small>طلب</small>
+          </div>
         </div>
+        <ul class="status-list">
+          <li *ngFor="let s of statusLegend" [class.is-empty]="!s.count">
+            <i [style.background]="s.color"></i>
+            <span class="status-name">{{ s.label }}</span>
+            <span class="status-track"><span [style.width.%]="s.pct" [style.background]="s.color"></span></span>
+            <span class="status-pct">{{ s.pct }}%</span>
+            <strong>{{ s.count }}</strong>
+          </li>
+        </ul>
       </div>
-      <ul class="status-list">
-        <li *ngFor="let s of statusLegend">
-          <i [style.background]="s.color"></i>
-          {{ s.label }}
-          <strong>{{ s.count }}</strong>
-        </li>
-      </ul>
     </article>
   </div>
 

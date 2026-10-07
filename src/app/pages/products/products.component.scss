@@ -1949,13 +1949,316 @@ $pv-ease: cubic-bezier(0.4, 0, 0.2, 1);
 
 .bot-compose {
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
   gap: 0.4rem;
   padding: 0.35rem 0.35rem 0.35rem 0.4rem;
   border-radius: 1rem;
   background: #f6f8f7;
   border: 1px solid $line;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.bot-compose-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.3rem;
+}
+
+.bot-shots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.3rem 0.3rem 0;
+}
+
+.bot-shot {
+  position: relative;
+  width: 3.6rem;
+  height: 3.6rem;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 0.75rem;
+  background: #eef2f0;
+  border: 1px solid $line;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+  animation: bot-in 0.25s ease both;
+}
+
+.bot-shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bot-shot.is-loading {
+  display: grid;
+  place-items: center;
+  color: $green;
+}
+
+.bot-shot.is-loading .material-symbols-outlined {
+  font-size: 1.2rem;
+}
+
+.bot-shot-x {
+  position: absolute;
+  top: 0.2rem;
+  left: 0.2rem;
+  width: 1.3rem;
+  height: 1.3rem;
+  border: 0;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.2s ease, transform 0.15s ease;
+}
+
+.bot-shot:hover .bot-shot-x,
+.bot-shot-x:focus-visible {
+  opacity: 1;
+}
+
+.bot-shot-x:hover {
+  background: #dc2626;
+}
+
+.bot-shot-x:active {
+  transform: scale(0.9);
+}
+
+.bot-shot-x:disabled {
+  display: none;
+}
+
+.bot-shot-x .material-symbols-outlined {
+  font-size: 0.85rem;
+}
+
+.bot-shot-scan {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(223, 193, 123, 0.55) 50%, transparent 100%);
+  background-size: 100% 200%;
+  animation: bot-scan 1.2s ease-in-out infinite;
+}
+
+@keyframes bot-scan {
+  from {
+    background-position: 0 -100%;
+  }
+  to {
+    background-position: 0 200%;
+  }
+}
+
+.bot-attach {
+  flex-shrink: 0;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: $green;
+  background: #fff;
+  border: 1px solid $line;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease, color 0.2s ease;
+}
+
+.bot-attach:hover:not(.is-disabled) {
+  background: $green-soft;
+  border-color: rgba(11, 74, 58, 0.25);
+}
+
+.bot-attach:active:not(.is-disabled) {
+  transform: scale(0.92);
+}
+
+.bot-attach:focus-within {
+  box-shadow: 0 0 0 3px rgba(200, 162, 75, 0.35);
+}
+
+.bot-attach.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.bot-attach .material-symbols-outlined {
+  font-size: 1.2rem;
+}
+
+.bot-setup {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.55rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: 0.9rem;
+  background: linear-gradient(135deg, rgba(243, 222, 154, 0.22), #fffdf7);
+  border: 1px solid rgba(200, 162, 75, 0.35);
+}
+
+.bot-setup-ico {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.65rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.05rem !important;
+  color: #8a6a1f;
+  background: rgba(200, 162, 75, 0.2);
+}
+
+.bot-setup-copy {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.bot-setup-copy strong {
+  font-size: 0.76rem;
+  font-weight: 800;
+  color: #6b4f12;
+}
+
+.bot-setup-copy small {
+  font-size: 0.66rem;
+  font-weight: 600;
+  line-height: 1.55;
+  color: #6b7280;
+}
+
+.bot-setup-copy code {
+  padding: 0 0.25rem;
+  border-radius: 0.3rem;
+  background: rgba(11, 74, 58, 0.07);
+  font-size: 0.62rem;
+  color: $green;
+}
+
+.bot-setup-link {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: #fff;
+  background: $green;
+  text-decoration: none;
+  box-shadow: 0 4px 10px -4px rgba(11, 74, 58, 0.5);
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.bot-setup-link:hover {
+  background: #0f5c48;
+  box-shadow: 0 6px 14px -4px rgba(11, 74, 58, 0.55);
+}
+
+.bot-setup-link:active {
+  transform: scale(0.95);
+}
+
+.bot-setup-link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(200, 162, 75, 0.45);
+}
+
+.bot-setup-link .material-symbols-outlined {
+  font-size: 0.85rem;
+}
+
+.bot-gallery {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  margin-top: 0.55rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 0.9rem;
+  border: 1px dashed rgba(200, 162, 75, 0.55);
+  background: linear-gradient(135deg, rgba(243, 222, 154, 0.18), rgba(255, 255, 255, 0.9));
+  font-family: inherit;
+  text-align: right;
+  color: $green;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease, background 0.2s ease;
+}
+
+.bot-gallery:hover:not(:disabled) {
+  border-style: solid;
+  border-color: $gold;
+  box-shadow: 0 8px 18px -8px rgba(200, 162, 75, 0.55);
+}
+
+.bot-gallery:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.bot-gallery:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(200, 162, 75, 0.4);
+}
+
+.bot-gallery:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bot-gallery-thumbs {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.bot-gallery-thumbs img {
+  width: 2rem;
+  height: 2rem;
+  object-fit: cover;
+  border-radius: 0.55rem;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+}
+
+.bot-gallery-thumbs img + img {
+  margin-right: -0.7rem;
+}
+
+.bot-gallery-copy {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.bot-gallery-copy strong {
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.bot-gallery-copy small {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.bot-gallery > .material-symbols-outlined {
+  font-size: 1.1rem;
+  color: $gold;
+  transition: transform 0.2s ease;
+}
+
+.bot-gallery:hover > .material-symbols-outlined {
+  transform: translateX(-3px);
 }
 
 .bot-compose:focus-within {
@@ -2054,7 +2357,9 @@ $pv-ease: cubic-bezier(0.4, 0, 0.2, 1);
 
 @media (prefers-reduced-motion: reduce) {
   .bot-orb.is-busy::after,
-  .bot-body {
+  .bot-body,
+  .bot-shot,
+  .bot-shot-scan {
     animation: none;
   }
 }

@@ -43,9 +43,18 @@ import {
   parseBotJson,
   stripLabel,
 } from './product-assistant';
-import { GeminiAiService, GeminiProduct } from '../../core/services/gemini-ai.service';
+import { GeminiAiService, GeminiImage, GeminiProduct, geminiErrorMessage } from '../../core/services/gemini-ai.service';
 import { STARTER_PRODUCTS, StarterProduct, StarterProductGroup } from './products-starter';
 import { STARTER_DETAILS } from './products-starter-details';
+
+interface BotImage extends GeminiImage {
+  preview: string;
+  /** الملف الأصلي لو اترفع من البوت — بيتضاف لصور المنتج بعد التحليل */
+  file?: File;
+}
+
+const BOT_MAX_IMAGES = 4;
+const BOT_IMAGE_EDGE = 1280;
 
 type ModalMode = 'add' | 'edit' | 'view';
 
@@ -138,6 +147,9 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
   newProp = '';
   assistText = '';
   assisting = false;
+  botImages: BotImage[] = [];
+  botLoadingImages = false;
+  readonly botMaxImages = BOT_MAX_IMAGES;
   botOpen = typeof window !== 'undefined' && window.innerWidth >= 1400;
   readonly botExamples = [
     { label: 'أسمنت', text: 'إسمنت بورتلاند 50 كجم من أسمنت اليمامة، سعر 28.5، مخزون 12500' },
@@ -304,17 +316,41 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ---------- assistant ----------
 
+  get botVision(): boolean {
+    return this.gemini.enabled;
+  }
+
+  get canAskBot(): boolean {
+    if (this.assisting || this.botLoadingImages) return false;
+    if (this.botImages.length) return this.botVision;
+    return this.assistText.trim().length >= 3;
+  }
+
+  get botStatus(): string {
+    if (this.assisting) return this.botImages.length ? 'بيحلّل الصور...' : 'بيحلّل الوصف...';
+    return 'اوصف المنتج أو ارفع صورته وهو يكمّل الباقي';
+  }
+
   async fillFromAssistant(sample?: string): Promise<void> {
     if (sample) this.assistText = sample;
     const text = this.assistText.trim();
-    if (text.length < 3 || this.assisting) {
-      if (!this.assisting) this.toast.error('اكتب وصف المنتج في سطر أو سطرين');
+    const images = this.botImages.map(({ mimeType, data }) => ({ mimeType, data }));
+    if (this.assisting) return;
+    if (text.length < 3 && !images.length) {
+      this.toast.error('اكتب وصف المنتج أو ارفع صورته');
       return;
     }
 
-    const pasted = parseBotJson(text);
-    if (pasted) {
-      this.applyBotJson(pasted);
+    if (!images.length) {
+      const pasted = parseBotJson(text);
+      if (pasted) {
+        this.applyBotJson(pasted);
+        return;
+      }
+    }
+
+    if (images.length && !this.gemini.enabled) {
+      this.toast.error('تحليل الصور محتاج مفتاح Gemini في إعدادات البيئة');
       return;
     }
 
@@ -322,14 +358,27 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.assisting = true;
       this.cdRef.detectChanges();
       try {
-        const ai = await this.gemini.parseProduct(text, {
-          categories: this.categories.map((c) => c.name),
-          brands: this.brands.map((b) => b.name),
-        });
-        this.applyBotJson(this.fromGemini(ai));
+        const ai = await this.gemini.parseProduct(
+          text,
+          {
+            categories: this.categories.map((c) => c.name),
+            brands: this.brands.map((b) => b.name),
+            current: this.currentForBot(),
+          },
+          images
+        );
+        this.applyBotJson(this.fromGemini(ai), { onlyMissing: images.length > 0 || this.mode === 'edit' });
+        if (images.length) {
+          this.addBotImagesToGallery();
+          this.botImages = [];
+        }
         return;
       } catch (err) {
         console.error('Gemini error', err);
+        if (images.length) {
+          this.toast.error(geminiErrorMessage(err));
+          return;
+        }
         this.toast.warning('تعذر الوصول لـ Gemini — تم استخدام المحلل المحلي');
       } finally {
         this.assisting = false;
@@ -342,6 +391,139 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
       brands: this.brands.map((b) => ({ name: b.name, nameEn: b.nameEn })),
     });
     if (local) this.applyBotJson(local);
+  }
+
+  /** اللي متعبّي في الفورم دلوقتي — عشان البوت يحافظ عليه ويكمّل الناقص بس */
+  private currentForBot(): Record<string, unknown> {
+    const v = this.form.getRawValue();
+    const out: Record<string, unknown> = {};
+    const put = (key: string, value: unknown) => {
+      if (value !== null && value !== undefined && String(value).trim() !== '') out[key] = value;
+    };
+    put('nameAr', v.name);
+    put('nameEn', v.nameEn);
+    put('descriptionAr', v.description);
+    put('descriptionEn', v.descriptionEn);
+    put('category', this.categories.find((c) => c.id === v.category)?.name);
+    put('brand', this.brands.find((b) => b.id === v.brand)?.name);
+    put('sku', v.sku);
+    put('price', v.price);
+    put('stock', v.stock);
+    const specs = (v.specs || []).filter((s) => s.nameAr && s.valueAr);
+    if (specs.length) out['specifications'] = specs.map((s) => `${s.nameAr}: ${s.valueAr}`);
+    return out;
+  }
+
+  onBotFiles(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.addBotFiles(Array.from(input.files || []));
+    input.value = '';
+  }
+
+  onBotPaste(event: ClipboardEvent): void {
+    const files = Array.from(event.clipboardData?.files || []).filter((f) => f.type.startsWith('image/'));
+    if (!files.length) return;
+    event.preventDefault();
+    this.addBotFiles(files);
+  }
+
+  onBotDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.addBotFiles(Array.from(event.dataTransfer?.files || []));
+  }
+
+  /** الصور اللي اترفعت للبوت بتبقى صور المنتج كمان (صور المعرض نفسها مش بتتكرر) */
+  private addBotImagesToGallery(): void {
+    const uploaded = this.botImages.filter((img) => img.file);
+    if (!uploaded.length) return;
+    uploaded.forEach((img) => {
+      const file = img.file!;
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result !== 'string') return;
+        this.gallery = [...this.gallery, { preview: reader.result, file }];
+        this.cdRef.detectChanges();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  removeBotImage(index: number): void {
+    this.botImages = this.botImages.filter((_, i) => i !== index);
+  }
+
+  /** يبعت صور المنتج نفسها للبوت — مفيد للمنتجات اللي جاية باسم وصورة بس */
+  async useGalleryForBot(): Promise<void> {
+    if (!this.botVision) return;
+    const room = BOT_MAX_IMAGES - this.botImages.length;
+    const sources = this.gallery.map((g) => g.file || g.preview).slice(0, room);
+    if (!sources.length) return;
+    this.botLoadingImages = true;
+    let failed = 0;
+    for (const src of sources) {
+      const img = await this.toBotImage(src).catch(() => null);
+      if (img) this.botImages = [...this.botImages, img];
+      else failed++;
+    }
+    this.botLoadingImages = false;
+    if (failed) this.toast.warning(`تعذر تحميل ${failed} صورة من صور المنتج`);
+    this.cdRef.detectChanges();
+  }
+
+  private async addBotFiles(files: File[]): Promise<void> {
+    const images = files.filter((f) => f.type.startsWith('image/'));
+    const room = BOT_MAX_IMAGES - this.botImages.length;
+    if (!images.length || !this.botVision) return;
+    if (room <= 0) {
+      this.toast.warning(`أقصى عدد ${BOT_MAX_IMAGES} صور`);
+      return;
+    }
+    if (images.length > room) this.toast.warning(`اتضاف أول ${room} صور بس`);
+    this.botLoadingImages = true;
+    for (const file of images.slice(0, room)) {
+      const img = await this.toBotImage(file).catch(() => null);
+      if (img) this.botImages = [...this.botImages, { ...img, file }];
+    }
+    this.botLoadingImages = false;
+    this.cdRef.detectChanges();
+  }
+
+  /** يصغّر الصورة لـ JPEG خفيف قبل ما تتبعت للموديل */
+  private async toBotImage(source: File | string): Promise<BotImage> {
+    let url: string;
+    let revoke = false;
+    if (typeof source === 'string' && !source.startsWith('data:')) {
+      const res = await fetch(source, { mode: 'cors' });
+      if (!res.ok) throw new Error('image fetch failed');
+      url = URL.createObjectURL(await res.blob());
+      revoke = true;
+    } else if (typeof source === 'string') {
+      url = source;
+    } else {
+      url = URL.createObjectURL(source);
+      revoke = true;
+    }
+    try {
+      const el = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = url;
+      });
+      const scale = Math.min(1, BOT_IMAGE_EDGE / Math.max(el.naturalWidth, el.naturalHeight));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(el.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(el.naturalHeight * scale));
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('no canvas');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(el, 0, 0, canvas.width, canvas.height);
+      const preview = canvas.toDataURL('image/jpeg', 0.85);
+      return { preview, mimeType: 'image/jpeg', data: preview.split(',')[1] };
+    } finally {
+      if (revoke) URL.revokeObjectURL(url);
+    }
   }
 
   private fromGemini(ai: GeminiProduct): Partial<BotProductJson> {
@@ -371,7 +553,10 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /** يطبّق JSON بوت معمار على الفورم بالكامل */
-  applyBotJson(data: Partial<BotProductJson>): void {
+  applyBotJson(data: Partial<BotProductJson>, opts: { onlyMissing?: boolean } = {}): void {
+    const keep = !!opts.onlyMissing;
+    const before = this.form.getRawValue();
+    const filled = (v: unknown) => v !== null && v !== undefined && String(v).trim() !== '';
     const info = data.basicInfo;
     const pricing = data.pricingAndInventory;
     const flags = info?.flags;
@@ -395,7 +580,31 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const categoryId = this.resolveCategory(text(info?.category));
     const brandId = this.resolveBrand(text(info?.brand));
-    const hasVariants = !!flags?.hasVariants;
+    const hasVariants = keep ? !!before.hasVariants : !!flags?.hasVariants;
+
+    if (keep) {
+      const patch: Record<string, unknown> = {};
+      const fill = (key: keyof typeof before, value: unknown) => {
+        if (!filled(before[key]) && filled(value)) patch[key] = value;
+      };
+      fill('name', text(info?.nameAr));
+      fill('nameEn', text(info?.nameEn));
+      fill('description', text(info?.descriptionAr));
+      fill('descriptionEn', text(info?.descriptionEn));
+      fill('category', categoryId);
+      fill('brand', brandId);
+      fill('sku', text(info?.sku));
+      if (!hasVariants) {
+        fill('price', num(pricing?.price));
+        fill('stock', num(pricing?.stock));
+      }
+      this.form.patchValue(patch);
+      const specsAdded = this.mergeBotSpecs(data.specifications || []);
+      this.form.markAsDirty();
+      this.cdRef.detectChanges();
+      this.reportBotFill(Object.keys(patch).length, specsAdded);
+      return;
+    }
 
     if (data.variantProps?.length) this.variantProps = [...data.variantProps];
 
@@ -480,6 +689,47 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!hasVariants && num(pricing?.stock) === null) missing.push('المخزون');
     if (missing.length) this.toast.warning(`تم التعبئة — ناقص: ${missing.join('، ')}`);
     else this.toast.success('تم تعبئة النموذج، راجع الحقول قبل الحفظ');
+  }
+
+  /** يضيف المواصفات الجديدة بس من غير ما يلمس اللي متعبّي */
+  private mergeBotSpecs(list: Partial<{ specAr: string; valueAr: string; specEn: string; valueEn: string }>[]): number {
+    const existing = this.specs.controls
+      .map((c) => c.value as { nameAr: string; valueAr: string })
+      .filter((s) => s.nameAr?.trim() && s.valueAr?.trim());
+    const seen = new Set(existing.map((s) => fold(s.nameAr)));
+    let added = 0;
+    list.forEach((s) => {
+      const row = {
+        specAr: cleanSpecText(s?.specAr),
+        valueAr: cleanSpecText(s?.valueAr),
+        specEn: cleanSpecText(s?.specEn),
+        valueEn: cleanSpecText(s?.valueEn),
+      };
+      if (!row.specAr || !row.valueAr || isBasicSpec(row) || seen.has(fold(row.specAr))) return;
+      seen.add(fold(row.specAr));
+      const blank = this.specs.controls.find((c) => !String(c.value?.nameAr || '').trim() && !String(c.value?.valueAr || '').trim());
+      if (blank) blank.setValue({ nameAr: row.specAr, valueAr: row.valueAr, nameEn: row.specEn, valueEn: row.valueEn });
+      else this.specs.push(this.specGroup(row.specAr, row.valueAr, row.specEn, row.valueEn));
+      added++;
+    });
+    return added;
+  }
+
+  private reportBotFill(fields: number, specs: number): void {
+    const v = this.form.getRawValue();
+    const missing: string[] = [];
+    if (!String(v.name || '').trim()) missing.push('اسم المنتج');
+    if (!v.category) missing.push('الفئة');
+    if (!v.hasVariants && v.price == null) missing.push('السعر');
+    if (!v.hasVariants && v.stock == null) missing.push('المخزون');
+    if (!fields && !specs) {
+      this.toast.info('مفيش حاجة ناقصة البوت قدر يكمّلها');
+      return;
+    }
+    const parts = [fields ? `${fields} حقل` : '', specs ? `${specs} مواصفة` : ''].filter(Boolean).join(' و');
+    const head = `البوت كمّل ${parts}`;
+    if (missing.length) this.toast.warning(`${head} — لسه ناقص: ${missing.join('، ')}`);
+    else this.toast.success(`${head}، راجعها قبل الحفظ`);
   }
 
   private resolveCategory(name: string): string {
@@ -680,6 +930,7 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.mode = 'add';
     this.selected = null;
     this.gallery = [];
+    this.botImages = [];
     this.mainImage = 0;
     this.expandedVariant = null;
     this.variantProps = ['اللون', 'المقاس', 'الخامة'];
@@ -712,6 +963,7 @@ export class ProductsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.mode = 'edit';
     this.selected = product;
     this.gallery = (product.images || []).map((preview) => ({ preview }));
+    this.botImages = [];
     this.mainImage = 0;
     this.expandedVariant = null;
     this.variantProps = product.variantProps?.length ? [...product.variantProps] : ['اللون', 'المقاس', 'الخامة'];

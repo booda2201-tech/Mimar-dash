@@ -59,7 +59,7 @@ import { BottomNavComponent } from '../shared/components/bottom-nav/bottom-nav.c
 
       @media (min-width: 1024px) {
         .app-main {
-          margin-right: 292px;
+          margin-right: 6.5rem;
         }
 
         .app-content {

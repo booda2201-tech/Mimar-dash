@@ -52,8 +52,6 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     { k: 'week', l: '7 أيام' },
     { k: 'month', l: '30 يوم' },
   ];
-  readonly compact = typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches;
-
   allOrders: Order[] = [];
   products: Product[] = [];
   categories: Category[] = [];
@@ -63,7 +61,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   stats: StatCardData[] = [];
   salesData: ChartConfiguration['data'] = { labels: [], datasets: [] };
   statusData: ChartConfiguration['data'] = { labels: [], datasets: [] };
-  statusLegend: { label: string; color: string; count: number }[] = [];
+  statusLegend: { label: string; color: string; count: number; pct: number }[] = [];
   categoryBars: { name: string; count: number; pct: number; color: string }[] = [];
   topProducts: { name: string; stock: number; image?: string; category: string; price: number }[] = [];
   stockAlerts: { name: string; stock: number; sku?: string }[] = [];
@@ -288,10 +286,13 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   }
 
   private buildStatus(orders: Order[]): void {
-    this.statusLegend = STATUS_GROUPS.map((g) => ({
+    const counts = STATUS_GROUPS.map((g) => orders.filter((o) => g.match.includes(String(o.status))).length);
+    const total = counts.reduce((s, c) => s + c, 0);
+    this.statusLegend = STATUS_GROUPS.map((g, i) => ({
       label: g.label,
       color: g.color,
-      count: orders.filter((o) => g.match.includes(String(o.status))).length,
+      count: counts[i],
+      pct: total ? Math.round((counts[i] / total) * 100) : 0,
     }));
     this.statusData = {
       labels: this.statusLegend.map((s) => s.label),

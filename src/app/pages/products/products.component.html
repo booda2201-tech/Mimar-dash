@@ -830,33 +830,101 @@
         </span>
         <span class="bot-trigger-text">
           <strong>بوت معمار</strong>
-          <small>{{ assisting ? 'بيحلّل الوصف...' : 'اوصف المنتج وهو يملأ النموذج' }}</small>
+          <small>{{ botStatus }}</small>
         </span>
         <span class="material-symbols-outlined bot-caret">expand_more</span>
       </button>
 
       <div class="bot-body" *ngIf="botOpen">
-        <div class="bot-compose">
-          <textarea
-            class="bot-input"
-            rows="2"
-            [value]="assistText"
-            (input)="assistText = $any($event.target).value"
-            (keydown.control.enter)="fillFromAssistant()"
-            placeholder="مثال: إسمنت بورتلاند 50 كجم من اليمامة، سعر 28.5، مخزون 12500"
-          ></textarea>
-          <button
-            type="button"
-            class="bot-send"
-            [disabled]="assisting || assistText.trim().length < 3"
-            (click)="fillFromAssistant()"
-            aria-label="املأ النموذج"
-          >
-            <span class="material-symbols-outlined" [class.animate-spin]="assisting">
-              {{ assisting ? 'progress_activity' : 'arrow_upward' }}
-            </span>
-          </button>
+        <div
+          class="bot-compose"
+          [class.has-images]="botImages.length || botLoadingImages"
+          (dragover)="$event.preventDefault()"
+          (drop)="onBotDrop($event)"
+        >
+          <div class="bot-shots" *ngIf="botImages.length || botLoadingImages">
+            <div class="bot-shot" *ngFor="let img of botImages; let i = index">
+              <img [src]="img.preview" alt="صورة مرفقة" />
+              <button type="button" class="bot-shot-x" (click)="removeBotImage(i)" [disabled]="assisting" aria-label="شيل الصورة">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+              <span class="bot-shot-scan" *ngIf="assisting" aria-hidden="true"></span>
+            </div>
+            <div class="bot-shot is-loading" *ngIf="botLoadingImages" aria-label="جاري تجهيز الصورة">
+              <span class="material-symbols-outlined animate-spin">progress_activity</span>
+            </div>
+          </div>
+          <div class="bot-compose-row">
+            <label
+              class="bot-attach"
+              [class.is-disabled]="!botVision || assisting || botImages.length >= botMaxImages"
+              [title]="botVision ? 'ارفع صورة المنتج' : 'تحليل الصور محتاج مفتاح Gemini'"
+            >
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                hidden
+                [disabled]="!botVision || assisting || botImages.length >= botMaxImages"
+                (change)="onBotFiles($event)"
+              />
+              <span class="material-symbols-outlined">add_photo_alternate</span>
+            </label>
+            <textarea
+              class="bot-input"
+              rows="2"
+              [value]="assistText"
+              (input)="assistText = $any($event.target).value"
+              (keydown.control.enter)="fillFromAssistant()"
+              (paste)="onBotPaste($event)"
+              [placeholder]="botImages.length ? 'اكتب أي معلومة زيادة (اختياري) — السعر، البراند...' : 'مثال: إسمنت بورتلاند 50 كجم من اليمامة، سعر 28.5، مخزون 12500'"
+            ></textarea>
+            <button
+              type="button"
+              class="bot-send"
+              [disabled]="!canAskBot"
+              (click)="fillFromAssistant()"
+              [attr.aria-label]="botImages.length ? 'حلّل الصور وكمّل البيانات' : 'املأ النموذج'"
+            >
+              <span class="material-symbols-outlined" [class.animate-spin]="assisting">
+                {{ assisting ? 'progress_activity' : botImages.length ? 'auto_awesome' : 'arrow_upward' }}
+              </span>
+            </button>
+          </div>
         </div>
+
+        <div class="bot-setup" *ngIf="!botVision" role="note">
+          <span class="bot-setup-ico material-symbols-outlined">key</span>
+          <span class="bot-setup-copy">
+            <strong>تحليل الصور مقفول</strong>
+            <small>
+              حط مفتاح Gemini في <code dir="ltr">geminiApiKey</code> جوه
+              <code dir="ltr">environment.ts</code> — الكتابة شغالة عادي.
+            </small>
+          </span>
+          <a class="bot-setup-link" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">
+            جيب مفتاح
+            <span class="material-symbols-outlined">open_in_new</span>
+          </a>
+        </div>
+
+        <button
+          type="button"
+          class="bot-gallery"
+          *ngIf="botVision && gallery.length && !botImages.length && !botLoadingImages"
+          (click)="useGalleryForBot()"
+          [disabled]="assisting"
+        >
+          <span class="bot-gallery-thumbs">
+            <img *ngFor="let g of gallery | slice: 0 : 3" [src]="g.preview" alt="" />
+          </span>
+          <span class="bot-gallery-copy">
+            <strong>حلّل صور المنتج</strong>
+            <small>يكمّل الوصف والفئة والمواصفات الناقصة من الصورة</small>
+          </span>
+          <span class="material-symbols-outlined">arrow_back</span>
+        </button>
+
         <div class="bot-examples">
           <button type="button" *ngFor="let ex of botExamples" (click)="assistText = ex.text">{{ ex.label }}</button>
         </div>

@@ -25,6 +25,12 @@ export interface GeminiProduct {
   specifications: GeminiSpec[];
 }
 
+/** صورة مرفقة للموديل — base64 من غير بادئة data: */
+export interface GeminiImage {
+  mimeType: string;
+  data: string;
+}
+
 const str = (description: string): Schema => ({ type: SchemaType.STRING, description });
 const num = (description: string): Schema => ({ type: SchemaType.NUMBER, description, nullable: true });
 
@@ -61,8 +67,17 @@ const PRODUCT_SCHEMA: Schema = {
   required: ['nameAr', 'nameEn', 'descriptionAr', 'descriptionEn', 'category', 'brand', 'sku', 'specifications'],
 };
 
-const SYSTEM_INSTRUCTION = `أنت "بوت معمار"، مساعد إدخال بيانات المنتجات لمنصة معمار لمواد البناء.
-حلّل نص المستخدم واستخرج بيانات المنتج حسب الـ schema.
+const SYSTEM_INSTRUCTION = `أنت "بوت معمار"، مساعد إدخال بيانات المنتجات لمنصة معمار لمواد البناء (المقر في الكويت، العملة د.ك).
+حلّل نص المستخدم وصور المنتج (لو موجودة) واستخرج بيانات المنتج حسب الـ schema.
+الصور:
+- اتعرّف على المنتج من الصورة: نوعه، الخامة، اللون، التشطيب، الشكل، الاستخدام، وأي كتابة أو لوجو أو مقاس ظاهر على المنتج أو العبوة.
+- استخدم ده عشان تكتب الاسم العربي والإنجليزي والوصفين وتختار الفئة وتطلع مواصفات فنية.
+- المواصفات من الصورة تكون اللي باينة فعلاً أو معروفة بثقة عالية لنوع المنتج ده. ممنوع تخترع أرقام دقيقة (وزن، مقاس، سعة) إلا لو مكتوبة أو باينة بوضوح.
+- البراند يتحدد بس لو اللوجو أو الاسم باين في الصورة أو مكتوب في النص.
+- ممنوع تخترع سعر أو مخزون أو SKU أو خصم أو سعر جملة من الصورة — دول null أو فارغ إلا لو مكتوبين صراحة.
+البيانات الحالية:
+- لو اتبعتلك "بيانات المنتج الحالية"، رجّع القيم الموجودة زي ما هي من غير تغيير، وكمّل الحقول الفاضية بس.
+- ممنوع تكرر مواصفة موجودة بالفعل.
 القواعد:
 - كل قيمة نصية تكون نظيفة: ممنوع تبدأ بعنوان الحقل مثل "اسم المنتج بالعربي:" أو "Product name (EN):" أو "الوصف:".
 - الأسعار والمخزون والنسب أرقام فقط بدون عملة أو وحدات.
@@ -71,34 +86,87 @@ const SYSTEM_INSTRUCTION = `أنت "بوت معمار"، مساعد إدخال �
 - لو الوصف مش مكتوب اكتب وصف قصير واقعي من البيانات المتاحة، ولو الاسم الإنجليزي مش مكتوب ترجمه.
 - أي حقل مش مذكور: نص فارغ أو null.`;
 
+/** بعض الموديلات بتعلّق من غير رد — بعد المدة دي بننقل للموديل اللي بعده */
+const GEMINI_TIMEOUT_MS = 25000;
+
 @Injectable({ providedIn: 'root' })
 export class GeminiAiService {
-  private model: GenerativeModel | null = environment.geminiApiKey
-    ? new GoogleGenerativeAI(environment.geminiApiKey).getGenerativeModel({
-        model: environment.geminiModel,
-        systemInstruction: SYSTEM_INSTRUCTION,
-        generationConfig: {
-          temperature: 0.2,
-          responseMimeType: 'application/json',
-          responseSchema: PRODUCT_SCHEMA,
-        },
-      })
-    : null;
+  /** الموديلات بالترتيب — لو واحد مضغوط (503) أو مش متاح للمفتاح (404) بنجرب اللي بعده */
+  private models: GenerativeModel[] = environment.geminiApiKey
+    ? [...new Set([environment.geminiModel, ...(environment.geminiFallbackModels || [])])].map((name) =>
+        new GoogleGenerativeAI(environment.geminiApiKey).getGenerativeModel(
+          {
+            model: name,
+            systemInstruction: SYSTEM_INSTRUCTION,
+            generationConfig: {
+              temperature: 0.2,
+              responseMimeType: 'application/json',
+              responseSchema: PRODUCT_SCHEMA,
+            },
+          },
+          { timeout: GEMINI_TIMEOUT_MS }
+        )
+      )
+    : [];
 
   get enabled(): boolean {
-    return !!this.model;
+    return this.models.length > 0;
   }
 
-  async parseProduct(text: string, ctx: { categories: string[]; brands: string[] }): Promise<GeminiProduct> {
-    if (!this.model) throw new Error('Gemini API key is not configured');
+  async parseProduct(
+    text: string,
+    ctx: { categories: string[]; brands: string[]; current?: Record<string, unknown> },
+    images: GeminiImage[] = []
+  ): Promise<GeminiProduct> {
+    if (!this.models.length) throw new Error('Gemini API key is not configured');
+    const current = ctx.current && Object.keys(ctx.current).length ? JSON.stringify(ctx.current) : '';
     const prompt = [
       `الفئات المتاحة: ${ctx.categories.join(' | ') || '—'}`,
       `البراندات المتاحة: ${ctx.brands.join(' | ') || '—'}`,
+      ...(current ? ['', 'بيانات المنتج الحالية (حافظ عليها وكمّل الناقص):', current] : []),
+      ...(images.length ? ['', `مرفق ${images.length} صورة للمنتج — حلّلها.`] : []),
       '',
       'نص المستخدم:',
-      text,
+      text || '(مفيش نص — اعتمد على الصور والبيانات الحالية)',
     ].join('\n');
-    const result = await this.model.generateContent(prompt);
-    return JSON.parse(result.response.text()) as GeminiProduct;
+    const parts = [
+      { text: prompt },
+      ...images.map((img) => ({ inlineData: { mimeType: img.mimeType, data: img.data } })),
+    ];
+    let lastError: unknown;
+    for (const model of this.models) {
+      try {
+        const result = await model.generateContent(parts);
+        return JSON.parse(result.response.text()) as GeminiProduct;
+      } catch (err) {
+        lastError = err;
+        if (!isRetryable(err)) break;
+        console.warn(`Gemini ${model.model} failed, trying next model`, err);
+      }
+    }
+    throw lastError;
   }
+}
+
+function isRetryable(err: unknown): boolean {
+  const status = (err as { status?: number })?.status;
+  if (status) return [404, 429, 500, 503].includes(status);
+  const name = (err as Error)?.name || '';
+  return (
+    name === 'AbortError' ||
+    /\[(404|429|500|503)\b|overloaded|not found|unavailable|abort|timeout|timed out/i.test(String((err as Error)?.message || err))
+  );
+}
+
+/** رسالة مفهومة للمستخدم من خطأ Gemini */
+export function geminiErrorMessage(err: unknown): string {
+  const msg = String((err as Error)?.message || err);
+  if (/API key not valid|API_KEY_INVALID|\[400/i.test(msg)) return 'مفتاح Gemini مش صالح';
+  if (/\[403|PERMISSION_DENIED/i.test(msg)) return 'مفتاح Gemini مش مسموحله بالموديل ده';
+  if (/\[429|quota|RESOURCE_EXHAUSTED/i.test(msg)) return 'خلصت حصة Gemini — استنى شوية وجرّب تاني';
+  if (/\[503|overloaded|unavailable/i.test(msg)) return 'خوادم Gemini مضغوطة دلوقتي — جرّب كمان دقيقة';
+  if (/abort|timeout|timed out/i.test(msg)) return 'Gemini اتأخر في الرد — جرّب تاني';
+  if (/Failed to fetch|NetworkError/i.test(msg)) return 'مفيش اتصال بـ Gemini — اتأكد من النت';
+  if (/JSON/i.test(msg)) return 'رد البوت مكانش مفهوم — جرّب تاني';
+  return 'تعذر تحليل الصور — جرّب تاني أو صورة أوضح';
 }

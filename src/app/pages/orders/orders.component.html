@@ -51,32 +51,51 @@
     <div class="anim-item" *ngFor="let s of stats"><app-stat-card [data]="s"></app-stat-card></div>
   </div>
 
-  <div class="anim-item chip-scroll status-chips">
-    <button
-      *ngFor="let t of tabs"
-      type="button"
-      class="chip-btn"
-      [class.is-active]="tab === t.key"
-      (click)="setTab(t.key)"
-    >
-      {{ t.label }}
-      <span class="chip-count">{{ t.count }}</span>
-    </button>
-  </div>
+  <div class="anim-item filters-bar">
+    <div class="seg-group">
+      <span class="seg-label">
+        <span class="material-symbols-outlined">filter_list</span>
+        الحالة
+      </span>
+      <div class="seg chip-scroll" role="tablist" aria-label="حالة الطلب">
+        <button
+          *ngFor="let t of tabs"
+          type="button"
+          role="tab"
+          class="seg-btn"
+          [class.is-active]="tab === t.key"
+          [attr.aria-selected]="tab === t.key"
+          (click)="setTab(t.key)"
+        >
+          {{ t.label }}
+          <span class="seg-count">{{ t.count }}</span>
+        </button>
+      </div>
+    </div>
 
-  <div class="anim-item chip-scroll source-chips">
-    <button type="button" class="chip-btn" [class.is-active]="sourceFilter === 'all'" (click)="setSource('all')">
-      كل المصادر
-      <span class="chip-count">{{ sourceCount('all') }}</span>
-    </button>
-    <button type="button" class="chip-btn" [class.is-active]="sourceFilter === 'app'" (click)="setSource('app')">
-      التطبيق
-      <span class="chip-count">{{ sourceCount('app') }}</span>
-    </button>
-    <button type="button" class="chip-btn" [class.is-active]="sourceFilter === 'admin'" (click)="setSource('admin')">
-      خدمة العملاء
-      <span class="chip-count">{{ sourceCount('admin') }}</span>
-    </button>
+    <div class="seg-group">
+      <span class="seg-label">
+        <span class="material-symbols-outlined">hub</span>
+        المصدر
+      </span>
+      <div class="seg chip-scroll" role="tablist" aria-label="مصدر الطلب">
+        <button type="button" role="tab" class="seg-btn" title="كل المصادر" aria-label="كل المصادر" [class.is-active]="sourceFilter === 'all'" [attr.aria-selected]="sourceFilter === 'all'" (click)="setSource('all')">
+          <span class="material-symbols-outlined">apps</span>
+          <span class="seg-text">الكل</span>
+          <span class="seg-count">{{ sourceCount('all') }}</span>
+        </button>
+        <button type="button" role="tab" class="seg-btn" title="التطبيق" aria-label="التطبيق" [class.is-active]="sourceFilter === 'app'" [attr.aria-selected]="sourceFilter === 'app'" (click)="setSource('app')">
+          <span class="material-symbols-outlined">smartphone</span>
+          <span class="seg-text">التطبيق</span>
+          <span class="seg-count">{{ sourceCount('app') }}</span>
+        </button>
+        <button type="button" role="tab" class="seg-btn" title="خدمة العملاء" aria-label="خدمة العملاء" [class.is-active]="sourceFilter === 'admin'" [attr.aria-selected]="sourceFilter === 'admin'" (click)="setSource('admin')">
+          <span class="material-symbols-outlined">support_agent</span>
+          <span class="seg-text">خدمة العملاء</span>
+          <span class="seg-count">{{ sourceCount('admin') }}</span>
+        </button>
+      </div>
+    </div>
   </div>
 
   <div class="orders-layout">
@@ -199,23 +218,139 @@
     </div>
 
     <div class="anim-item table-col hidden md:block">
-      <app-data-table
-        [columns]="columns"
-        [data]="$any(filtered)"
-        [loading]="loading"
-        [selectedId]="selected?.id || null"
-        [statusLabels]="statusLabels"
-        editLabel="تغيير الحالة"
-        editIcon="swap_horiz"
-        deleteLabel="إلغاء الطلب"
-        deleteIcon="block"
-        searchPlaceholder="بحث برقم الطلب أو المقاول..."
-        emptyTitle="لا توجد طلبات"
-        emptyMessage="لا يوجد طلبات مطابقة للفلتر الحالي"
-        emptyIcon="local_shipping"
-        (rowClick)="select($any($event))"
-        (rowAction)="onRowAction($event)"
-      ></app-data-table>
+      <div class="ot">
+        <div class="ot-toolbar">
+          <label class="ot-search">
+            <span class="material-symbols-outlined">search</span>
+            <input type="search" [(ngModel)]="deskSearch" (ngModelChange)="deskPage = 1" placeholder="بحث برقم الطلب، العميل أو الصنف..." />
+            <button type="button" *ngIf="deskSearch" (click)="deskSearch = ''; deskPage = 1" aria-label="مسح البحث">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </label>
+          <span class="ot-total">
+            <strong>{{ deskOrders.length }}</strong> طلب
+          </span>
+        </div>
+
+        <div class="ot-head" *ngIf="!loading && deskOrders.length">
+          <button type="button" class="ot-sort" [class.is-sorted]="sortKey === 'id'" (click)="sortBy('id')">
+            الطلب
+            <span class="material-symbols-outlined">{{ sortIcon('id') }}</span>
+          </button>
+          <span>العميل</span>
+          <span class="ot-col-items">الأصناف</span>
+          <button type="button" class="ot-sort" [class.is-sorted]="sortKey === 'total'" (click)="sortBy('total')">
+            القيمة
+            <span class="material-symbols-outlined">{{ sortIcon('total') }}</span>
+          </button>
+          <span class="ot-col-status">الحالة</span>
+          <span class="sr-only">إجراءات</span>
+        </div>
+
+        <div class="ot-body" *ngIf="loading">
+          <div class="ot-skel" *ngFor="let i of [1, 2, 3, 4, 5]">
+            <span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span>
+          </div>
+        </div>
+
+        <div class="ot-empty" *ngIf="!loading && !deskOrders.length">
+          <span class="ot-empty-icon"><span class="material-symbols-outlined">local_shipping</span></span>
+          <strong>لا توجد طلبات</strong>
+          <p>{{ deskSearch ? 'جرّب كلمة بحث تانية' : 'لا يوجد طلبات مطابقة للفلتر الحالي' }}</p>
+        </div>
+
+        <div class="ot-body" *ngIf="!loading && deskOrders.length">
+          <div
+            class="ot-row"
+            *ngFor="let o of deskPaged; trackBy: trackOrder"
+            role="button"
+            tabindex="0"
+            [class.is-selected]="selected?.id === o.id"
+            [attr.data-status]="o.status"
+            (click)="select(o)"
+            (keydown.enter)="select(o)"
+          >
+            <div class="ot-id">
+              <strong>#{{ o.id }}</strong>
+              <small>{{ shortDate(o.date) }}</small>
+            </div>
+
+            <div class="ot-customer">
+              <div class="ot-name-row">
+                <strong [title]="o.customer || o.company">{{ o.customer || o.company }}</strong>
+                <span class="ot-source" [class.is-admin]="o.source === 'admin'" [title]="sourceLabel(o)">
+                  <span class="material-symbols-outlined">{{ o.source === 'admin' ? 'support_agent' : 'smartphone' }}</span>
+                  {{ o.source === 'admin' ? createdByLabel(o) : 'التطبيق' }}
+                </span>
+              </div>
+              <small class="ot-items-inline" [title]="o.items">{{ o.items }}</small>
+            </div>
+
+            <p class="ot-items ot-col-items" [title]="o.items">{{ o.items }}</p>
+
+            <div class="ot-money">
+              <strong>{{ o.total | number: '1.0-3' }}</strong>
+              <small>د.ك</small>
+              <span class="ot-status-inline">
+                <app-status-badge [status]="o.status" [label]="statusLabel(o.status)"></app-status-badge>
+              </span>
+            </div>
+
+            <div class="ot-col-status">
+              <app-status-badge [status]="o.status" [label]="statusLabel(o.status)"></app-status-badge>
+            </div>
+
+            <div class="ot-actions" (click)="$event.stopPropagation()">
+              <button
+                type="button"
+                class="ot-act is-confirm"
+                *ngIf="canConfirm(o)"
+                [disabled]="statusBusy"
+                (click)="setStatus(o, 'confirmed')"
+                title="تأكيد الطلب"
+                aria-label="تأكيد الطلب"
+              >
+                <span class="material-symbols-outlined">task_alt</span>
+              </button>
+              <button
+                type="button"
+                class="ot-act is-deliver"
+                *ngIf="canDeliver(o)"
+                [disabled]="statusBusy"
+                (click)="setStatus(o, 'completed')"
+                title="تم التسليم"
+                aria-label="تم التسليم"
+              >
+                <span class="material-symbols-outlined">inventory</span>
+              </button>
+              <button type="button" class="ot-act" (click)="openView(o)" title="عرض التفاصيل" aria-label="عرض التفاصيل">
+                <span class="material-symbols-outlined">visibility</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="ot-pager" *ngIf="!loading && deskPages > 1">
+          <p>
+            عرض {{ (deskPage - 1) * deskPageSize + 1 }}–{{ deskPage * deskPageSize > deskOrders.length ? deskOrders.length : deskPage * deskPageSize }}
+            من {{ deskOrders.length }}
+          </p>
+          <div class="ot-pages">
+            <button type="button" [disabled]="deskPage === 1" (click)="deskPage = deskPage - 1" aria-label="السابق">
+              <span class="material-symbols-outlined">chevron_right</span>
+            </button>
+            <button
+              type="button"
+              *ngFor="let p of deskPageList"
+              [class.is-active]="p === deskPage"
+              (click)="deskPage = p"
+            >{{ p }}</button>
+            <button type="button" [disabled]="deskPage === deskPages" (click)="deskPage = deskPage + 1" aria-label="التالي">
+              <span class="material-symbols-outlined">chevron_left</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <aside class="anim-item track-card" *ngIf="selected; else noSelected">
@@ -237,91 +372,115 @@
 
 <ng-template #trackContent>
   <ng-container *ngIf="selected">
-      <div class="track-head">
+      <header class="tk-head">
         <div class="min-w-0">
-          <p class="track-kicker">تتبع الشحنة</p>
-          <h3>طلب {{ selected.id }}</h3>
-          <p class="track-sub" *ngIf="selected.tracking && selected.tracking !== '—'">{{ selected.tracking }}</p>
+          <p class="tk-kicker">
+            <span class="material-symbols-outlined">local_shipping</span>
+            تتبع الشحنة
+          </p>
+          <h3>طلب <span>#{{ selected.id }}</span></h3>
+          <p class="tk-date">{{ viewDate(selected.date) }}</p>
         </div>
         <app-status-badge [status]="selected.status" [label]="statusLabel(selected.status)"></app-status-badge>
-      </div>
+      </header>
 
-      <div class="source-box" [class.is-admin]="selected.source === 'admin'">
-        <span class="material-symbols-outlined">{{ selected.source === 'admin' ? 'badge' : 'smartphone' }}</span>
-        <div class="min-w-0">
-          <p>{{ selected.source === 'admin' ? 'اسم موظف خدمة العملاء' : 'الطلب من التطبيق' }}</p>
-          <strong>{{ createdByLabel(selected) }}</strong>
-          <small>{{ sourceLabel(selected) }}</small>
+      <div class="tk-total">
+        <div>
+          <small>إجمالي الطلب</small>
+          <strong>{{ selected.total | number: '1.0-3' }} <em>د.ك</em></strong>
         </div>
+        <span class="tk-qty" *ngIf="selected.quantity">
+          <span class="material-symbols-outlined">inventory_2</span>
+          {{ selected.quantity }} قطعة
+        </span>
       </div>
 
-      <div class="track-map">
-        <span class="material-symbols-outlined">map</span>
-        <div class="min-w-0">
-          <p>موقع التسليم</p>
-          <strong>{{ selected.location && selected.location !== '—' ? selected.location : 'غير محدد' }}</strong>
-          <small *ngIf="selected.eta">الوصول المتوقع: {{ selected.eta }}</small>
-        </div>
-      </div>
-
-      <div class="track-block" *ngIf="selected.driverName">
-        <p class="block-label">السائق</p>
-        <p class="block-value">{{ selected.driverName }}</p>
-        <p class="block-meta" *ngIf="selected.driverPhone" dir="ltr">{{ selected.driverPhone }}</p>
-      </div>
-
-      <div class="track-block">
-        <p class="block-label">مراحل الطلب</p>
-        <ol class="steps">
-          <li
-            *ngFor="let step of selected.trackingSteps || []"
-            [class.is-done]="step.done"
-            [class.is-current]="step.current"
-            [class.is-cancelled]="step.key === 'cancelled'"
-          >
+      <ol class="tk-steps" [class.is-cancelled]="selected.status === 'cancelled'">
+        <li
+          *ngFor="let step of selected.trackingSteps || []"
+          [class.is-done]="step.done"
+          [class.is-current]="step.current"
+          [class.is-cancel]="step.key === 'cancelled'"
+        >
+          <span class="tk-dot">
             <span class="material-symbols-outlined">{{
-              step.key === 'cancelled' ? 'cancel' : step.done ? 'check_circle' : step.current ? 'pending' : 'radio_button_unchecked'
+              step.key === 'cancelled' ? 'close' : step.done ? 'check' : step.current ? 'schedule' : 'circle'
             }}</span>
-            <span>
-              <strong>{{ step.label }}</strong>
-              <small *ngIf="step.current">الخطوة الحالية</small>
-              <small *ngIf="step.time">{{ step.time }}</small>
-            </span>
-          </li>
-        </ol>
-      </div>
+          </span>
+          <strong>{{ step.label }}</strong>
+          <small *ngIf="step.current">الخطوة الحالية</small>
+          <small *ngIf="step.time">{{ step.time }}</small>
+        </li>
+      </ol>
 
-      <div class="track-facts">
-        <div>
-          <p class="block-label">المقاول</p>
-          <p class="block-value">{{ selected.company }}</p>
-          <p class="block-meta" *ngIf="selected.customer && selected.customer !== selected.company">{{ selected.customer }}</p>
+      <dl class="tk-list">
+        <div class="tk-item">
+          <span class="tk-ico" [class.is-admin]="selected.source === 'admin'">
+            <span class="material-symbols-outlined">{{ selected.source === 'admin' ? 'support_agent' : 'smartphone' }}</span>
+          </span>
+          <div class="min-w-0">
+            <dt>{{ selected.source === 'admin' ? 'سجّله موظف خدمة العملاء' : 'طلب من التطبيق' }}</dt>
+            <dd>{{ createdByLabel(selected) }}</dd>
+          </div>
+          <span class="tk-chip" [class.is-admin]="selected.source === 'admin'">{{ sourceLabel(selected) }}</span>
         </div>
-        <div>
-          <p class="block-label">المواد</p>
-          <p class="block-value">{{ selected.items }}</p>
-        </div>
-        <div class="fact-total">
-          <p class="block-label">الإجمالي</p>
-          <p class="total-value">{{ selected.total | number }} <span>د.ك</span></p>
-        </div>
-      </div>
 
-      <div class="track-actions">
-        <button type="button" class="btn-outline flex-1 text-sm" (click)="showTrack = false; openView(selected!)">عرض كامل</button>
-        <button type="button" class="status-btn is-confirm flex-1" *ngIf="canConfirm(selected)" [disabled]="statusBusy" (click)="setStatus(selected!, 'confirmed')">
+        <div class="tk-item">
+          <span class="tk-ico"><span class="material-symbols-outlined">person</span></span>
+          <div class="min-w-0">
+            <dt>العميل</dt>
+            <dd>{{ selected.company !== '—' ? selected.company : selected.customer }}</dd>
+            <p class="tk-meta" *ngIf="selected.customer && selected.company !== '—' && selected.customer !== selected.company">{{ selected.customer }}</p>
+          </div>
+        </div>
+
+        <div class="tk-item">
+          <span class="tk-ico"><span class="material-symbols-outlined">location_on</span></span>
+          <div class="min-w-0">
+            <dt>موقع التسليم</dt>
+            <dd>{{ selected.location && selected.location !== '—' ? selected.location : 'غير محدد' }}</dd>
+            <p class="tk-meta" *ngIf="selected.eta">الوصول المتوقع: {{ selected.eta }}</p>
+          </div>
+        </div>
+
+        <div class="tk-item" *ngIf="selected.driverName">
+          <span class="tk-ico"><span class="material-symbols-outlined">local_shipping</span></span>
+          <div class="min-w-0">
+            <dt>السائق</dt>
+            <dd>{{ selected.driverName }}</dd>
+            <p class="tk-meta" *ngIf="selected.driverPhone" dir="ltr">{{ selected.driverPhone }}</p>
+          </div>
+        </div>
+
+        <div class="tk-item">
+          <span class="tk-ico"><span class="material-symbols-outlined">category</span></span>
+          <div class="min-w-0">
+            <dt>المواد</dt>
+            <dd class="tk-items">{{ selected.items }}</dd>
+          </div>
+        </div>
+      </dl>
+
+      <div class="tk-actions">
+        <button type="button" class="status-btn is-confirm" *ngIf="canConfirm(selected)" [disabled]="statusBusy" (click)="setStatus(selected!, 'confirmed')">
           <span class="material-symbols-outlined" [class.animate-spin]="statusBusy">{{ statusBusy ? 'progress_activity' : 'task_alt' }}</span>
-          تأكيد
+          تأكيد الطلب
         </button>
-        <button type="button" class="status-btn is-deliver flex-1" *ngIf="canDeliver(selected)" [disabled]="statusBusy" (click)="setStatus(selected!, 'completed')">
+        <button type="button" class="status-btn is-deliver" *ngIf="canDeliver(selected)" [disabled]="statusBusy" (click)="setStatus(selected!, 'completed')">
           <span class="material-symbols-outlined" [class.animate-spin]="statusBusy">{{ statusBusy ? 'progress_activity' : 'inventory' }}</span>
           تم التسليم
         </button>
+        <div class="tk-sub-actions">
+          <button type="button" class="tk-link" (click)="showTrack = false; openView(selected!)">
+            <span class="material-symbols-outlined">open_in_full</span>
+            عرض التفاصيل
+          </button>
+          <button type="button" class="tk-link is-danger" *ngIf="canCancel(selected)" [disabled]="statusBusy" (click)="askCancel(selected!)">
+            <span class="material-symbols-outlined">block</span>
+            إلغاء الطلب
+          </button>
+        </div>
       </div>
-      <button type="button" class="track-cancel" *ngIf="canCancel(selected)" [disabled]="statusBusy" (click)="askCancel(selected!)">
-        <span class="material-symbols-outlined">block</span>
-        إلغاء الطلب
-      </button>
   </ng-container>
 </ng-template>
 

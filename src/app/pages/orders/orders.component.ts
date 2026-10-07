@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { StatCardComponent } from '../../shared/components/stat-card/stat-card.component';
-import { DataTableComponent } from '../../shared/components/data-table/data-table.component';
 import { StatusBadgeComponent } from '../../shared/components/status-badge/status-badge.component';
 import { ModalComponent } from '../../shared/components/modal/modal.component';
 import { ConfirmDialogComponent } from '../../shared/components/confirm-dialog/confirm-dialog.component';
@@ -14,7 +13,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { AnimationService } from '../../core/services/animation.service';
 import { AuthService } from '../../core/services/auth.service';
 import { displayPersonName, isAccountHandle } from '../../core/api/api-utils';
-import { Order, StatCardData, TableColumn, StatusType } from '../../core/models';
+import { Order, StatCardData, StatusType } from '../../core/models';
 
 type SourceFilter = 'all' | 'app' | 'admin';
 
@@ -25,7 +24,6 @@ type SourceFilter = 'all' | 'app' | 'admin';
     CommonModule,
     FormsModule,
     StatCardComponent,
-    DataTableComponent,
     StatusBadgeComponent,
     ModalComponent,
     ConfirmDialogComponent,
@@ -80,6 +78,56 @@ export class OrdersComponent implements OnInit, AfterViewInit {
     );
   }
 
+  deskSearch = '';
+  deskPage = 1;
+  readonly deskPageSize = 10;
+  sortKey: 'id' | 'total' | '' = '';
+  sortDir: 'asc' | 'desc' = 'desc';
+
+  get deskOrders(): Order[] {
+    const q = this.deskSearch.trim().toLowerCase();
+    let rows = q
+      ? this.filtered.filter((o) =>
+          [o.id, o.customer, o.company, o.items, o.phone, o.createdBy].some((v) => (v || '').toLowerCase().includes(q))
+        )
+      : this.filtered;
+    if (this.sortKey) {
+      const key = this.sortKey;
+      const dir = this.sortDir === 'asc' ? 1 : -1;
+      const val = (o: Order) => (key === 'total' ? o.total || 0 : Number(o.id) || 0);
+      rows = [...rows].sort((a, b) => (val(a) - val(b)) * dir);
+    }
+    return rows;
+  }
+
+  get deskPages(): number {
+    return Math.max(1, Math.ceil(this.deskOrders.length / this.deskPageSize));
+  }
+
+  get deskPaged(): Order[] {
+    const page = Math.min(this.deskPage, this.deskPages);
+    const start = (page - 1) * this.deskPageSize;
+    return this.deskOrders.slice(start, start + this.deskPageSize);
+  }
+
+  get deskPageList(): number[] {
+    return Array.from({ length: this.deskPages }, (_, i) => i + 1);
+  }
+
+  sortBy(key: 'id' | 'total'): void {
+    if (this.sortKey === key) this.sortDir = this.sortDir === 'desc' ? 'asc' : 'desc';
+    else {
+      this.sortKey = key;
+      this.sortDir = 'desc';
+    }
+    this.deskPage = 1;
+  }
+
+  sortIcon(key: 'id' | 'total'): string {
+    if (this.sortKey !== key) return 'unfold_more';
+    return this.sortDir === 'desc' ? 'arrow_downward' : 'arrow_upward';
+  }
+
   trackOrder(_: number, o: Order): string {
     return o.id;
   }
@@ -90,17 +138,6 @@ export class OrdersComponent implements OnInit, AfterViewInit {
     if (Number.isNaN(d.getTime())) return value;
     return d.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' });
   }
-
-  columns: TableColumn[] = [
-    { key: 'id', label: 'رقم', sortable: true, width: '64px' },
-    { key: 'company', label: 'العميل', sortable: true },
-    { key: 'source', label: 'بواسطة', type: 'source', width: '130px' },
-    { key: 'items', label: 'الأصناف' },
-    { key: 'total', label: 'القيمة', type: 'currency', sortable: true, width: '105px' },
-    { key: 'status', label: 'الحالة', type: 'status', width: '95px' },
-    { key: 'date', label: 'التاريخ', type: 'date', sortable: true, width: '110px' },
-    { key: 'actions', label: '', type: 'actions', width: '52px' },
-  ];
 
   private stepsFor(order: Order) {
     const s = order.status;
@@ -171,7 +208,7 @@ export class OrdersComponent implements OnInit, AfterViewInit {
 
   select(order: Order): void {
     this.selected = this.hydrateOrder(order);
-    if (window.matchMedia('(max-width: 1279px)').matches) this.showTrack = true;
+    if (window.matchMedia('(max-width: 1535px)').matches) this.showTrack = true;
   }
 
   statusLabel(status: string): string {
@@ -243,11 +280,13 @@ export class OrdersComponent implements OnInit, AfterViewInit {
 
   setTab(key: StatusType | 'all'): void {
     this.tab = key;
+    this.deskPage = 1;
     this.applyTab();
   }
 
   setSource(key: SourceFilter): void {
     this.sourceFilter = key;
+    this.deskPage = 1;
     this.applyTab();
   }
 
@@ -324,17 +363,6 @@ export class OrdersComponent implements OnInit, AfterViewInit {
       { label: 'الشقة', value: a.apartment },
       { label: 'علامة مميزة', value: a.landmark },
     ].filter((row): row is { label: string; value: string } => !!row.value);
-  }
-
-  onRowAction(event: { action: string; row: Record<string, unknown> }): void {
-    const order = this.hydrateOrder(event.row as unknown as Order);
-    this.selected = order;
-    if (event.action === 'delete') {
-      if (this.canCancel(order)) this.askCancel(order);
-      else this.toast.error(`الطلب ${this.statusLabel(order.status)} ومينفعش يتلغي`);
-      return;
-    }
-    this.openView(order);
   }
 
   private refreshStats(): void {
