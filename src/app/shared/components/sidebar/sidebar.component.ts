@@ -19,7 +19,7 @@ export class SidebarComponent implements OnInit, AfterViewInit {
   open = false;
 
   navItems: NavItem[] = [
-    { label: 'الرئيسية', route: '/dashboard', icon: 'dashboard' },
+    { label: 'الرئيسية', route: '/', icon: 'dashboard' },
     { label: 'المنتجات', route: '/products', icon: 'inventory_2' },
     { label: 'محتوى التطبيق', route: '/app-content', icon: 'smartphone' },
     { label: 'الطلبات', route: '/orders', icon: 'local_shipping' },

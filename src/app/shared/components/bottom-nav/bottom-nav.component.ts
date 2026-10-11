@@ -156,7 +156,7 @@ import { LayoutService } from '../../../core/services/layout.service';
 })
 export class BottomNavComponent {
   items = [
-    { label: 'الرئيسية', route: '/dashboard', icon: 'space_dashboard', exact: true },
+    { label: 'الرئيسية', route: '/', icon: 'space_dashboard', exact: true },
     { label: 'الطلبات', route: '/orders', icon: 'local_shipping', exact: false },
     { label: 'المنتجات', route: '/products', icon: 'inventory_2', exact: false },
     { label: 'العملاء', route: '/customers', icon: 'groups', exact: false },

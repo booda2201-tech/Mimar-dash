@@ -9,16 +9,22 @@ export const routes: Routes = [
       import('./pages/login/login.component').then((m) => m.LoginComponent),
   },
   {
+    path: 'forgot-password',
+    loadComponent: () =>
+      import('./pages/forgot-password/forgot-password.component').then((m) => m.ForgotPasswordComponent),
+  },
+  {
     path: '',
     component: MainLayoutComponent,
     canActivate: [authGuard],
     children: [
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       {
-        path: 'dashboard',
+        path: '',
+        pathMatch: 'full',
         loadComponent: () =>
           import('./pages/dashboard/dashboard.component').then((m) => m.DashboardComponent),
       },
+      { path: 'dashboard', redirectTo: '', pathMatch: 'full' },
       {
         path: 'products',
         loadComponent: () =>
@@ -71,8 +77,8 @@ export const routes: Routes = [
           import('./pages/advertisements/advertisements.component').then((m) => m.AdvertisementsComponent),
       },
       { path: 'agent-ads', redirectTo: 'advertisements', pathMatch: 'full' },
-      { path: 'reports', redirectTo: 'dashboard', pathMatch: 'full' },
-      { path: 'notifications', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: 'reports', redirectTo: '', pathMatch: 'full' },
+      { path: 'notifications', redirectTo: '', pathMatch: 'full' },
       {
         path: 'settings',
         loadComponent: () =>
@@ -85,5 +91,5 @@ export const routes: Routes = [
       },
     ],
   },
-  { path: '**', redirectTo: 'dashboard' },
+  { path: '**', redirectTo: '' },
 ];

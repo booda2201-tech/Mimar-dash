@@ -50,14 +50,13 @@
               <input type="checkbox" formControlName="remember" class="rounded text-brand-primary" />
               تذكرني في هذه الجلسة
             </label>
-            <a href="#" class="text-xs sm:text-sm font-bold text-brand-gold-dark hover:underline">نسيت كلمة المرور؟</a>
+            <a routerLink="/forgot-password" class="rounded text-xs sm:text-sm font-bold text-brand-gold-dark transition-colors duration-300 hover:text-brand-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold/40">نسيت كلمة المرور؟</a>
           </div>
 
           <button type="submit" class="btn-gold w-full shadow-gold py-3" [disabled]="submitting">
             {{ submitting ? 'جاري الدخول...' : 'تسجيل الدخول إلى النظام' }}
             <span class="material-symbols-outlined text-[18px] rotate-180">arrow_forward</span>
-          </button>
-        </form>
+          </button>        </form>
       </div>
       <div class="px-6 py-3 bg-slate-50/80 border-t border-slate-100 text-center text-xs text-slate-500">
         الدخول مخصص للموظفين والمشرفين المصرح لهم فقط.

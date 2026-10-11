@@ -2,7 +2,7 @@
 <aside class="sidebar-shell" aria-label="القائمة الرئيسية">
   <div class="sidebar-glow" aria-hidden="true"></div>
 
-  <a routerLink="/dashboard" class="sidebar-brand" aria-label="منصة معمار">
+  <a routerLink="/" class="sidebar-brand" aria-label="منصة معمار">
     <img class="brand-logo" src="assets/brand/mimar-logo.jpg" alt="معمار" />
     <span class="brand-copy">
       <span class="brand-title">منصة معمار</span>
@@ -17,7 +17,7 @@
       *ngFor="let item of navItems"
       [routerLink]="item.route"
       routerLinkActive="nav-active"
-      [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+      [routerLinkActiveOptions]="{ exact: item.route === '/' }"
       class="nav-item"
       [attr.aria-label]="item.label"
     >
@@ -80,7 +80,7 @@
       *ngFor="let item of navItems; let i = index"
       [routerLink]="item.route"
       routerLinkActive="is-active"
-      [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+      [routerLinkActiveOptions]="{ exact: item.route === '/' }"
       class="m-tile"
       [style.--i]="i"
       (click)="close()"

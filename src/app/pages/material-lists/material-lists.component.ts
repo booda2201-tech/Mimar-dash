@@ -92,7 +92,7 @@ export class MaterialListsComponent implements OnInit, AfterViewInit {
       this.location.back();
       return;
     }
-    this.router.navigateByUrl('/dashboard');
+    this.router.navigateByUrl('/');
   }
 
   get formTitle(): string {

@@ -13,6 +13,24 @@ export interface AuthUser {
   phoneNumber?: string;
 }
 
+export interface ResetPasswordPayload {
+  email: string;
+  code: string;
+  resetToken: string | null;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+/**
+ * مسارات استعادة كلمة المرور تحت /api/Auth — مش موجودة في الباك اند لسه (بترجع 404).
+ * لو الباك اند اختار أسماء تانية، غيّرها هنا بس.
+ */
+export const PASSWORD_RESET_ENDPOINTS = {
+  request: 'forgot-password',
+  verify: 'verify-reset-code',
+  reset: 'reset-password',
+} as const;
+
 const TOKEN_KEY = 'mimar_admin_token';
 const USER_KEY = 'mimar_admin_user';
 const DEFAULT_STAFF_NAME = 'م. عبد الرحمن';
@@ -45,6 +63,25 @@ export class AuthService {
     return this.http.post<unknown>(`${this.base}/login`, { emailOrPhone, password }).pipe(
       map((res) => this.persistSession(res, emailOrPhone))
     );
+  }
+
+  /** بيبعت كود التحقق على البريد */
+  requestPasswordReset(email: string): Observable<unknown> {
+    return this.http.post(`${this.base}/${PASSWORD_RESET_ENDPOINTS.request}`, { email });
+  }
+
+  /** بيرجّع توكن إعادة التعيين لو السيرفر بيرجّعه — وإلا الكود نفسه بيتبعت في الخطوة الأخيرة */
+  verifyResetCode(email: string, code: string): Observable<string | null> {
+    return this.http.post<unknown>(`${this.base}/${PASSWORD_RESET_ENDPOINTS.verify}`, { email, code }).pipe(
+      map((res) => {
+        const r = unwrapItem(res);
+        return str(pick(r, 'resetToken', 'ResetToken', 'token', 'Token')) || null;
+      })
+    );
+  }
+
+  resetPassword(payload: ResetPasswordPayload): Observable<unknown> {
+    return this.http.post(`${this.base}/${PASSWORD_RESET_ENDPOINTS.reset}`, payload);
   }
 
   me(): Observable<AuthUser | null> {

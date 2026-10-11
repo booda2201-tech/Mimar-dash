@@ -748,7 +748,7 @@ export class CategoriesComponent implements OnInit, AfterViewInit {
       this.location.back();
       return;
     }
-    this.router.navigateByUrl('/dashboard');
+    this.router.navigateByUrl('/');
   }
 
   addingMain = false;

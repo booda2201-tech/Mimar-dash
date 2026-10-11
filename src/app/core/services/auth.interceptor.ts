@@ -16,7 +16,7 @@ export class AuthInterceptor implements HttpInterceptor {
 
   intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
     const token = this.auth.token;
-    const isAuthCall = /\/Auth\/(login|register)/i.test(req.url);
+    const isAuthCall = /\/Auth\/(login|register|forgot-password|verify-reset-code|reset-password)/i.test(req.url);
     const withAuth = token && !isAuthCall
       ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
       : req;
