@@ -1059,6 +1059,31 @@
 
   .m-head {
     display: block;
+    padding: 0.95rem 1rem;
+    border-radius: 1.1rem;
+    border: 1px solid rgba(11, 74, 58, 0.08);
+    background:
+      radial-gradient(ellipse 70% 120% at 100% 0%, rgba(200, 162, 75, 0.16) 0%, transparent 55%),
+      radial-gradient(ellipse 50% 80% at 0% 100%, rgba(11, 74, 58, 0.08) 0%, transparent 50%),
+      linear-gradient(135deg, #ffffff 0%, #f7faf8 100%);
+    box-shadow: 0 6px 18px rgba(11, 74, 58, 0.06);
+  }
+
+  .m-head-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-bottom: 0.4rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    color: #784d08;
+    background: linear-gradient(135deg, #ffe9b0, #f0d078);
+  }
+
+  .m-head-chip .material-symbols-outlined {
+    font-size: 14px;
   }
 
   .m-head h1 {

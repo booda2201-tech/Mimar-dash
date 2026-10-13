@@ -77,6 +77,12 @@ export const routes: Routes = [
           import('./pages/advertisements/advertisements.component').then((m) => m.AdvertisementsComponent),
       },
       { path: 'agent-ads', redirectTo: 'advertisements', pathMatch: 'full' },
+      {
+        path: 'ad-requests',
+        loadComponent: () =>
+          import('./pages/ad-requests/ad-requests.component').then((m) => m.AdRequestsComponent),
+      },
+      { path: 'dashboard/ad-requests', redirectTo: 'ad-requests', pathMatch: 'full' },
       { path: 'reports', redirectTo: '', pathMatch: 'full' },
       { path: 'notifications', redirectTo: '', pathMatch: 'full' },
       {

@@ -29,6 +29,7 @@ export class SidebarComponent implements OnInit, AfterViewInit {
     { label: 'البراندات', route: '/brands', icon: 'workspace_premium' },
     { label: 'الفئات', route: '/categories', icon: 'category' },
     { label: 'العروض والبنرات', route: '/offers', icon: 'sell' },
+    { label: 'طلبات إعلانات التجار', route: '/ad-requests', icon: 'campaign' },
   ];
 
   dragY = 0;

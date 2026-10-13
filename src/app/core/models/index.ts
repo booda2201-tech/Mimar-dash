@@ -524,3 +524,5 @@ export interface NavItem {
   route: string;
   icon: string;
 }
+
+export * from './ad-request.model';

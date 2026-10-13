@@ -1,16 +1,20 @@
 <div class="space-y-6" *ngIf="!showForm">
-  <div class="anim-item page-head flex flex-wrap items-center justify-between gap-4">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-900">إدارة المنتجات والمخزون</h1>
-      <p class="text-sm text-gray-500 mt-1">الكتالوج الشامل · {{ products.length }} صنف</p>
+  <section class="anim-item page-head page-hero">
+    <div class="min-w-0">
+      <span class="hero-chip">
+        <span class="material-symbols-outlined text-[14px]">inventory_2</span>
+        الكتالوج والمخزون
+      </span>
+      <h1>إدارة المنتجات والمخزون</h1>
+      <p>الكتالوج الشامل · {{ products.length }} صنف</p>
     </div>
-    <div class="ph-actions flex flex-wrap gap-2">
+    <div class="ph-actions hero-actions">
       <button type="button" class="btn-primary text-sm" (click)="openAdd()">
         <span class="material-symbols-outlined text-[18px]">add</span>
         إضافة منتج
       </button>
     </div>
-  </div>
+  </section>
 
   <section class="anim-item pm-summary">
     <div class="pm-main">

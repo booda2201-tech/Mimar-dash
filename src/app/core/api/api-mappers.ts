@@ -22,6 +22,8 @@ import {
   QuotationOffer,
   QuotationRequest,
   QuotationStatus,
+  AdRequestItem,
+  AdStatus,
 } from '../models';
 import { asRecord, bool, displayPersonName, labelOf, num, pick, str, unwrapItem, unwrapList } from './api-utils';
 
@@ -838,6 +840,55 @@ export function mapAdvertisement(raw: unknown): Advertisement {
 
 export function mapAdvertisements(payload: unknown): Advertisement[] {
   return unwrapList(payload).map(mapAdvertisement);
+}
+
+/** الباك اند ممكن يرجّع الحالة/المكان كـ enum رقمي أو PascalCase */
+function adStatusOf(value: unknown): AdStatus {
+  const key = str(value).toLowerCase().replace(/[\s_-]/g, '');
+  if (key === '1' || key === 'approved' || key === 'accepted' || key === 'active') return 'approved';
+  if (key === '2' || key === 'rejected' || key === 'declined') return 'rejected';
+  return 'pending';
+}
+
+/** الكلمة الافتراضية اللي Swagger بيبعتها لما الحقل يتساب فاضي */
+function cleanText(value: unknown): string {
+  const v = str(value).trim();
+  return v.toLowerCase() === 'string' ? '' : v;
+}
+
+export function mapAdRequest(raw: unknown): AdRequestItem {
+  const r = asRecord(raw);
+  const id = str(pick(r, 'id', 'Id'), String(Date.now()));
+  const date = (v: unknown) => str(v).slice(0, 10) || undefined;
+  const applicantName = cleanText(pick(r, 'applicantName', 'ApplicantName'));
+  const companyName = cleanText(pick(r, 'companyName', 'CompanyName'));
+  const imageUrl = str(pick(r, 'imageUrl', 'ImageUrl')) || undefined;
+  const displayImageUrl = str(pick(r, 'displayImageUrl', 'DisplayImageUrl')) || undefined;
+  return {
+    id,
+    trackingCode: str(pick(r, 'requestNumber', 'RequestNumber'), `M-${id}`),
+    applicantName,
+    companyName,
+    merchantName: companyName || applicantName || '—',
+    merchantPhone: str(pick(r, 'phoneNumber', 'PhoneNumber')),
+    companySummary: cleanText(pick(r, 'companySummary', 'CompanySummary')) || undefined,
+    adTitle: cleanText(pick(r, 'adTitle', 'AdTitle')) || undefined,
+    imageUrl,
+    displayImageUrl,
+    bannerUrl: displayImageUrl || imageUrl || '',
+    facebookUrl: str(pick(r, 'facebookUrl', 'FacebookUrl')) || undefined,
+    instagramUrl: str(pick(r, 'instagramUrl', 'InstagramUrl')) || undefined,
+    websiteUrl: str(pick(r, 'websiteUrl', 'WebsiteUrl')) || undefined,
+    status: adStatusOf(pick(r, 'status', 'Status')),
+    rejectionReason: str(pick(r, 'rejectionReason', 'RejectionReason')) || undefined,
+    reviewedAt: str(pick(r, 'reviewedAt', 'ReviewedAt')) || undefined,
+    activeUntil: date(pick(r, 'activeUntil', 'ActiveUntil')),
+    createdAt: str(pick(r, 'createdAt', 'CreatedAt'), new Date().toISOString()),
+  };
+}
+
+export function mapAdRequests(payload: unknown): AdRequestItem[] {
+  return unwrapList(payload).map(mapAdRequest);
 }
 
 export function mapMaterialListItem(raw: unknown): MaterialListItem {

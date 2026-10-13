@@ -1,0 +1,595 @@
+<div class="ar-page space-y-6">
+  <!-- Header -->
+  <section class="page-hero anim-item">
+    <div class="hero-row">
+      <div class="min-w-0">
+        <div class="hero-top">
+          <button type="button" class="ar-back" (click)="goBack()" aria-label="رجوع">
+            <span class="material-symbols-outlined">arrow_forward</span>
+          </button>
+          <span class="hero-chip">
+            <span class="material-symbols-outlined text-[14px]">campaign</span>
+            العروض والبنرات
+          </span>
+          <span class="hero-chip is-demo" *ngIf="demoMode && !loading">
+            <span class="material-symbols-outlined text-[14px]">science</span>
+            وضع تجريبي
+          </span>
+        </div>
+        <h1>طلبات إعلانات التجار</h1>
+        <p>راجع الإعلانات اللي التجار طلبوها من موقع معمار، واعتمدها لحد تاريخ معين أو ارفضها بسبب واضح يوصل للتاجر</p>
+      </div>
+      <div class="hero-actions">
+        <button
+          type="button"
+          class="ar-sample-toggle"
+          *ngIf="!demoMode"
+          [class.is-on]="showSamples"
+          [attr.aria-pressed]="showSamples"
+          (click)="toggleSamples()"
+          [disabled]="loading"
+        >
+          <span class="material-symbols-outlined text-[18px]">{{ showSamples ? 'visibility' : 'visibility_off' }}</span>
+          طلبات تجريبية
+          <span class="ar-switch" aria-hidden="true"><i></i></span>
+        </button>
+        <button type="button" class="btn-outline text-sm" (click)="load()" [disabled]="loading">
+          <span class="material-symbols-outlined text-[18px]" [class.animate-spin]="loading">refresh</span>
+          تحديث
+        </button>
+        <a routerLink="/advertisements" class="btn-primary text-sm">
+          <span class="material-symbols-outlined text-[18px]">campaign</span>
+          الإعلانات المنشورة
+        </a>
+      </div>
+    </div>
+
+    <div class="hero-note" *ngIf="!loading && (demoMode || sampleCount)" role="status">
+      <span class="material-symbols-outlined">info</span>
+      <p *ngIf="demoMode; else samplesNote">
+        مقدرناش نوصل لـ <bdi dir="ltr">/api/AdvertisementRequests</bdi> — البيانات دي تجريبية ومحفوظة على الجهاز ده بس.
+      </p>
+      <ng-template #samplesNote>
+        <p>
+          ظاهر معاك <strong>{{ sampleCount }} طلبات تجريبية</strong> بعلامة «تجريبي» — الاعتماد والرفض عليها بيتحفظ على الجهاز ده بس ومش بيوصل للسيرفر.
+        </p>
+      </ng-template>
+      <button type="button" class="hero-note-btn" (click)="resetDemo()">
+        <span class="material-symbols-outlined">restart_alt</span>
+        إعادة ضبط
+      </button>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <div class="anim-item ar-stats">
+    <button type="button" class="ar-stat is-pending" [class.is-active]="statusFilter === 'pending'" (click)="setStatus('pending')">
+      <span class="ar-stat-icon"><span class="material-symbols-outlined">hourglass_top</span></span>
+      <span class="min-w-0">
+        <small>بانتظار المراجعة</small>
+        <strong>{{ countOf('pending') }}</strong>
+      </span>
+      <span class="ar-pulse" *ngIf="countOf('pending')" aria-hidden="true"></span>
+    </button>
+    <button type="button" class="ar-stat is-approved" [class.is-active]="statusFilter === 'approved'" (click)="setStatus('approved')">
+      <span class="ar-stat-icon"><span class="material-symbols-outlined">verified</span></span>
+      <span class="min-w-0">
+        <small>معتمد</small>
+        <strong>{{ countOf('approved') }}</strong>
+      </span>
+    </button>
+    <div class="ar-stat is-live">
+      <span class="ar-stat-icon"><span class="material-symbols-outlined">smartphone</span></span>
+      <span class="min-w-0">
+        <small>ظاهر في التطبيق الآن</small>
+        <strong>{{ liveCount }}</strong>
+      </span>
+    </div>
+    <button type="button" class="ar-stat is-rejected" [class.is-active]="statusFilter === 'rejected'" (click)="setStatus('rejected')">
+      <span class="ar-stat-icon"><span class="material-symbols-outlined">block</span></span>
+      <span class="min-w-0">
+        <small>مرفوض</small>
+        <strong>{{ countOf('rejected') }}</strong>
+      </span>
+    </button>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="anim-item ar-toolbar card">
+    <div class="ar-tabs" role="tablist" aria-label="حالة الطلب">
+      <button
+        *ngFor="let f of statusFilters"
+        type="button"
+        role="tab"
+        class="ar-tab"
+        [class.is-active]="statusFilter === f.key"
+        [attr.aria-selected]="statusFilter === f.key"
+        (click)="setStatus(f.key)"
+      >
+        <span class="material-symbols-outlined">{{ f.icon }}</span>
+        {{ f.label }}
+        <span class="ar-tab-count">{{ countOf(f.key) }}</span>
+      </button>
+    </div>
+    <div class="ar-filters">
+      <label class="ar-search">
+        <span class="material-symbols-outlined">search</span>
+        <input type="search" [(ngModel)]="search" placeholder="ابحث برقم الطلب أو الشركة أو الموبايل أو عنوان الإعلان" aria-label="بحث" />
+        <button type="button" *ngIf="search" (click)="search = ''" aria-label="مسح البحث">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </label>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="ar-grid">
+    <div class="ar-card" *ngFor="let i of [1, 2, 3, 4, 5, 6]">
+      <div class="skeleton aspect-[2/1] w-full !rounded-none"></div>
+      <div class="p-4 space-y-2.5">
+        <div class="skeleton h-4 w-2/3"></div>
+        <div class="skeleton h-3 w-1/2"></div>
+        <div class="skeleton h-10 w-full !rounded-xl"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cards -->
+  <div class="ar-grid" *ngIf="!loading && visible.length">
+    <article class="ar-row ar-card" *ngFor="let r of visible; trackBy: trackById" [ngClass]="'is-' + r.status">
+      <button type="button" class="ar-card-cover" (click)="openReview(r)" [attr.aria-label]="'مراجعة ' + r.trackingCode">
+        <img *ngIf="r.bannerUrl; else coverEmpty" [src]="r.bannerUrl" [alt]="r.trackingCode" loading="lazy" />
+        <ng-template #coverEmpty><span class="material-symbols-outlined ar-cover-empty">hide_image</span></ng-template>
+        <span class="ar-card-shade"></span>
+        <span class="ar-badge is-floating" [ngClass]="'is-' + r.status">
+          <span class="ar-dot"></span>
+          {{ statusLabels[r.status] }}
+        </span>
+        <span class="ar-sample-pill" *ngIf="isSample(r)" title="طلب تجريبي — مش على السيرفر">
+          <span class="material-symbols-outlined">science</span>
+          تجريبي
+        </span>
+        <span class="ar-card-prio" *ngIf="r.displayImageUrl" title="فيه صورة عرض معتمدة">
+          <span class="material-symbols-outlined">verified</span>
+          صورة العرض
+        </span>
+        <span class="ar-card-place" *ngIf="r.adTitle">
+          <span class="material-symbols-outlined">campaign</span>
+          <span class="truncate">{{ r.adTitle }}</span>
+        </span>
+        <span class="ar-card-open">
+          <span class="material-symbols-outlined">visibility</span>
+          مراجعة
+        </span>
+      </button>
+
+      <div class="ar-card-body">
+        <div class="flex items-start gap-3">
+          <span class="ar-avatar is-sm">{{ r.merchantName.charAt(0) }}</span>
+          <div class="min-w-0 flex-1">
+            <p class="font-bold text-gray-800 truncate">{{ r.merchantName }}</p>
+            <p class="text-xs text-gray-500 mt-0.5 truncate"><bdi dir="ltr">{{ r.merchantPhone }}</bdi></p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button type="button" class="ar-code" (click)="copyCode(r, $event)" title="نسخ الكود">
+            <bdi dir="ltr">{{ r.trackingCode }}</bdi>
+            <span class="material-symbols-outlined">content_copy</span>
+          </button>
+          <span class="text-gray-300">·</span>
+          <span class="text-xs text-gray-400">{{ timeAgo(r.createdAt) }}</span>
+        </div>
+
+        <div class="ar-card-meta" *ngIf="r.status === 'approved'; else requestedMeta">
+          <span class="material-symbols-outlined">event_available</span>
+          <span class="min-w-0 flex-1">
+            <strong class="tabular-nums">{{ r.activeUntil ? 'لحد ' + formatDate(r.activeUntil) : 'بدون تاريخ انتهاء' }}</strong>
+            <small [ngClass]="liveState(r) === 'live' ? 'text-emerald-600' : 'text-gray-400'">{{ liveLabel(r) }}</small>
+          </span>
+        </div>
+        <ng-template #requestedMeta>
+          <div class="ar-card-meta">
+            <span class="material-symbols-outlined">storefront</span>
+            <span class="min-w-0 flex-1">
+              <strong class="truncate">{{ r.companySummary || 'مفيش نبذة عن الشركة' }}</strong>
+              <small>{{ r.applicantName ? 'مقدم الطلب: ' + r.applicantName : 'نبذة الشركة' }}</small>
+            </span>
+          </div>
+        </ng-template>
+
+        <p class="ar-card-reason" *ngIf="r.status === 'rejected' && r.rejectionReason">
+          <span class="material-symbols-outlined">report</span>
+          <span>{{ r.rejectionReason }}</span>
+        </p>
+      </div>
+
+      <footer class="ar-card-foot">
+        <ng-container *ngIf="r.status === 'pending'; else cardView">
+          <button type="button" class="ar-btn-soft-danger flex-1" (click)="openReject(r)">
+            <span class="material-symbols-outlined text-[18px]">close</span>
+            رفض
+          </button>
+          <button type="button" class="btn-primary flex-1 !py-2 text-sm" (click)="openApprove(r)">
+            <span class="material-symbols-outlined text-[18px]">check</span>
+            اعتماد
+          </button>
+        </ng-container>
+        <ng-template #cardView>
+          <button type="button" class="ar-btn-ghost flex-1" (click)="openReview(r)">
+            عرض التفاصيل
+            <span class="material-symbols-outlined text-[18px]">chevron_left</span>
+          </button>
+          <button
+            type="button"
+            class="ar-act"
+            [ngClass]="r.status === 'approved' ? 'is-approve' : 'is-neutral'"
+            (click)="openApprove(r)"
+            [title]="r.status === 'approved' ? 'تعديل مدة الظهور' : 'إعادة النظر واعتماد'"
+            [attr.aria-label]="r.status === 'approved' ? 'تعديل مدة الظهور' : 'إعادة النظر واعتماد'"
+          >
+            <span class="material-symbols-outlined">{{ r.status === 'approved' ? 'edit_calendar' : 'restart_alt' }}</span>
+          </button>
+        </ng-template>
+      </footer>
+    </article>
+  </div>
+
+
+  <!-- Empty -->
+  <div class="card ar-empty" *ngIf="!loading && !visible.length">
+    <span class="ar-empty-icon material-symbols-outlined">{{ hasFilters ? 'search_off' : statusFilter === 'pending' ? 'task_alt' : 'campaign' }}</span>
+    <p class="font-bold text-gray-800 mt-3">
+      {{ hasFilters ? 'مفيش نتائج للبحث ده' : statusFilter === 'pending' ? 'مفيش طلبات مستنية مراجعة' : 'مفيش طلبات هنا' }}
+    </p>
+    <p class="text-sm text-gray-500 mt-1">
+      {{ hasFilters ? 'جرّب كلمة تانية' : 'أول ما تاجر يطلب إعلان من الموقع هيظهر هنا' }}
+    </p>
+    <button type="button" class="btn-outline text-sm mt-4" *ngIf="hasFilters" (click)="clearFilters()">
+      <span class="material-symbols-outlined text-[18px]">filter_alt_off</span>
+      مسح الفلاتر
+    </button>
+  </div>
+</div>
+
+<!-- ═════════ Review modal ═════════ -->
+<app-modal [open]="showReview" [title]="'مراجعة طلب ' + (selected?.trackingCode || '')" maxWidth="880px" (close)="closeReview()">
+  <div class="ar-review" *ngIf="selected as s">
+    <div class="ar-review-main space-y-4">
+      <button
+        type="button"
+        class="ar-hero"
+        [class.is-zoomed]="imageZoom"
+        [style.aspectRatio]="imageZoom ? null : '2 / 1'"
+        (click)="imageZoom = !imageZoom"
+        [attr.aria-label]="imageZoom ? 'تصغير الصورة' : 'تكبير الصورة'"
+      >
+        <img *ngIf="reviewImage(s); else heroEmpty" [src]="reviewImage(s)" [alt]="'إعلان ' + s.trackingCode" />
+        <ng-template #heroEmpty><span class="material-symbols-outlined text-[44px] text-gray-300">hide_image</span></ng-template>
+        <span class="ar-hero-zoom">
+          <span class="material-symbols-outlined">{{ imageZoom ? 'zoom_in_map' : 'zoom_out_map' }}</span>
+        </span>
+      </button>
+
+      <!-- Display image -->
+      <section class="ar-media">
+        <div class="ar-media-switch" role="tablist" aria-label="الصورة المعروضة" *ngIf="s.displayImageUrl && s.imageUrl">
+          <button type="button" role="tab" [class.is-active]="!showOriginal" [attr.aria-selected]="!showOriginal" (click)="showOriginal = false">
+            <span class="material-symbols-outlined">smartphone</span>
+            صورة العرض
+          </button>
+          <button type="button" role="tab" [class.is-active]="showOriginal" [attr.aria-selected]="showOriginal" (click)="showOriginal = true">
+            <span class="material-symbols-outlined">image</span>
+            اللي رفعها التاجر
+          </button>
+        </div>
+        <p class="ar-media-hint" *ngIf="!s.displayImageUrl">
+          <span class="material-symbols-outlined">info</span>
+          لسه مفيش صورة عرض — التطبيق هيستخدم الصورة الأصلية لحد ما ترفع نسخة معدّلة.
+        </p>
+        <label class="ar-upload" [class.is-busy]="uploading">
+          <input type="file" accept="image/png,image/jpeg,image/webp" (change)="onDisplayImage($event)" [disabled]="uploading" />
+          <span class="material-symbols-outlined" [class.animate-spin]="uploading">{{ uploading ? 'progress_activity' : 'add_photo_alternate' }}</span>
+          {{ uploading ? 'جاري الرفع...' : s.displayImageUrl ? 'تغيير صورة العرض' : 'رفع صورة العرض' }}
+        </label>
+      </section>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="ar-badge" [ngClass]="'is-' + s.status"><span class="ar-dot"></span>{{ statusLabels[s.status] }}</span>
+        <button type="button" class="ar-chip" (click)="copyCode(s)">
+          <span class="material-symbols-outlined">tag</span>
+          <bdi dir="ltr">{{ s.trackingCode }}</bdi>
+          <span class="material-symbols-outlined text-gray-400">content_copy</span>
+        </button>
+        <span class="ar-chip is-static">
+          <span class="material-symbols-outlined">schedule</span>
+          اتقدّم {{ timeAgo(s.createdAt) }}
+        </span>
+        <span class="ar-chip is-static is-sample" *ngIf="isSample(s)">
+          <span class="material-symbols-outlined">science</span>
+          طلب تجريبي
+        </span>
+      </div>
+
+      <!-- Merchant -->
+      <section class="ar-merchant">
+        <div class="ar-merchant-id">
+          <span class="ar-avatar">{{ s.merchantName.charAt(0) }}</span>
+          <div class="min-w-0 flex-1">
+            <small>الشركة</small>
+            <p class="ar-merchant-name">{{ s.merchantName }}</p>
+            <p class="ar-merchant-sub">
+              <span *ngIf="s.applicantName && s.applicantName !== s.merchantName" class="truncate">{{ s.applicantName }}</span>
+              <span *ngIf="s.applicantName && s.applicantName !== s.merchantName" class="text-gray-300">·</span>
+              <bdi dir="ltr">{{ s.merchantPhone }}</bdi>
+            </p>
+          </div>
+        </div>
+        <div class="ar-contact">
+          <a [href]="'tel:' + s.merchantPhone" class="ar-contact-btn" title="اتصال">
+            <span class="material-symbols-outlined">call</span>
+            <span>اتصال</span>
+          </a>
+          <a [href]="whatsappOf(s)" target="_blank" rel="noopener" class="ar-contact-btn is-wa" title="واتساب">
+            <span class="material-symbols-outlined">chat</span>
+            <span>واتساب</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- Request -->
+      <section>
+        <h4 class="ar-block-title">تفاصيل الطلب</h4>
+        <div class="ar-tiles">
+          <div class="ar-tile is-wide">
+            <span class="ar-tile-icon"><span class="material-symbols-outlined">campaign</span></span>
+            <div class="min-w-0">
+              <small>عنوان الإعلان</small>
+              <strong>{{ s.adTitle || '—' }}</strong>
+            </div>
+          </div>
+          <div class="ar-tile">
+            <span class="ar-tile-icon is-sky"><span class="material-symbols-outlined">event</span></span>
+            <div class="min-w-0">
+              <small>تاريخ الطلب</small>
+              <strong>{{ formatDate(s.createdAt) }}</strong>
+            </div>
+          </div>
+          <div class="ar-tile">
+            <span class="ar-tile-icon is-slate"><span class="material-symbols-outlined">tag</span></span>
+            <div class="min-w-0">
+              <small>رقم الطلب</small>
+              <strong><bdi dir="ltr">{{ s.trackingCode }}</bdi></strong>
+            </div>
+          </div>
+          <div class="ar-tile is-wide is-text" *ngIf="s.companySummary">
+            <span class="ar-tile-icon is-gold"><span class="material-symbols-outlined">storefront</span></span>
+            <div class="min-w-0">
+              <small>نبذة عن الشركة</small>
+              <p>{{ s.companySummary }}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Links -->
+      <section>
+        <h4 class="ar-block-title">روابط التاجر</h4>
+        <div class="ar-links" *ngIf="linksOf(s).length; else noLinks">
+          <a *ngFor="let l of linksOf(s)" [href]="l.url" target="_blank" rel="noopener noreferrer" class="ar-link" [ngClass]="'is-' + l.kind">
+            <span class="ar-link-icon"><span class="material-symbols-outlined">{{ l.icon }}</span></span>
+            <span class="min-w-0 flex-1">
+              <small>{{ l.label }}</small>
+              <bdi dir="ltr" class="block truncate">{{ l.url }}</bdi>
+            </span>
+            <span class="material-symbols-outlined ar-link-go">open_in_new</span>
+          </a>
+        </div>
+        <ng-template #noLinks>
+          <p class="ar-links-empty">
+            <span class="material-symbols-outlined">link_off</span>
+            التاجر مبعتش روابط صالحة
+          </p>
+        </ng-template>
+      </section>
+
+      <!-- Decision outcome -->
+      <section class="ar-outcome is-approved" *ngIf="s.status === 'approved'">
+        <span class="material-symbols-outlined">event_available</span>
+        <div class="min-w-0">
+          <strong>معتمد للظهور</strong>
+          <p>
+            {{ s.activeUntil ? 'لحد ' + formatDate(s.activeUntil) : 'بدون تاريخ انتهاء' }} · {{ liveLabel(s) }}
+            <ng-container *ngIf="s.reviewedAt"> · اتراجع {{ formatDate(s.reviewedAt) }}</ng-container>
+          </p>
+        </div>
+      </section>
+      <section class="ar-outcome is-rejected" *ngIf="s.status === 'rejected'">
+        <span class="material-symbols-outlined">report</span>
+        <div class="min-w-0">
+          <strong>سبب الرفض (ظاهر للتاجر)</strong>
+          <p class="whitespace-pre-line">{{ s.rejectionReason || '—' }}</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- Phone preview -->
+    <aside class="ar-review-side">
+      <p class="ar-side-title">
+        <span class="material-symbols-outlined">smartphone</span>
+        هيظهر كده في التطبيق
+      </p>
+      <div class="ar-phone" aria-hidden="true">
+        <div class="ar-phone-notch"></div>
+        <div class="ar-phone-screen">
+          <div class="ar-ph-bar"><span></span><span></span></div>
+          <div class="ar-ph-search"></div>
+          <div class="ar-ph-slot is-top is-target">
+            <img *ngIf="s.bannerUrl" [src]="s.bannerUrl" alt="" />
+          </div>
+          <div class="ar-ph-dots"><i class="is-on"></i><i></i><i></i></div>
+          <div class="ar-ph-cats"><span *ngFor="let c of [1, 2, 3, 4]"></span></div>
+          <div class="ar-ph-slot is-mid"></div>
+          <div class="ar-ph-grid">
+            <div class="ar-ph-slot is-card" *ngFor="let c of [1, 2, 3, 4]"></div>
+          </div>
+        </div>
+      </div>
+      <p class="ar-side-hint">{{ s.displayImageUrl ? 'بنستخدم صورة العرض المعتمدة' : 'بنستخدم صورة التاجر الأصلية' }}</p>
+    </aside>
+
+    <div class="ar-review-actions">
+      <ng-container [ngSwitch]="s.status">
+        <ng-container *ngSwitchCase="'pending'">
+          <button type="button" class="ar-btn-soft-danger" (click)="openReject(s)">
+            <span class="material-symbols-outlined text-[18px]">close</span>
+            رفض الطلب
+          </button>
+          <button type="button" class="btn-primary" (click)="openApprove(s)">
+            <span class="material-symbols-outlined text-[18px]">check_circle</span>
+            اعتماد الإعلان
+          </button>
+        </ng-container>
+        <ng-container *ngSwitchCase="'approved'">
+          <button type="button" class="ar-btn-soft-danger" (click)="openReject(s)">
+            <span class="material-symbols-outlined text-[18px]">block</span>
+            إلغاء الاعتماد
+          </button>
+          <button type="button" class="btn-primary" (click)="openApprove(s)">
+            <span class="material-symbols-outlined text-[18px]">edit_calendar</span>
+            تعديل مدة الظهور
+          </button>
+        </ng-container>
+        <ng-container *ngSwitchCase="'rejected'">
+          <button type="button" class="btn-outline" (click)="openReject(s)">
+            <span class="material-symbols-outlined text-[18px]">edit_note</span>
+            تعديل السبب
+          </button>
+          <button type="button" class="btn-primary" (click)="openApprove(s)">
+            <span class="material-symbols-outlined text-[18px]">restart_alt</span>
+            إعادة النظر واعتماد
+          </button>
+        </ng-container>
+      </ng-container>
+    </div>
+  </div>
+</app-modal>
+
+<!-- ═════════ Approve modal ═════════ -->
+<app-modal [open]="showApprove" title="اعتماد الإعلان" maxWidth="560px" (close)="showApprove = false">
+  <form class="space-y-5" [formGroup]="approveForm" (ngSubmit)="submitApprove()" *ngIf="selected as s">
+    <div class="ar-summary">
+      <img *ngIf="s.bannerUrl" [src]="s.bannerUrl" [alt]="s.trackingCode" />
+      <div class="min-w-0 flex-1">
+        <p class="font-bold text-gray-800 truncate">{{ s.merchantName }}</p>
+        <p class="text-xs text-gray-500 truncate"><bdi dir="ltr">{{ s.trackingCode }}</bdi><ng-container *ngIf="s.adTitle"> · {{ s.adTitle }}</ng-container></p>
+      </div>
+    </div>
+
+    <div class="ar-note" *ngIf="!s.displayImageUrl">
+      <span class="material-symbols-outlined">image</span>
+      <p>مفيش صورة عرض مرفوعة — هيظهر بصورة التاجر الأصلية. تقدر ترفع نسخة معدّلة من شاشة المراجعة.</p>
+    </div>
+
+    <div>
+      <p class="form-label">مدة الظهور</p>
+      <div class="ar-presets">
+        <button type="button" *ngFor="let d of durationPresets" [class.is-active]="isPreset(d)" (click)="applyPreset(d)">
+          {{ d }} يوم
+        </button>
+      </div>
+    </div>
+
+    <div>
+      <label class="form-label" for="ar-until">ظاهر لحد <span class="text-red-500">*</span></label>
+      <input id="ar-until" type="date" class="input-field" formControlName="activeUntil" [min]="minDate" [class.ar-invalid]="untilInvalid" />
+      <p class="form-error" *ngIf="untilInvalid">اختار تاريخ من النهارده أو بعده</p>
+    </div>
+
+    <div class="ar-duration" [class.is-bad]="!approvedDays">
+      <span class="material-symbols-outlined">{{ approvedDays ? 'date_range' : 'error' }}</span>
+      <span class="flex-1">
+        <ng-container *ngIf="approvedDays; else badRange">
+          هيظهر في التطبيق من النهارده لمدة <strong>{{ approvedDays }} يوم</strong>
+        </ng-container>
+        <ng-template #badRange>التاريخ لازم يكون من النهارده أو بعده</ng-template>
+      </span>
+    </div>
+
+    <div class="flex flex-wrap items-center justify-end gap-3 pt-1">
+      <button type="button" class="btn-outline" (click)="showApprove = false">إلغاء</button>
+      <button type="submit" class="btn-primary" [disabled]="saving">
+        <span class="material-symbols-outlined text-[18px]" [class.animate-spin]="saving">{{ saving ? 'progress_activity' : 'verified' }}</span>
+        {{ saving ? 'جاري الاعتماد...' : s.status === 'approved' ? 'حفظ المدة' : 'اعتماد الإعلان' }}
+      </button>
+    </div>
+  </form>
+</app-modal>
+
+<!-- ═════════ Reject modal ═════════ -->
+<app-modal [open]="showReject" title="رفض طلب الإعلان" maxWidth="560px" (close)="showReject = false">
+  <form class="space-y-4" [formGroup]="rejectForm" (ngSubmit)="submitReject()" *ngIf="selected as s">
+    <div class="ar-summary">
+      <img *ngIf="s.bannerUrl" [src]="s.bannerUrl" [alt]="s.trackingCode" />
+      <div class="min-w-0 flex-1">
+        <p class="font-bold text-gray-800 truncate">{{ s.merchantName }}</p>
+        <p class="text-xs text-gray-500"><bdi dir="ltr">{{ s.trackingCode }}</bdi><ng-container *ngIf="s.adTitle"> · {{ s.adTitle }}</ng-container></p>
+      </div>
+    </div>
+
+    <div class="ar-note">
+      <span class="material-symbols-outlined">visibility</span>
+      <p>السبب ده <strong>هيظهر للتاجر</strong> على موقع معمار لما يتابع الطلب بكود التتبع — اكتبه بوضوح وقوله يعدّل إيه.</p>
+    </div>
+
+    <div>
+      <p class="form-label">أسباب سريعة</p>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" class="ar-reason-chip" *ngFor="let r of quickReasons" [class.is-used]="isReasonUsed(r)" (click)="useReason(r)">
+          <span class="material-symbols-outlined">{{ isReasonUsed(r) ? 'check' : 'add' }}</span>
+          {{ r }}
+        </button>
+      </div>
+    </div>
+
+    <div>
+      <label class="form-label" for="ar-reason">سبب الرفض <span class="text-red-500">*</span></label>
+      <textarea
+        id="ar-reason"
+        class="input-field min-h-[120px] py-3 leading-relaxed resize-y"
+        formControlName="reason"
+        [maxlength]="reasonMax"
+        placeholder="مثال: الصورة غير واضحة على شاشة الموبايل. برجاء رفع تصميم بجودة أعلى وخط أكبر."
+        [class.ar-invalid]="rejectForm.controls.reason.invalid && rejectForm.controls.reason.touched"
+      ></textarea>
+      <div class="flex items-center justify-between mt-1">
+        <p class="form-error !mt-0" *ngIf="rejectForm.controls.reason.invalid && rejectForm.controls.reason.touched; else reasonHint">
+          اكتب سبب واضح (10 حروف على الأقل)
+        </p>
+        <ng-template #reasonHint><span class="form-hint !mt-0">كلما كان السبب محدد، كلما التاجر عدّل أسرع</span></ng-template>
+        <span class="text-[11px] tabular-nums" [ngClass]="reasonLength > reasonMax - 40 ? 'text-amber-600 font-bold' : 'text-gray-400'">
+          {{ reasonLength }}/{{ reasonMax }}
+        </span>
+      </div>
+    </div>
+
+    <div class="ar-merchant-preview" *ngIf="reasonLength >= 10">
+      <p class="ar-mp-label">معاينة اللي هيشوفه التاجر</p>
+      <div class="ar-mp-card">
+        <div class="flex items-center justify-between gap-2">
+          <bdi dir="ltr" class="text-xs font-bold text-gray-500">{{ s.trackingCode }}</bdi>
+          <span class="ar-badge is-rejected"><span class="ar-dot"></span>مرفوض</span>
+        </div>
+        <p class="whitespace-pre-line">{{ rejectForm.controls.reason.value }}</p>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap items-center justify-end gap-3 pt-1">
+      <button type="button" class="btn-outline" (click)="showReject = false">إلغاء</button>
+      <button type="submit" class="ar-btn-danger" [disabled]="saving">
+        <span class="material-symbols-outlined text-[18px]" [class.animate-spin]="saving">{{ saving ? 'progress_activity' : 'block' }}</span>
+        {{ saving ? 'جاري الرفض...' : 'رفض وإبلاغ التاجر' }}
+      </button>
+    </div>
+  </form>
+</app-modal>

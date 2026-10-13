@@ -1,21 +1,25 @@
 <div class="space-y-6">
-  <div class="anim-item page-head flex flex-wrap items-end justify-between gap-4">
+  <section class="anim-item page-head page-hero">
     <div class="title-row">
       <button type="button" class="ct-back" (click)="goBack()" aria-label="رجوع">
         <span class="material-symbols-outlined">arrow_forward</span>
       </button>
       <div class="min-w-0">
-        <h1 class="text-2xl font-bold">إدارة الفئات</h1>
-        <p class="text-sm text-gray-500 mt-1">فئات رئيسية، وتحت كل واحدة الفئات الفرعية اللي بتظهر في التطبيق</p>
+        <span class="hero-chip">
+          <span class="material-symbols-outlined text-[14px]">category</span>
+          تنظيم الكتالوج
+        </span>
+        <h1>إدارة الفئات</h1>
+        <p>فئات رئيسية، وتحت كل واحدة الفئات الفرعية اللي بتظهر في التطبيق</p>
       </div>
     </div>
-    <div class="flex items-center gap-2 ct-add-desk">
+    <div class="hero-actions ct-add-desk">
       <button type="button" class="btn-primary text-sm" (click)="openAdd()">
         <span class="material-symbols-outlined text-[18px]">create_new_folder</span>
         إضافة فئة رئيسية
       </button>
     </div>
-  </div>
+  </section>
 
   <div class="anim-item ct-summary">
     <div class="ct-main">

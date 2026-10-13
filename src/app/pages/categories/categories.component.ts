@@ -52,6 +52,51 @@ import { STARTER_PACKS, StarterCategory, StarterPack } from './categories-starte
       .ct-back {
         display: none;
       }
+      .page-hero {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1.2rem 1.35rem;
+        border-radius: 1.25rem;
+        border: 1px solid rgba(11, 74, 58, 0.08);
+        background:
+          radial-gradient(ellipse 70% 120% at 100% 0%, rgba(200, 162, 75, 0.16) 0%, transparent 55%),
+          radial-gradient(ellipse 50% 80% at 0% 100%, rgba(11, 74, 58, 0.08) 0%, transparent 50%),
+          linear-gradient(135deg, #ffffff 0%, #f7faf8 100%);
+        box-shadow: 0 10px 30px rgba(11, 74, 58, 0.06);
+      }
+      .page-hero h1 {
+        margin: 0;
+        font-size: clamp(1.25rem, 2vw, 1.65rem);
+        font-weight: 800;
+        color: #0b4a3a;
+      }
+      .page-hero p {
+        margin: 0.35rem 0 0;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #6b7280;
+      }
+      .hero-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        margin-bottom: 0.55rem;
+        padding: 0.28rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: #784d08;
+        background: linear-gradient(135deg, #ffe9b0, #f0d078);
+      }
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.55rem;
+      }
       .rc-head {
         display: flex;
         align-items: flex-start;
@@ -348,6 +393,17 @@ import { STARTER_PACKS, StarterCategory, StarterPack } from './categories-starte
         }
         .page-head {
           gap: 0;
+        }
+        .page-hero {
+          align-items: stretch;
+          padding: 0.85rem 0.9rem;
+          border-radius: 1.1rem;
+          box-shadow: 0 6px 18px rgba(11, 74, 58, 0.06);
+        }
+        .hero-chip {
+          margin-bottom: 0.35rem;
+          padding: 0.2rem 0.55rem;
+          font-size: 0.6875rem;
         }
         .page-head .ct-add-desk,
         .ct-stats {

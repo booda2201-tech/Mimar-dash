@@ -1,14 +1,24 @@
 <div class="space-y-6">
-  <div class="anim-item page-head flex flex-wrap items-center justify-between gap-4">
+  <section class="anim-item page-hero">
     <div class="min-w-0">
-      <h1 class="text-2xl font-bold">العروض والخصومات</h1>
-      <p class="text-sm text-gray-500 mt-1">المنتجات اللي عليها خصم · التعديل بيتطبق على المنتج مباشرة</p>
+      <span class="hero-chip">
+        <span class="material-symbols-outlined text-[14px]">sell</span>
+        العروض والبنرات
+      </span>
+      <h1>العروض والخصومات</h1>
+      <p>المنتجات اللي عليها خصم · التعديل بيتطبق على المنتج مباشرة</p>
     </div>
-    <button type="button" class="btn-primary text-sm of-help" (click)="openAdd()">
-      <span class="material-symbols-outlined text-[18px]">info</span>
-      كيف أضيف خصم؟
-    </button>
-  </div>
+    <div class="hero-actions">
+      <a routerLink="/ad-requests" class="btn-outline text-sm of-ad-requests">
+        <span class="material-symbols-outlined text-[18px]">campaign</span>
+        طلبات إعلانات التجار
+      </a>
+      <button type="button" class="btn-primary text-sm of-help" (click)="openAdd()">
+        <span class="material-symbols-outlined text-[18px]">info</span>
+        كيف أضيف خصم؟
+      </button>
+    </div>
+  </section>
 
   <section class="anim-item ofm-summary">
     <div class="ofm-main">
@@ -103,7 +113,19 @@
             <span>{{ o.category || 'بدون فئة' }}</span>
             <span *ngIf="o.brand" class="kicker-brand">{{ o.brand }}</span>
           </p>
-          <h3 class="offer-title" [title]="o.title">{{ o.title }}</h3>
+          <div class="offer-title-row">
+            <h3 class="offer-title" [title]="o.title">{{ o.title }}</h3>
+            <span
+              *ngIf="twins.get(o) as twin"
+              class="twin-tag"
+              [attr.data-tone]="twin.tone"
+              [title]="twin.hint"
+              [attr.aria-label]="twin.hint"
+            >
+              <span class="material-symbols-outlined">join_inner</span>
+              <bdi>{{ twin.label }}</bdi>
+            </span>
+          </div>
           <p class="offer-sub">
             <bdi *ngIf="o.titleEn">{{ o.titleEn }}</bdi>
             <span *ngIf="o.titleEn && o.code" aria-hidden="true"> · </span>

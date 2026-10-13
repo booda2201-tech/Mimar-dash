@@ -14,6 +14,37 @@ import { AnimationService } from '../../core/services/animation.service';
 import { ToastService } from '../../core/services/toast.service';
 import { Offer, StatCardData } from '../../core/models';
 
+interface OfferTwin {
+  label: string;
+  hint: string;
+  tone: number;
+}
+
+const TWIN_COLORS: Record<string, string> = {
+  WHITE: 'أبيض',
+  WHT: 'أبيض',
+  WH: 'أبيض',
+  BLACK: 'أسود',
+  BLK: 'أسود',
+  BEIGE: 'بيج',
+  BG: 'بيج',
+  GREY: 'رمادي',
+  GRAY: 'رمادي',
+  GRY: 'رمادي',
+  BROWN: 'بني',
+  BRN: 'بني',
+  CREAM: 'كريمي',
+  IVORY: 'عاجي',
+  RED: 'أحمر',
+  BLUE: 'أزرق',
+  GREEN: 'أخضر',
+  GOLD: 'ذهبي',
+  SILVER: 'فضي',
+  MATTE: 'مطفي',
+  GLOSSY: 'لامع',
+  POLISHED: 'لامع',
+};
+
 @Component({
   selector: 'app-offers',
   standalone: true,
@@ -36,6 +67,7 @@ export class OffersComponent implements OnInit, AfterViewInit {
   saving = false;
   offers: Offer[] = [];
   visibleOffers: Offer[] = [];
+  twins = new Map<Offer, OfferTwin>();
   searchTerm = '';
   sourceFilter: 'all' | NonNullable<Offer['discountSource']> = 'all';
   readonly sourceFilters: { key: OffersComponent['sourceFilter']; label: string }[] = [
@@ -97,6 +129,7 @@ export class OffersComponent implements OnInit, AfterViewInit {
     this.loading = true;
     this.service.getAll().subscribe((d) => {
       this.offers = d.filter((o) => (o.discount || 0) > 0);
+      this.computeTwins();
       this.refreshRows();
       this.refreshStats();
       this.banners = this.offers.slice(0, 3).map((o) => ({
@@ -119,6 +152,47 @@ export class OffersComponent implements OnInit, AfterViewInit {
       { ...this.stats[2], value: stock },
       { ...this.stats[3], value: this.offers.length },
     ];
+  }
+
+  private computeTwins(): void {
+    const groups = new Map<string, Offer[]>();
+    for (const o of this.offers) {
+      const key = (o.title || '').trim().replace(/\s+/g, ' ').toLowerCase();
+      if (!key) continue;
+      groups.set(key, [...(groups.get(key) || []), o]);
+    }
+
+    const twins = new Map<Offer, OfferTwin>();
+    groups.forEach((group) => {
+      if (group.length < 2) return;
+      const byEn = this.distinctParts(group.map((o) => o.titleEn || ''), /\s+/);
+      const byCode = this.distinctParts(group.map((o) => o.code || ''), /[-_\s]+/);
+      group.forEach((o, i) => {
+        const enPart = byEn[i];
+        const codePart = byCode[i];
+        const color = TWIN_COLORS[(enPart || codePart || '').toUpperCase()];
+        const label = color || enPart || (codePart ? `كود ${codePart}` : '') || `نسخة ${i + 1}`;
+        twins.set(o, {
+          label,
+          tone: i % 4,
+          hint: `فيه ${group.length} منتجات بنفس الاسم${o.code ? ` · الكود ${o.code}` : ''}`,
+        });
+      });
+    });
+    this.twins = twins;
+  }
+
+  private distinctParts(values: string[], sep: RegExp): string[] {
+    if (values.some((v) => !v.trim()) || new Set(values).size !== values.length) return values.map(() => '');
+    const split = values.map((v) => v.trim().split(sep).filter(Boolean));
+    let head = 0;
+    while (split.every((p) => p.length > head && p[head].toLowerCase() === split[0][head].toLowerCase())) head++;
+    let tail = 0;
+    while (
+      split.every((p) => p.length - tail > head && p[p.length - 1 - tail].toLowerCase() === split[0][split[0].length - 1 - tail].toLowerCase())
+    )
+      tail++;
+    return split.map((p) => p.slice(head, p.length - tail).join(' '));
   }
 
   refreshRows(): void {
