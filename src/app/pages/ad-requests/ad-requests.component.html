@@ -11,28 +11,11 @@
             <span class="material-symbols-outlined text-[14px]">campaign</span>
             العروض والبنرات
           </span>
-          <span class="hero-chip is-demo" *ngIf="demoMode && !loading">
-            <span class="material-symbols-outlined text-[14px]">science</span>
-            وضع تجريبي
-          </span>
         </div>
         <h1>طلبات إعلانات التجار</h1>
         <p>راجع الإعلانات اللي التجار طلبوها من موقع معمار، واعتمدها لحد تاريخ معين أو ارفضها بسبب واضح يوصل للتاجر</p>
       </div>
       <div class="hero-actions">
-        <button
-          type="button"
-          class="ar-sample-toggle"
-          *ngIf="!demoMode"
-          [class.is-on]="showSamples"
-          [attr.aria-pressed]="showSamples"
-          (click)="toggleSamples()"
-          [disabled]="loading"
-        >
-          <span class="material-symbols-outlined text-[18px]">{{ showSamples ? 'visibility' : 'visibility_off' }}</span>
-          طلبات تجريبية
-          <span class="ar-switch" aria-hidden="true"><i></i></span>
-        </button>
         <button type="button" class="btn-outline text-sm" (click)="load()" [disabled]="loading">
           <span class="material-symbols-outlined text-[18px]" [class.animate-spin]="loading">refresh</span>
           تحديث
@@ -44,21 +27,6 @@
       </div>
     </div>
 
-    <div class="hero-note" *ngIf="!loading && (demoMode || sampleCount)" role="status">
-      <span class="material-symbols-outlined">info</span>
-      <p *ngIf="demoMode; else samplesNote">
-        مقدرناش نوصل لـ <bdi dir="ltr">/api/AdvertisementRequests</bdi> — البيانات دي تجريبية ومحفوظة على الجهاز ده بس.
-      </p>
-      <ng-template #samplesNote>
-        <p>
-          ظاهر معاك <strong>{{ sampleCount }} طلبات تجريبية</strong> بعلامة «تجريبي» — الاعتماد والرفض عليها بيتحفظ على الجهاز ده بس ومش بيوصل للسيرفر.
-        </p>
-      </ng-template>
-      <button type="button" class="hero-note-btn" (click)="resetDemo()">
-        <span class="material-symbols-outlined">restart_alt</span>
-        إعادة ضبط
-      </button>
-    </div>
   </section>
 
   <!-- Stats -->
@@ -144,10 +112,6 @@
         <span class="ar-badge is-floating" [ngClass]="'is-' + r.status">
           <span class="ar-dot"></span>
           {{ statusLabels[r.status] }}
-        </span>
-        <span class="ar-sample-pill" *ngIf="isSample(r)" title="طلب تجريبي — مش على السيرفر">
-          <span class="material-symbols-outlined">science</span>
-          تجريبي
         </span>
         <span class="ar-card-prio" *ngIf="r.displayImageUrl" title="فيه صورة عرض معتمدة">
           <span class="material-symbols-outlined">verified</span>
@@ -236,8 +200,19 @@
   </div>
 
 
+  <!-- Load error -->
+  <div class="card ar-empty is-error" *ngIf="!loading && loadError" role="alert">
+    <span class="ar-empty-icon material-symbols-outlined">cloud_off</span>
+    <p class="font-bold text-gray-800 mt-3">مقدرناش نجيب طلبات الإعلانات</p>
+    <p class="text-sm text-gray-500 mt-1">اتأكد إن السيرفر شغال وإنك مسجل دخول، وجرب تاني.</p>
+    <button type="button" class="btn-primary text-sm mt-4" (click)="load()">
+      <span class="material-symbols-outlined text-[18px]">refresh</span>
+      إعادة المحاولة
+    </button>
+  </div>
+
   <!-- Empty -->
-  <div class="card ar-empty" *ngIf="!loading && !visible.length">
+  <div class="card ar-empty" *ngIf="!loading && !loadError && !visible.length">
     <span class="ar-empty-icon material-symbols-outlined">{{ hasFilters ? 'search_off' : statusFilter === 'pending' ? 'task_alt' : 'campaign' }}</span>
     <p class="font-bold text-gray-800 mt-3">
       {{ hasFilters ? 'مفيش نتائج للبحث ده' : statusFilter === 'pending' ? 'مفيش طلبات مستنية مراجعة' : 'مفيش طلبات هنا' }}
@@ -304,10 +279,6 @@
         <span class="ar-chip is-static">
           <span class="material-symbols-outlined">schedule</span>
           اتقدّم {{ timeAgo(s.createdAt) }}
-        </span>
-        <span class="ar-chip is-static is-sample" *ngIf="isSample(s)">
-          <span class="material-symbols-outlined">science</span>
-          طلب تجريبي
         </span>
       </div>
 

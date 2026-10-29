@@ -30,6 +30,7 @@ const MAX_IMAGE_MB = 5;
 })
 export class AdRequestsComponent implements OnInit, AfterViewInit {
   loading = true;
+  loadError = false;
   saving = false;
   uploading = false;
   requests: AdRequestItem[] = [];
@@ -74,10 +75,6 @@ export class AdRequestsComponent implements OnInit, AfterViewInit {
     private router: Router
   ) {}
 
-  get demoMode(): boolean {
-    return this.service.demoMode;
-  }
-
   ngOnInit(): void {
     this.load();
   }
@@ -88,39 +85,21 @@ export class AdRequestsComponent implements OnInit, AfterViewInit {
 
   load(): void {
     this.loading = true;
-    this.service.getAll().subscribe((list) => {
-      this.requests = list;
-      this.loading = false;
-      if (!this.countOf('pending') && this.statusFilter === 'pending') this.statusFilter = 'all';
-      if (this.selected) this.selected = list.find((r) => r.id === this.selected?.id) || null;
-      this.animateRows();
+    this.loadError = false;
+    this.service.getAll().subscribe({
+      next: (list) => {
+        this.requests = list;
+        this.loading = false;
+        if (!this.countOf('pending') && this.statusFilter === 'pending') this.statusFilter = 'all';
+        if (this.selected) this.selected = list.find((r) => r.id === this.selected?.id) || null;
+        this.animateRows();
+      },
+      error: () => {
+        this.requests = [];
+        this.loading = false;
+        this.loadError = true;
+      },
     });
-  }
-
-  get showSamples(): boolean {
-    return this.service.showSamples;
-  }
-
-  get sampleCount(): number {
-    return this.requests.filter((r) => this.service.isSample(r)).length;
-  }
-
-  isSample(item: AdRequestItem): boolean {
-    return this.service.isSample(item);
-  }
-
-  toggleSamples(): void {
-    this.service.showSamples = !this.service.showSamples;
-    this.toast.info(this.service.showSamples ? 'ظهرت الطلبات التجريبية' : 'اتخفت الطلبات التجريبية');
-    this.load();
-  }
-
-  resetDemo(): void {
-    const live = this.requests.filter((r) => !this.service.isSample(r));
-    this.requests = [...live, ...this.service.resetDemo()];
-    this.statusFilter = 'pending';
-    this.toast.info('رجّعنا الطلبات التجريبية لحالتها الأولى');
-    this.animateRows();
   }
 
   goBack(): void {

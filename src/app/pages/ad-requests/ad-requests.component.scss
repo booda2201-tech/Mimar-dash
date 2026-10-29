@@ -66,11 +66,6 @@ a:focus-visible {
   font-weight: 800;
   color: #784d08;
   background: linear-gradient(135deg, #ffe9b0, #f0d078);
-  &.is-demo {
-    color: $brand;
-    background: rgba(11, 74, 58, 0.07);
-    border: 1px dashed rgba(11, 74, 58, 0.25);
-  }
 }
 .hero-actions {
   display: flex;
@@ -81,56 +76,6 @@ a:focus-visible {
 }
 .ar-back {
   display: none;
-}
-
-.hero-note {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  margin-top: 1rem;
-  padding: 0.55rem;
-  padding-inline-start: 0.85rem;
-  border-radius: 0.85rem;
-  background: rgba(255, 255, 255, 0.75);
-  border: 1px solid rgba(200, 162, 75, 0.3);
-  backdrop-filter: blur(6px);
-  > .material-symbols-outlined { flex-shrink: 0; font-size: 1.1rem; color: $gold; }
-  p {
-    flex: 1;
-    min-width: 0;
-    margin: 0;
-    font-size: 0.78rem;
-    font-weight: 600;
-    color: #6b7280;
-  }
-  bdi {
-    padding: 0.05rem 0.35rem;
-    border-radius: 0.35rem;
-    background: rgba(11, 74, 58, 0.06);
-    color: $brand;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 0.72rem;
-  }
-}
-.hero-note-btn {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  height: 2rem;
-  padding: 0 0.75rem;
-  border: 1px solid rgba(11, 74, 58, 0.15);
-  border-radius: 0.6rem;
-  background: #fff;
-  font-family: inherit;
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: $brand;
-  cursor: pointer;
-  transition: all 0.3s $ease;
-  .material-symbols-outlined { font-size: 1rem; }
-  &:hover { background: rgba(11, 74, 58, 0.05); border-color: rgba(11, 74, 58, 0.3); box-shadow: 0 2px 8px rgba(11, 74, 58, 0.08); }
-  &:active { transform: scale(0.96); }
 }
 
 /* ───── Stats ───── */
@@ -377,85 +322,6 @@ button.ar-stat {
   min-width: 0;
   .material-symbols-outlined { font-size: 1rem; flex-shrink: 0; }
 }
-.ar-sample-pill {
-  position: absolute;
-  bottom: 0.6rem;
-  inset-inline-end: 0.65rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  padding: 0.18rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 800;
-  color: #5b21b6;
-  background: rgba(237, 233, 254, 0.95);
-  border: 1px solid rgba(139, 92, 246, 0.35);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  backdrop-filter: blur(4px);
-  .material-symbols-outlined { font-size: 0.9rem; }
-}
-
-.ar-chip.is-sample {
-  color: #5b21b6;
-  background: #f5f3ff;
-  border-color: #ddd6fe;
-  .material-symbols-outlined { color: #7c3aed; }
-}
-
-.ar-sample-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  height: 2.5rem;
-  padding: 0 0.6rem 0 0.85rem;
-  border-radius: 0.8rem;
-  border: 1px solid rgba(139, 92, 246, 0.25);
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 800;
-  color: #6b7280;
-  background: #fff;
-  cursor: pointer;
-  transition: all 0.25s $ease;
-
-  .ar-switch {
-    position: relative;
-    width: 2.1rem;
-    height: 1.2rem;
-    border-radius: 999px;
-    background: #e5e7eb;
-    transition: background 0.25s $ease;
-
-    i {
-      position: absolute;
-      top: 0.15rem;
-      inset-inline-start: 0.15rem;
-      width: 0.9rem;
-      height: 0.9rem;
-      border-radius: 999px;
-      background: #fff;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-      transition: transform 0.25s $ease;
-    }
-  }
-
-  &.is-on {
-    color: #5b21b6;
-    background: #f5f3ff;
-    border-color: #c4b5fd;
-    .ar-switch { background: #7c3aed; }
-    .ar-switch i { transform: translateX(-0.9rem); }
-  }
-
-  &:hover:not(:disabled) { border-color: #8b5cf6; box-shadow: 0 6px 14px -8px rgba(124, 58, 237, 0.5); }
-  &:active:not(:disabled) { transform: scale(0.97); }
-  &:focus-visible { outline: 2px solid $gold; outline-offset: 2px; }
-  &:disabled { opacity: 0.55; cursor: not-allowed; }
-}
-
-:host-context([dir='ltr']) .ar-sample-toggle.is-on .ar-switch i { transform: translateX(0.9rem); }
-
 .ar-card-prio {
   position: absolute;
   top: 0.65rem;
@@ -693,6 +559,10 @@ button.ar-stat {
   justify-content: center;
   background: rgba(11, 74, 58, 0.08);
   color: $brand;
+}
+.ar-empty.is-error .ar-empty-icon {
+  background: #fef2f2;
+  color: #dc2626;
 }
 
 /* ───── Review modal ───── */
@@ -1362,14 +1232,7 @@ button.ar-stat {
     display: grid;
     grid-template-columns: auto 1fr;
     .btn-outline { padding-inline: 0.85rem; }
-    .ar-sample-toggle { grid-column: 1 / -1; justify-content: space-between; }
   }
-  .hero-note {
-    flex-wrap: wrap;
-    padding: 0.6rem 0.7rem;
-    p { flex-basis: calc(100% - 1.8rem); font-size: 0.74rem; }
-  }
-  .hero-note-btn { margin-inline-start: auto; }
 
   .ar-stats { gap: 0.6rem; }
   .ar-stat {
