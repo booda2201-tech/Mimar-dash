@@ -3,7 +3,10 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
+    "ensure-secrets": "node -e \"const fs=require('fs');const p='src/environments/environment.secrets.ts';const e='src/environments/environment.secrets.example.ts';if(!fs.existsSync(p)){fs.copyFileSync(e,p);console.log('Created environment.secrets.ts — put your Gemini key there');}\"",
+    "prestart": "npm run ensure-secrets",
     "start": "ng serve",
+    "prebuild": "npm run ensure-secrets",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
