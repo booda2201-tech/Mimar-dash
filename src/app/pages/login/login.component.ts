@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -12,9 +12,10 @@ import { AuthService } from '../../core/services/auth.service';
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss'],
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   showPassword = false;
   submitting = false;
+  sessionNotice: string | null = null;
 
   form = this.fb.group({
     email: ['', [Validators.required]],
@@ -28,6 +29,16 @@ export class LoginComponent {
     private toast: ToastService,
     private auth: AuthService
   ) {}
+
+  ngOnInit(): void {
+    if (this.auth.isLoggedIn) {
+      this.router.navigateByUrl('/');
+      return;
+    }
+    if (this.auth.hasExpiredToken()) this.auth.endSession('expired');
+    this.sessionNotice = this.auth.consumeSessionEndedMessage();
+    if (this.sessionNotice) this.toast.warning(this.sessionNotice);
+  }
 
   get emailCtrl() {
     return this.form.get('email');

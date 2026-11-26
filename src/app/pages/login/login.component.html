@@ -22,6 +22,15 @@
           <p class="text-xs sm:text-sm text-slate-500">مرحباً بك مجدداً، أدخل بياناتك للوصول إلى منصة معمار</p>
         </div>
 
+        <div
+          *ngIf="sessionNotice"
+          class="mb-4 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-sm text-amber-900"
+          role="status"
+        >
+          <span class="material-symbols-outlined mt-0.5 text-[20px] text-amber-600">schedule</span>
+          <span class="font-semibold leading-relaxed">{{ sessionNotice }}</span>
+        </div>
+
         <form class="space-y-4" [formGroup]="form" (ngSubmit)="submit()">
           <div>
             <label class="block text-xs sm:text-sm font-semibold text-slate-700 mb-1.5">اسم المستخدم أو البريد الإلكتروني</label>

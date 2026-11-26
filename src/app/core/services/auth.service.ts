@@ -1,9 +1,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, map, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { mapAuthToken } from '../api/api-mappers';
 import { asRecord, displayPersonName, isAccountHandle, pick, str, unwrapItem } from '../api/api-utils';
+import { ToastService } from './toast.service';
 
 export interface AuthUser {
   id?: string;
@@ -33,22 +35,37 @@ export const PASSWORD_RESET_ENDPOINTS = {
 
 const TOKEN_KEY = 'mimar_admin_token';
 const USER_KEY = 'mimar_admin_user';
+const SESSION_ENDED_KEY = 'mimar_session_ended';
 const DEFAULT_STAFF_NAME = 'م. عبد الرحمن';
+/** نخلّي مهلة بسيطة قبل الانتهاء عشان مانبعتش طلب بتوكن على وشك يخلص */
+const EXPIRY_SKEW_MS = 10_000;
+
+export type SessionEndReason = 'expired' | 'unauthorized';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly base = `${environment.apiUrl}/api/Auth`;
   private userSubject = new BehaviorSubject<AuthUser | null>(this.readUser());
   user$ = this.userSubject.asObservable();
+  private endingSession = false;
+  private expiryTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private router: Router,
+    private toast: ToastService
+  ) {
+    // بعد ما Angular يخلّص الـ DI — عشان ماننادهوش أثناء الـ constructor
+    queueMicrotask(() => this.watchTokenExpiry());
+  }
 
   get token(): string | null {
     return localStorage.getItem(TOKEN_KEY);
   }
 
   get isLoggedIn(): boolean {
-    return !!this.token;
+    const token = this.token;
+    return !!token && !isJwtExpired(token, EXPIRY_SKEW_MS);
   }
 
   get user(): AuthUser | null {
@@ -97,9 +114,59 @@ export class AuthService {
   }
 
   logout(): void {
+    this.clearExpiryWatch();
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     this.userSubject.next(null);
+  }
+
+  /**
+   * يمسح الجلسة ويرجّع المستخدم لصفحة الدخول برسالة واضحة.
+   * بيتنادى لما التوكن يخلص أو السيرفر يرجّع 401.
+   */
+  endSession(reason: SessionEndReason = 'expired'): void {
+    if (this.endingSession) return;
+    const hadSession = !!this.token || !!this.user;
+    if (!hadSession) {
+      if (!this.router.url.startsWith('/login') && !this.router.url.startsWith('/forgot-password')) {
+        this.router.navigateByUrl('/login');
+      }
+      return;
+    }
+
+    this.endingSession = true;
+    this.logout();
+    sessionStorage.setItem(SESSION_ENDED_KEY, reason);
+    const message =
+      reason === 'unauthorized'
+        ? 'لازم تسجّل دخول تاني عشان تكمل'
+        : 'انتهت جلستك — سجّل دخول تاني عشان تكمل';
+    this.toast.warning(message);
+    const goLogin = () => {
+      this.endingSession = false;
+      if (!this.router.url.startsWith('/login')) this.router.navigateByUrl('/login');
+    };
+    if (this.router.url.startsWith('/login')) {
+      this.endingSession = false;
+      return;
+    }
+    this.router.navigateByUrl('/login').then(goLogin, goLogin);
+  }
+
+  /** لو فيه رسالة انتهاء جلسة من التوجيه السابق */
+  consumeSessionEndedMessage(): string | null {
+    const reason = sessionStorage.getItem(SESSION_ENDED_KEY) as SessionEndReason | null;
+    if (!reason) return null;
+    sessionStorage.removeItem(SESSION_ENDED_KEY);
+    return reason === 'unauthorized'
+      ? 'لازم تسجّل دخول تاني عشان تكمل'
+      : 'انتهت جلستك — سجّل دخول تاني عشان تكمل';
+  }
+
+  /** true لو التوكن موجود بس خلص أو بايظ */
+  hasExpiredToken(): boolean {
+    const token = this.token;
+    return !!token && isJwtExpired(token, EXPIRY_SKEW_MS);
   }
 
   matchesStaff(createdBy?: string, createdById?: string): boolean {
@@ -120,7 +187,29 @@ export class AuthService {
     const user = this.mapUser(payload, emailOrPhone);
     localStorage.setItem(USER_KEY, JSON.stringify(user));
     this.userSubject.next(user);
+    this.watchTokenExpiry();
     return user;
+  }
+
+  private watchTokenExpiry(): void {
+    this.clearExpiryWatch();
+    const token = this.token;
+    if (!token) return;
+    const expMs = jwtExpiryMs(token);
+    if (!expMs) return;
+    const delay = expMs - Date.now() - EXPIRY_SKEW_MS;
+    if (delay <= 0) {
+      this.endSession('expired');
+      return;
+    }
+    this.expiryTimer = setTimeout(() => this.endSession('expired'), delay);
+  }
+
+  private clearExpiryWatch(): void {
+    if (this.expiryTimer) {
+      clearTimeout(this.expiryTimer);
+      this.expiryTimer = null;
+    }
   }
 
   private mapUser(payload: unknown, fallbackEmail: string): AuthUser {
@@ -205,4 +294,15 @@ function decodeJwtPayload(token: string): Record<string, unknown> {
   } catch {
     return {};
   }
+}
+
+function jwtExpiryMs(token: string): number | null {
+  const exp = Number(decodeJwtPayload(token)['exp']);
+  return Number.isFinite(exp) && exp > 0 ? exp * 1000 : null;
+}
+
+function isJwtExpired(token: string, skewMs = 0): boolean {
+  const expMs = jwtExpiryMs(token);
+  if (!expMs) return false;
+  return Date.now() >= expMs - skewMs;
 }

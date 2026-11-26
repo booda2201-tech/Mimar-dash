@@ -8,6 +8,10 @@ export class AuthGuardService {
 
   canActivate(): boolean {
     if (this.auth.isLoggedIn) return true;
+    if (this.auth.hasExpiredToken()) {
+      this.auth.endSession('expired');
+      return false;
+    }
     this.router.navigateByUrl('/login');
     return false;
   }
